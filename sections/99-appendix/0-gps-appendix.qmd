@@ -104,4 +104,3 @@ $$
 $$
 \Cov[f_*, f_*] = \vphi(\vx_*)^\top\Cov[\vw]\vphi(\vx_*) = \vphi(\vx_*)^\top\Sigma_p\vphi(\vx_*).
 $$
-

@@ -7,3 +7,4 @@ _manuscript/**
 node_modules/**
 spell-check/.cspellcache-en-gb.json
 sections/1-gps/2-gaussian-processes_files/**
+site_libs/**

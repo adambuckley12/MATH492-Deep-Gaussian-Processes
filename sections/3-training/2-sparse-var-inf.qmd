@@ -1,0 +1,77 @@
+## Sparse Variational GPs
+
+The $O(n^3)$ cost of standard GP inference becomes prohibitive for large datasets. Sparse methods address this by using $m \ll n$ *inducing points* that summarise the data, reducing complexity to $O(nm^2)$ [@quinonero-candela_unifying_2005; @titsias_variational_2009].
+
+Consider inducing inputs $\vZ = \{\vz_j\}_{j=1}^m$ with function values $\vu = f(\vZ) \in \mathbb{R}^m$. From the prior, the joint distribution of function values $\vf$ at training inputs and inducing values $\vu$ is:
+
+$$
+\begin{bmatrix} \vf \\ \vu \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} K_{ff} & K_{fu} \\ K_{uf} & K_{uu} \end{bmatrix}\right),
+$$ {#eq-joint_f_u}
+
+where $K_{ff} = K(\vX, \vX)$, $K_{fu} = K(\vX, \vZ)$, and $K_{uu} = K(\vZ, \vZ)$.
+
+@titsias_variational_2009 introduced a variational framework that treats $\vZ$ as variational parameters rather than fixed pseudo-inputs. The key idea is to use the conditional $p(\vf \mid \vu)$ from the prior and place a variational distribution on $\vu$:
+
+$$
+q(\vf, \vu) = p(\vf \mid \vu) q(\vu),
+$$ {#eq-sparse_variational_form}
+
+where $q(\vu) = \mathcal{N}(\vu \mid \vm, S)$ with variational parameters $\vm \in \mathbb{R}^m$ and $S \in \mathbb{R}^{m \times m}$.
+
+The conditional from the prior is:
+
+$$
+p(\vf \mid \vu) = \mathcal{N}(\vf \mid K_{fu} K_{uu}^{-1} \vu, \, K_{ff} - K_{fu} K_{uu}^{-1} K_{uf}).
+$$ {#eq-conditional_f_given_u}
+
+Marginalising out $\vu$, the variational distribution over $\vf$ is:
+
+$$
+q(\vf) = \int p(\vf \mid \vu) q(\vu) \, d\vu = \mathcal{N}(\vf \mid K_{fu} K_{uu}^{-1} \vm, \, K_{ff} - K_{fu} K_{uu}^{-1} K_{uf} + K_{fu} K_{uu}^{-1} S K_{uu}^{-1} K_{uf}).
+$$ {#eq-marginal_q_f}
+
+The ELBO for this sparse model is [@titsias_variational_2009]:
+
+$$
+\mathcal{L} = \mathbb{E}_{q(\vf)}[\log p(\vy \mid \vf)] - \KL(q(\vu) \| p(\vu)).
+$$ {#eq-sparse_elbo}
+
+The KL term has closed form:
+
+$$
+\KL(q(\vu) \| p(\vu)) = \frac{1}{2}\left[\tr(K_{uu}^{-1}S) + \vm^\top K_{uu}^{-1} \vm - m + \log|K_{uu}| - \log|S|\right].
+$$ {#eq-kl_inducing}
+
+For Gaussian likelihoods $p(\vy \mid \vf) = \mathcal{N}(\vy \mid \vf, \sigma_n^2 \vI)$, the expected log-likelihood can be computed in closed form, yielding a fully analytical ELBO. Optimal parameters satisfy:
+
+$$
+\begin{aligned}
+S^{-1} &= K_{uu}^{-1} + \sigma_n^{-2} K_{uu}^{-1} K_{uf} K_{fu} K_{uu}^{-1}, \\
+\vm &= \sigma_n^{-2} S K_{uu}^{-1} K_{uf} \vy.
+\end{aligned}
+$$ {#eq-optimal_params}
+
+With inducing points, predictions at test inputs $\vX_*$ follow:
+
+$$
+\begin{aligned}
+\mathbb{E}[f_*] &= K_{*u} K_{uu}^{-1} \vm, \\
+\text{Var}[f_*] &= K_{**} - K_{*u} K_{uu}^{-1} (K_{uu} - S) K_{uu}^{-1} K_{u*}.
+\end{aligned}
+$$ {#eq-sparse_predictions}
+
+The computational scaling is $O(m^3)$ for inverting $K_{uu}$, $O(nm^2)$ for matrix products involving $K_{fu}$, and $O(m^2)$ storage for variational parameters. Inducing locations $\vZ$ can be jointly optimised with hyperparameters $\vtheta$ and variational parameters $(\vm, S)$ by gradient ascent on the ELBO.
+
+### Stochastic Optimisation via Minibatches
+
+Even at $O(nm^2)$ per gradient step, iterating over the full dataset each step becomes expensive for large $n$. For Gaussian likelihoods the expected log-likelihood in @eq-sparse_elbo decomposes over individual data points:
+$$
+\mathbb{E}_{q(\vf)}[\log p(\vy \mid \vf)] = \sum_{i=1}^n \mathbb{E}_{q(f_i)}[\log p(y_i \mid f_i)],
+$$ {#eq-ell_decomposition}
+since $p(\vy \mid \vf) = \prod_i p(y_i \mid f_i)$ and the marginals $q(f_i) = \mathcal{N}(f_i \mid [K_{fu}K_{uu}^{-1}\vm]_i,\, [K_{ff} - K_{fu}K_{uu}^{-1}(K_{uu}-S)K_{uu}^{-1}K_{uf}]_{ii})$ are available in closed form. The KL term does not depend on the data and can be evaluated once per step. This per-point structure means the ELBO can be estimated unbiasedly from a random minibatch $\mathcal{B} \subset \{1,\ldots,n\}$ [@hensman_gaussian_2013]:
+$$
+\hat{\mathcal{L}} = \frac{n}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \mathbb{E}_{q(f_i)}[\log p(y_i \mid f_i)] - \KL(q(\vu) \| p(\vu)).
+$$ {#eq-sparse_minibatch_elbo}
+Each step now costs $O(|\mathcal{B}|m^2 + m^3)$, making gradient-based optimisation tractable even for very large datasets. This minibatch decomposition carries directly into the doubly stochastic DGP estimator @eq-dsvi_mc_elbo, which applies the same per-point factorisation across all layers.
+
+This sparse variational framework forms the foundation for scalable DGP inference, with each layer maintaining its own set of inducing points.

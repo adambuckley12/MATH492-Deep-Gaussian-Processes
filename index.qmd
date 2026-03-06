@@ -16,5 +16,24 @@ bibliography: references.bib
 {{< include sections/1-gps/1-weight-space.qmd >}}
 {{< include sections/1-gps/2-gaussian-processes.qmd >}}
 
+<!-- Deep Gaussian Processes section -->
+{{< include sections/2-dgps/0-dgps.qmd >}}
+{{< include sections/2-dgps/1-dgp-def.qmd >}}
+{{< include sections/2-dgps/2-intractbility.qmd >}}
+
+<!-- Training section -->
+{{< include sections/3-training/0-training.qmd >}}
+{{< include sections/3-training/01-gp-training.qmd >}}
+{{< include sections/3-training/1-var-inf.qmd >}}
+{{< include sections/3-training/2-sparse-var-inf.qmd >}}
+{{< include sections/3-training/3-dgp-spars-inf.qmd >}}
+{{< include /sections/3-training/4-doubly-stochastic.qmd >}}
+<!-- {{< include sections/3-training/5-hilbert.qmd >}}
+{{< include sections/3-training/6-comparison.qmd >}} -->
+
+<!-- Modeling -->
+{{< include sections/4-modeling/0-overview.qmd >}}
+{{< include sections/4-modeling/1-uci-credit-card-default.qmd >}}
+
 
 {{< include sections/99-appendix/0-gps-appendix.qmd >}}

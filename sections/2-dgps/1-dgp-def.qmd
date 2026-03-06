@@ -1,0 +1,127 @@
+## Definition and Model Formulation
+
+DGPs extend standard GPs by composing multiple GP layers in a hierarchical structure [@damianou_deep_2013]. Instead of a single mapping from inputs to outputs, DGPs construct a chain of latent function spaces, each transforming the previous layer.
+
+An $L$-layer DGP is defined by a sequence of latent functions $\{f^{(\ell)}\}_{\ell=1}^{L}$ where each function is drawn from a GP prior conditioned on the output of the previous:
+
+$$
+f^{(\ell)} \mid \vF^{(\ell-1)} \sim \mathcal{GP}\left(0, k^{(\ell)}(\cdot, \cdot)\right), \quad \ell = 1, \ldots, L,
+$$ {#eq-dgp_definition}
+
+with the convention $\vF^{(0)} = \vX$ (the observed inputs).
+
+For observed inputs $\vX \in \mathbb{R}^{n \times d_0}$ and outputs $\vy \in \mathbb{R}^n$, the generative model proceeds as:
+
+$$
+\begin{aligned}
+\vF^{(1)} &= f^{(1)}(\vX), & f^{(1)} &\sim \mathcal{GP}(0, k^{(1)}), \\
+\vF^{(2)} &= f^{(2)}(\vF^{(1)}), & f^{(2)} &\sim \mathcal{GP}(0, k^{(2)}), \\
+&\vdots \\
+\vF^{(L)} &= f^{(L)}(\vF^{(L-1)}), & f^{(L)} &\sim \mathcal{GP}(0, k^{(L)}), \\
+\vy &= \vF^{(L)} + \vepsilon, & \vepsilon &\sim \mathcal{N}(\vzero, \sigma_n^2 \vI),
+\end{aligned}
+$$ {#eq-dgp_generative}
+
+where $\vF^{(\ell)} \in \mathbb{R}^{n \times d_\ell}$ contains function evaluations at layer $\ell$ for all $n$ data points, and $d_\ell$ is the output dimensionality of layer $\ell$.
+
+The covariance matrix at layer $\ell$ is constructed from kernel evaluations at the *random* outputs of the previous layer:
+
+$$
+\left[K^{(\ell)}\right]_{ij} = k^{(\ell)}\left(\vf_i^{(\ell-1)}, \vf_j^{(\ell-1)}\right),
+$$ {#eq-dgp_covariance_element}
+
+where $\vf_i^{(\ell-1)} \in \mathbb{R}^{d_{\ell-1}}$ is the $i$-th row of $\vF^{(\ell-1)}$. When conditioned on the outputs from layer $\ell-1$, the distribution of $\vF^{(\ell)}$ remains multivariate Gaussian:
+
+$$
+p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right) = \mathcal{N}\left(\vF^{(\ell)} \mid \vzero, K^{(\ell)}\right).
+$$ {#eq-dgp_conditional_gaussian}
+
+The directed graph structure implies that each layer depends only on its immediate predecessor (a Markov property), leading to a factorised joint prior:
+
+$$
+p\left(\vF^{(1)}, \ldots, \vF^{(L)} \mid \vX\right) = p\left(\vF^{(1)} \mid \vX\right) \prod_{\ell=2}^{L} p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right).
+$$ {#eq-dgp_joint_prior}
+
+This follows from applying the chain rule and noting that $\vF^{(\ell)} \perp \vF^{(1:\ell-2)}, \vX \mid \vF^{(\ell-1)}$. The likelihood connects the final layer to observations via $p(\vy \mid \vF^{(L)}) = \mathcal{N}(\vy \mid \vF^{(L)}, \sigma_n^2 \vI)$.
+
+Equivalently, defining the composed function $f = f^{(L)} \circ f^{(L-1)} \circ \cdots \circ f^{(1)}$:
+
+$$
+\vy = f(\vX) + \vepsilon = f^{(L)}(f^{(L-1)}(\cdots f^{(1)}(\vX))) + \vepsilon.
+$$ {#eq-dgp_composition}
+
+When layers have output dimension $d_\ell > 1$, the standard approach uses independent GPs per output dimension:
+
+$$
+\vF^{(\ell)} = \left[\vf^{(\ell,1)}, \ldots, \vf^{(\ell,d_\ell)}\right], \quad f^{(\ell,j)} \stackrel{\text{ind}}{\sim} \mathcal{GP}\left(0, k^{(\ell)}\right).
+$$ {#eq-dgp_multi_output}
+
+This leads to $\sum_{\ell=1}^{L} n \cdot d_\ell = O(nLd)$ total latent variables.
+
+@fig-dgp-composition illustrates the compositional structure of a two-layer DGP. The first layer warps the input, and the second layer operates on the warped space, producing a composed function that would be difficult to represent with a single GP.
+
+```{python}
+#| label: fig-dgp-composition
+#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ warps the input. Centre: the second-layer function $f^{(2)}$ maps the warped inputs to outputs. Right: the composed function $f^{(2)} \\circ f^{(1)}$ exhibits non-stationary behaviour — smooth in some regions and rapidly varying in others — that neither layer alone could produce."
+#| echo: false
+
+import torch
+import gpytorch
+import numpy as np
+import matplotlib.pyplot as plt
+
+torch.manual_seed(21)
+
+n = 300
+x_np = np.linspace(-3, 3, n)
+
+# Layer 1: a smooth nonlinear warp
+h_np = x_np + 0.7 * np.tanh(1.8 * x_np) + 0.3 * np.sin(2 * x_np)
+
+# Layer 2: draw a GP sample on the warped inputs using GPyTorch
+h_t = torch.tensor(h_np, dtype=torch.float64)
+kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel()).double()
+kernel.base_kernel.lengthscale = 0.8
+kernel.outputscale = 1.0
+prior = gpytorch.distributions.MultivariateNormal(
+    torch.zeros(n, dtype=torch.float64),
+    kernel(h_t).evaluate() + 1e-6 * torch.eye(n, dtype=torch.float64)
+)
+f2 = prior.sample().numpy()
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.5))
+
+ax = axes[0]
+ax.plot(x_np, h_np, color='#1f77b4', linewidth=1.5)
+ax.plot(x_np, x_np, color='grey', linewidth=0.7, linestyle='--', alpha=0.5, label='Identity')
+ax.set_xlabel('$x$')
+ax.set_ylabel('$f^{(1)}(x)$')
+ax.set_title('Layer 1: input warp')
+ax.legend(fontsize=8, framealpha=0.9)
+
+ax = axes[1]
+ax.plot(h_np, f2, color='#ff7f0e', linewidth=1.5)
+ax.set_xlabel('$h = f^{(1)}(x)$')
+ax.set_ylabel('$f^{(2)}(h)$')
+ax.set_title('Layer 2: GP on warped inputs')
+
+ax = axes[2]
+ax.plot(x_np, f2, color='#2ca02c', linewidth=1.5)
+ax.set_xlabel('$x$')
+ax.set_ylabel('$f^{(2)}(f^{(1)}(x))$')
+ax.set_title('Composed function')
+
+for ax in axes:
+    ax.axhline(0, color='grey', linewidth=0.4, linestyle='--')
+
+fig.tight_layout()
+plt.show()
+```
+
+The expressiveness of DGPs over standard GPs comes from this composition [@damianou_deep_2013; @dunlop_how_2018]. Even when each layer uses a stationary kernel, the composed function yields a non-stationary process. Consider the covariance of $g = f^{(2)} \circ f^{(1)}$:
+
+$$
+\text{Cov}[g(\vx), g(\vx')] = \mathbb{E}_{f^{(1)}}\left[k^{(2)}\left(f^{(1)}(\vx), f^{(1)}(\vx')\right)\right].
+$$ {#eq-composed_covariance}
+
+This expectation depends on marginal distributions of $f^{(1)}(\vx)$ and $f^{(1)}(\vx')$, which change with $\vx, \vx'$ through $k^{(1)}$. The composed covariance is therefore not simply a function of $\vx - \vx'$, making the process non-stationary. This input-dependent structure lets DGPs model functions with varying smoothness and lengthscale across input space. [**TODO: CITE**].

@@ -1,0 +1,37 @@
+## Credit Card Probability of Default {#sec-credit-card}
+
+We evaluate the performance of GPs and DGPs on the UCI credit card default dataset [@yeh_comparisons_2009], which contains information on 30,000 credit card holders, including demographic features, credit history, and a binary target indicating whether they defaulted on their next payment. This dataset is a common benchmark for probabilistic classification models, as it requires accurate uncertainty estimates to inform risk management decisions.
+
+
+<!-- import ./fig-calibration.pdf -->
+![Calibration curves for GP and DGP models on the UCI credit card default dataset. The GP model shows significant miscalibration, while the DGP's curve is much closer to the ideal diagonal, indicating better uncertainty estimates.](/sections/4-modeling/calibration.png){#fig-calibration width=100%}
+
+
+```{python, width=80%}
+#| label: tab-metrics
+#| tbl-cap: "Performance metrics for GP and DGP models on the UCI credit card default dataset. The DGP outperforms the GP across all metrics, with particularly large improvements in Brier Score and ECE, indicating much better calibrated probabilities."
+#| echo: false
+
+import pandas as pd
+
+data = {
+    'Model':              ['Logistic Regression', 'Random Forest', 'XGBoost', 'SVGP', 'DSVGP-2L', 'DSVGP-3L'],
+    'ROC AUC':            [0.7388, 0.7706, 0.7783, 0.7778, 0.7774, 0.7751],
+    'Average Precision':  [0.4933, 0.5502, 0.5529, 0.5530, 0.5509, 0.5446],
+    'F1 Score':           [0.4998, 0.5327, 0.5388, 0.4681, 0.4644, 0.4681],
+    'Precision':          [0.4214, 0.5667, 0.4794, 0.6607, 0.6662, 0.6630],
+    'Recall':             [0.6142, 0.5026, 0.6149, 0.3625, 0.3564, 0.3617],
+    'Brier Score':        [0.1992, 0.1461, 0.1796, 0.1352, 0.1356, 0.1358],
+    'ECE':                [0.2253, 0.0879, 0.2045, 0.0117, 0.0204, 0.0213],
+}
+metrics_df = pd.DataFrame(data)
+
+def highlight_best_worst(s):
+    is_better_higher = s.name in ['ROC AUC', 'Average Precision', 'F1 Score', 'Precision', 'Recall']
+    best = s.max() if is_better_higher else s.min()
+    worst = s.min() if is_better_higher else s.max()
+    return ['font-weight: bold; color: green' if v == best else 'font-weight: bold; color: red' if v == worst else '' for v in s]
+
+styled_df = metrics_df.style.apply(highlight_best_worst, subset=metrics_df.columns[1:])
+styled_df
+```

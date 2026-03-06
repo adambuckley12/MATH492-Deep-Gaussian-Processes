@@ -1,0 +1,34 @@
+## Hilbert Space and Spectral Approximations
+
+An alternative to inducing point methods exploits spectral representations of kernels to construct finite-dimensional approximations. These approaches leverage the connection between GPs and basis function regression through the spectral theory of positive definite kernels.
+
+### Karhunen–Loève Expansion
+
+For a continuous, symmetric, positive definite kernel $k$ on a compact domain $\mathcal{X}$, Mercer's theorem guarantees an eigenfunction expansion [@rasmussen_gaussian_2008]:
+$$
+k(\vx, \vx') = \sum_{j=1}^{\infty} \lambda_j \phi_j(\vx) \phi_j(\vx'),
+$$ {#eq-mercer_theorem}
+where $\{\phi_j\}$ are orthonormal eigenfunctions of the integral operator $(\mathcal{T}_k \phi)(\vx) = \int k(\vx, \vx') \phi(\vx') d\vx'$ and $\lambda_j \geq 0$ are the corresponding eigenvalues. A GP with covariance $k$ can be represented via the Karhunen–Loève expansion:
+$$
+f(\vx) = \sum_{j=1}^{\infty} w_j \sqrt{\lambda_j} \phi_j(\vx), \quad w_j \stackrel{\text{iid}}{\sim} \mathcal{N}(0, 1).
+$$ {#eq-karhunen_loeve}
+
+Truncating to $m$ terms yields a finite-rank approximation $\tilde{f}(\vx) = \vw^\top \vLambda^{1/2} \vphi(\vx)$, where $\vLambda = \text{diag}(\lambda_1, \ldots, \lambda_m)$ and $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_m(\vx)]^\top$. The approximation error $|k - \tilde{k}| \leq \sum_{j=m+1}^{\infty} \lambda_j$ vanishes as $m \to \infty$.
+
+### Random Fourier Features
+
+For stationary kernels on $\mathbb{R}^d$, Bochner's theorem provides an alternative spectral representation via the Fourier transform: $k(\vtau) = \int S(\vomega) e^{i\vomega^\top \vtau} d\vomega$, where $S(\vomega) \geq 0$ is the spectral density. @rahimi_random_2007 introduced random Fourier features to approximate this via Monte Carlo. Sampling $\vomega_1, \ldots, \vomega_m \stackrel{\text{iid}}{\sim} S(\vomega)$ and defining features $\phi_j(\vx) = \sqrt{2/m}[\cos(\vomega_j^\top \vx),\, \sin(\vomega_j^\top \vx)]^\top$, the kernel is approximated as $k(\vx, \vx') \approx \vphi(\vx)^\top \vphi(\vx')$.
+
+This converts the GP to Bayesian linear regression in feature space: $f(\vx) = \vphi(\vx)^\top \vw$ with $\vw \sim \mathcal{N}(\vzero, \vI)$. The posterior over weights costs $O(nm^2 + m^3) = O(nm^2)$ for $m < n$, the same asymptotic scaling as inducing point methods.
+
+### Application to Deep GPs
+
+For Deep GPs, the Hilbert space approach applies independently to each layer. At layer $\ell$:
+$$
+f^{(\ell)}(\vx) = \vw^{(\ell)\top} \vLambda^{(\ell)1/2} \vphi^{(\ell)}(\vx), \qquad q(\vw^{(\ell)}) = \mathcal{N}(\vm_w^{(\ell)}, \vS_w^{(\ell)}).
+$$ {#eq-dgp_hilbert_layer}
+
+The ELBO mirrors the inducing point case, with KL terms between $q(\vw^{(\ell)})$ and the standard normal prior. The key advantage is that basis functions are fixed by the kernel's spectral properties rather than being variational parameters, eliminating the need to optimise inducing locations. The disadvantage is that uniform basis placement may be inefficient when data concentrates in subregions, whereas inducing points can adapt to data density.
+
+These perspectives are unified through interdomain inducing variables [@titsias_variational_2009]. Choosing delta-function test functions recovers standard inducing points; choosing Fourier basis functions recovers spectral features; choosing kernel eigenfunctions recovers the Karhunen–Loève weights. The optimal choice depends on the problem: localised data favours inducing points, while globally distributed smooth data favours spectral bases.
+

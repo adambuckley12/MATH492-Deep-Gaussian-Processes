@@ -1,6 +1,6 @@
 ## The Weight Space View
 
-Before moving to the full function space perspective, it helps to build intuition through a finite-dimensional parametric approach. The weight space view treats regression as inference over weight vectors, and the resulting structure naturally motivates the transition to Gaussian processes.
+Before moving to the full function space perspective, it is instructive to build intuition through a finite-dimensional parametric approach. The *weight space view* treats regression as Bayesian inference over a weight vector, and the structure of the resulting predictive distribution — once expressed in terms of inner products between inputs — naturally motivates the transition to Gaussian processes [@rasmussen_gaussian_2008; @mackay_introduction_1998].
 
 We begin with a linear model of the form
 $$
@@ -13,7 +13,7 @@ $$ {#eq-basis-expansion}
 
 where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basis functions mapping the input to an $M$-dimensional feature space, with weights $\vw = [w_1, \ldots, w_M]^\top$. This is more general than the simple linear model, allowing non-linear relationships through the choice of basis functions $\phi_j(\cdot)$, without breaking linearity in the parameters $\vw$.
 
-Given training data $\mathcal{D}$, our goal is to learn the weights $\vw$. Maximum likelihood estimation would yield a single point estimate, but this ignores the fact that many different weight vectors could explain the observed data equally well yet make very different predictions elsewhere.
+Given training data $\mathcal{D}$, our goal is to learn the weights $\vw$. Maximum likelihood (ML) estimation would yield a single point estimate $\hat{\vw}_{\text{ML}} = (\Phi^\top\Phi)^{-1}\Phi^\top\vy$ [@bishop_pattern_2006; @murphy_machine_2013], but this ignores the fact that many different weight vectors may explain the observed data equally well yet make very different predictions in unobserved regions — a manifestation of the bias-variance trade-off that becomes especially problematic with limited data and many parameters.
 
 ## Bayesian Linear Regression
 
@@ -65,12 +65,12 @@ $$ {#eq-posterior-weights}
 
 ## Predictive Distribution
 
-This posterior distribution captures uncertainty about the weights given the observed data. We can use it to make predictions at a new input $\vx_*$ by marginalising over $\vw$:
+This posterior distribution captures uncertainty about the weights given the observed data. We can use it to make predictions at a new input $\vx_*$ by marginalising over the weight posterior:
 $$
 p(f_* \mid \vx_*, \vX, \vy) = \int p(f_* \mid \vx_*, \vw) p(\vw \mid \vX, \vy) \, d\vw,
 $$ {#eq-predictive-distribution}
 
-where $f_* = f(\vx_*)$ is the predicted output at $\vx_*$. Since $f(\vx_*) = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw$, the predictive distribution is also Gaussian, with mean and variance given by standard results for linear transformations of Gaussian random variables (see [Appendix @sec-predictive-variance] for the full derivation):
+where $f_* = f(\vx_*)$. Since $f(\vx_*) = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw$, the marginal $p(f_* \mid \vx_*, \vX, \vy)$ is also Gaussian [@bishop_pattern_2006, Chapter 3]. Evaluating the integral in closed form gives the predictive mean and variance (see [Appendix @sec-predictive-variance] for the full derivation):
 
 $$
 \begin{aligned}
@@ -127,6 +127,6 @@ $$
 p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-predictive-kernel-full}
 
-Crucially, $\vphi$ has vanished entirely — the predictions depend only on kernel evaluations between data points. This means we are free to specify $k$ directly, without ever constructing an explicit feature map. In particular, if we allow $M \to \infty$ — infinitely many basis functions — and define $k$ to be the corresponding limiting inner product, the model becomes *non-parametric*: its effective complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998].
+Crucially, $\vphi$ has vanished entirely — the predictions depend only on kernel evaluations between data points. This means we are free to specify $k$ directly, without ever constructing an explicit feature map. In particular, if we allow $M \to \infty$ — infinitely many basis functions — and define $k$ to be the corresponding limiting inner product, the model becomes *non-parametric*: its effective complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. Indeed, @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, making rigorous the connection between the weight-space and function-space views.
 
-This is precisely the function space perspective. Instead of reasoning about an infinite weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.
+This is precisely the function-space perspective: instead of reasoning about an infinite weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.

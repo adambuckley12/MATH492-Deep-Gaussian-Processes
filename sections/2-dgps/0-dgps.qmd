@@ -1,0 +1,5 @@
+# Deep Gaussian Processes {#sec-dgps}
+
+The previous section established that GPs provide closed-form predictions and uncertainty estimates, governed entirely by the choice of kernel. However, the expressiveness of a single-layer GP is fundamentally constrained by this kernel: a stationary kernel like the squared exponential encodes a fixed notion of smoothness across the entire input space, which may not match real-world data where patterns vary in complexity across different regions.
+
+Deep Gaussian Processes (DGPs) address this by composing multiple GP layers hierarchically. Rather than relying on hand-crafted kernels, DGPs learn representations at multiple levels of abstraction, much like deep neural networks, while retaining Bayesian uncertainty quantification. This section formalises the DGP model and shows why exact inference becomes intractable in the deep setting, motivating the approximate methods of @sec-learning.

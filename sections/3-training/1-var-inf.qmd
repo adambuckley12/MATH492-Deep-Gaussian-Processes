@@ -1,0 +1,46 @@
+## Variational Inference
+
+When exact inference is intractable, variational inference provides a principled approximation framework [@jordan_introduction_1999; @blei_variational_2017]. The idea is to approximate the true posterior $p(\vz \mid \vy)$ with a tractable distribution $q(\vz)$, chosen to minimise the Kullback–Leibler divergence between them.
+
+For latent variables $\vz$ and observations $\vy$, the log marginal likelihood separates as:
+
+$$
+\log p(\vy) = \mathcal{L}(q) + \KL(q(\vz) \| p(\vz \mid \vy)),
+$$ {#eq-vi_decomposition}
+
+where the evidence lower bound (ELBO) is:
+
+$$
+\mathcal{L}(q) = \mathbb{E}_{q(\vz)}[\log p(\vy, \vz)] - \mathbb{E}_{q(\vz)}[\log q(\vz)] = \mathbb{E}_{q(\vz)}[\log p(\vy \mid \vz)] - \KL(q(\vz) \| p(\vz)).
+$$ {#eq-elbo}
+
+Since KL divergence is non-negative, $\mathcal{L}(q) \leq \log p(\vy)$ with equality when $q(\vz) = p(\vz \mid \vy)$.
+
+To show @eq-vi_decomposition, start from the definition of KL divergence:
+
+$$
+\begin{aligned}
+\KL(q \| p) &= \mathbb{E}_{q(\vz)}\left[\log \frac{q(\vz)}{p(\vz \mid \vy)}\right] = \mathbb{E}_{q(\vz)}[\log q(\vz)] - \mathbb{E}_{q(\vz)}[\log p(\vz \mid \vy)] \\
+&= \mathbb{E}_{q(\vz)}[\log q(\vz)] - \mathbb{E}_{q(\vz)}[\log p(\vy, \vz)] + \log p(\vy).
+\end{aligned}
+$$
+
+Rearranging gives @eq-vi_decomposition. Since $\KL(q \| p)$ cannot be computed directly (it is intractable), we instead maximise the ELBO, which is equivalent to minimising KL divergence.
+
+The second form @eq-elbo illuminates the ELBO's structure. The expected log-likelihood $\mathbb{E}_{q}[\log p(\vy \mid \vz)]$ encourages $q$ to concentrate where the data is well-explained, while the KL term $\KL(q \| p(\vz))$ regularises $q$ toward the prior, preventing overfitting [@bishop_pattern_2006]. This trade-off mirrors the data-fit versus complexity balance in exact Bayesian inference.
+
+For the models in this dissertation, variational inference serves two purposes: enabling scalability to large datasets, and handling the hierarchical structure of DGPs where function values at each layer cannot be analytically integrated out. The latent variables $\vz$ correspond to function values $\vf$, and the variational distribution is usually chosen to be Gaussian:
+
+$$
+q(\vf) = \mathcal{N}(\vf \mid \vm, S),
+$$ {#eq-variational_gaussian}
+
+with variational parameters $\vm \in \mathbb{R}^n$ and $S \in \mathbb{R}^{n \times n}$ (positive definite). This balances expressiveness with computational tractability. The expectations under $q$ can often be computed analytically for standard likelihood functions.
+
+With this Gaussian choice, the KL term has closed form:
+
+$$
+\KL(q(\vf) \| p(\vf)) = \frac{1}{2}\left[\tr(K^{-1}S) + \vm^\top K^{-1} \vm - n + \log|K| - \log|S|\right],
+$$ {#eq-kl_gaussian}
+
+where $K$ is the prior covariance. Optimisation over a full-rank matrix $S \in \mathbb{R}^{n \times n}$ still involves $O(n^2)$ parameters, which becomes problematic for large $n$. The key to resolving this is to restrict the variational family to a lower-dimensional subspace defined by $m \ll n$ *inducing points*, as developed in the following section.

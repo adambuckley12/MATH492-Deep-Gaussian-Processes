@@ -1,0 +1,73 @@
+## Doubly Stochastic Variational Inference
+
+@salimbeni_doubly_2017 introduced a more elegant approach to DGP inference that avoids the mean-field approximation over layer outputs. The key insight is to use Monte Carlo estimation of the nested expectations while maintaining the exact conditional structure through the GP prior.
+
+The variational distribution retains the form from @eq-dgp_variational_factorization:
+
+$$
+q(\{\vF^{(\ell)}, \vU^{(\ell)}\}) = \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) q(\vU^{(\ell)}),
+$$ {#eq-dsvi_variational}
+
+but rather than introducing additional variational parameters for $\vF^{(\ell)}$, the method propagates samples through the layers. This respects the hierarchical structure: $\vF^{(\ell)}$ is generated from $\vF^{(\ell-1)}$ via the GP conditional, with uncertainty injected only through the inducing variables $\vU^{(\ell)}$.
+
+The ELBO decomposes over data points:
+
+$$
+\mathcal{L} = \sum_{i=1}^{n} \mathbb{E}_{q(f_i^{(L)})}[\log p(y_i \mid f_i^{(L)})] - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})).
+$$ {#eq-dsvi_elbo}
+
+The factorisation follows from $p(\vy \mid \vF^{(L)}) = \prod_i p(y_i \mid f_i^{(L)})$. The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian (the standard Gaussian KL). The challenge lies in computing $\mathbb{E}_{q(f_i^{(L)})}[\log p(y_i \mid f_i^{(L)})]$, which requires marginalising over all intermediate layers. The distribution $q(f_i^{(L)})$ is obtained by integrating:
+
+$$
+q(f_i^{(L)}) = \int \cdots \int p(f_i^{(L)} \mid \vU^{(L)}, f_i^{(L-1)}) q(\vU^{(L)}) \cdots p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)} \cdots d\vU^{(L)}.
+$$ {#eq-marginal_q_output}
+
+This nested integral is analytically intractable due to the nonlinear dependence of kernel matrices on previous layer outputs.
+
+The doubly stochastic approach estimates this expectation via Monte Carlo. For data point $\vx_i$, we construct a sample path through all layers. Starting at layer 1, the marginal distribution over $f_i^{(1)}$ given $\vx_i$ is:
+
+$$
+q(f_i^{(1)} \mid \vx_i) = \int p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)}.
+$$ {#eq-layer1_marginal}
+
+Since $p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) = \mathcal{N}(f_i^{(1)} \mid k_i^{(1)\top} (K_{uu}^{(1)})^{-1} \vU^{(1)}, \, k_{ii}^{(1)} - k_i^{(1)\top} (K_{uu}^{(1)})^{-1} k_i^{(1)})$ and $q(\vU^{(1)}) = \mathcal{N}(\vM^{(1)}, \vS^{(1)})$, integrating out $\vU^{(1)}$ yields:
+
+$$
+\begin{aligned}
+\mu_i^{(1)} &= k_i^{(1)\top} (K_{uu}^{(1)})^{-1} \vM^{(1)}, \\
+\sigma_i^{(1)2} &= k_{ii}^{(1)} - k_i^{(1)\top} (K_{uu}^{(1)})^{-1} (K_{uu}^{(1)} - \vS^{(1)}) (K_{uu}^{(1)})^{-1} k_i^{(1)},
+\end{aligned}
+$$ {#eq-layer1_moments}
+
+where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$.
+
+Sampling $f_i^{(1)} \sim \mathcal{N}(\mu_i^{(1)}, \sigma_i^{(1)2})$ gives a realisation of the first layer output. For subsequent layers $\ell = 2, \ldots, L$, we condition on the sampled value from the previous layer. The distribution at layer $\ell$ given sampled $f_i^{(\ell-1)}$ is:
+
+$$
+q(f_i^{(\ell)} \mid f_i^{(\ell-1)}) = \int p(f_i^{(\ell)} \mid \vU^{(\ell)}, f_i^{(\ell-1)}) q(\vU^{(\ell)}) \, d\vU^{(\ell)},
+$$ {#eq-layer_conditional}
+
+with mean and variance:
+
+$$
+\begin{aligned}
+\mu_i^{(\ell)} &= k^{(\ell)}(f_i^{(\ell-1)}, \vZ^{(\ell)})^\top (K_{uu}^{(\ell)})^{-1} \vM^{(\ell)}, \\
+\sigma_i^{(\ell)2} &= k^{(\ell)}(f_i^{(\ell-1)}, f_i^{(\ell-1)}) - k^{(\ell)}(f_i^{(\ell-1)}, \vZ^{(\ell)})^\top (K_{uu}^{(\ell)})^{-1} (K_{uu}^{(\ell)} - \vS^{(\ell)}) (K_{uu}^{(\ell)})^{-1} k^{(\ell)}(\vZ^{(\ell)}, f_i^{(\ell-1)}).
+\end{aligned}
+$$ {#eq-layer_ell_moments}
+
+The kernel evaluations now depend on the random variable $f_i^{(\ell-1)}$ from the previous layer, creating the propagation of uncertainty.
+
+After sampling through all $L$ layers, we obtain $f_i^{(L)}$ and evaluate $\log p(y_i \mid f_i^{(L)})$. With $S$ independent sample paths, the Monte Carlo estimate of the ELBO is:
+
+$$
+\hat{\mathcal{L}} = \frac{n}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \frac{1}{S} \sum_{s=1}^{S} \log p(y_i \mid f_i^{(L,s)}) - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})),
+$$ {#eq-dsvi_mc_elbo}
+
+where $\mathcal{B} \subset \{1, \ldots, n\}$ is a minibatch and $f_i^{(L,s)}$ denotes the $s$-th sample at the final layer for point $i$. The factor $n/|\mathcal{B}|$ corrects for minibatch subsampling, ensuring the estimate remains unbiased.
+
+The term "doubly stochastic" refers to two sources of randomness: minibatch subsampling (stochasticity over data) and Monte Carlo sampling through layers (stochasticity over latent functions). Both maintain unbiasedness of gradient estimates, which is crucial for stochastic optimisation convergence.
+
+Gradient computation requires differentiating through the sampling operations. The reparameterisation trick [@kingma_auto-encoding_2014] makes this tractable: instead of sampling $f \sim \mathcal{N}(\mu, \sigma^2)$ directly, we write $f = \mu + \sigma\epsilon$ with $\epsilon \sim \mathcal{N}(0,1)$, so that gradients with respect to $\mu$ and $\sigma$ flow through the deterministic transformation while the stochastic node $\epsilon$ carries no parameters.
+
+Computational cost per iteration is $O(|\mathcal{B}| m^2 L S)$ for forward propagation of $S$ samples through $L$ layers, plus $O(m^3 L)$ for the KL terms. Crucially, this is independent of $n$, enabling scalability to large datasets. Empirically, a single sample ($S=1$) often suffices when $|\mathcal{B}|$ is large, as averaging over many data points provides natural variance reduction.

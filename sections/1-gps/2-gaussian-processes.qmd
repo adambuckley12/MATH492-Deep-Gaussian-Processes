@@ -1,0 +1,377 @@
+# Gaussian Processes {#sec-gp-definition}
+
+Formally, a Gaussian process is a collection of random variables, any finite number of which have a joint Gaussian distribution [@rasmussen_gaussian_2008]. A GP is fully specified by its mean function $m(\vx) = \E[f(\vx)]$ and covariance function (or kernel) $k(\vx, \vx') = \E[(f(\vx) - m(\vx))(f(\vx') - m(\vx'))] = \Cov[f(\vx), f(\vx')]$. We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions — rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space — and the choice of kernel is the primary modelling decision.
+
+## The GP Prior {#sec-gp-prior}
+
+Placing a GP prior on $f$ gives concrete meaning to the phrase "prior over functions". Evaluating $f$ at any finite collection of inputs $\vX = \{\vx_1, \ldots, \vx_n\}$ yields a joint Gaussian over the corresponding function values $\vf = [f(\vx_1), \ldots, f(\vx_n)]^\top$,
+$$
+\vf \mid \vX \sim \N(\vm, K),
+$$ {#eq-gp-prior}
+where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This *marginalisation property* — that every finite-dimensional marginal is Gaussian — is the defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression it is standard to take $m \equiv 0$, since any non-zero prior mean can be absorbed into the model or estimated from data [@mackay_introduction_1998].
+
+## Kernels and Covariance Functions {#sec-kernels}
+
+All of the structure of the prior is encoded in the kernel $k$. The kernel determines how function values co-vary across input space: inputs that are close according to $k$ will have strongly correlated function values, while distant inputs are nearly independent. Kernel hyper-parameters directly control interpretable properties such as the characteristic length-scale (how rapidly the function varies), the output scale (the typical amplitude), and whether the function is stationary or periodic. @fig-kernels illustrates this with two common choices: the squared exponential (SE) kernel, which produces infinitely differentiable functions whose roughness is controlled by a length-scale parameter $\ell$, and the periodic kernel, whose period parameter $p$ fixes the repetition frequency of the sampled functions.
+
+```{python}
+#| label: fig-kernels
+#| fig-cap: "Prior samples from GPs with the SE kernel (left) and the periodic kernel (right) under varying hyperparameters."
+#| echo: false
+
+import torch
+import gpytorch
+import numpy as np
+import matplotlib.pyplot as plt
+
+torch.manual_seed(2)
+
+X_plot = torch.linspace(0, 5, 300).double()
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+
+# --- Left: SE/RBF kernel, varying lengthscale ---
+lengthscales = [0.1, 0.5, 1.0]
+ax = axes[0]
+for ell, color in zip(lengthscales, colors):
+    kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel()).double()
+    kernel.base_kernel.lengthscale = ell
+    kernel.outputscale = 1.0
+    K = kernel(X_plot).evaluate() + 1e-6 * torch.eye(len(X_plot), dtype=torch.float64)
+    prior = gpytorch.distributions.MultivariateNormal(
+        torch.zeros_like(X_plot), K
+    )
+    sample = prior.sample().numpy()
+    ax.plot(X_plot.numpy(), sample, color=color, alpha=0.85, linewidth=1.2,
+            label=fr'$\ell={ell}$')
+ax.set_title('SE kernel')
+ax.set_xlabel('$x$')
+ax.set_ylabel('$f(x)$')
+ax.set_ylim(-3, 3)
+ax.legend(framealpha=0.9)
+ax.axhline(0, color='grey', linewidth=0.5, linestyle='--')
+
+# --- Right: Periodic kernel, varying period ---
+periods = [1.0, 3.0, 5.0]
+ax = axes[1]
+for p, color in zip(periods, colors):
+    kernel = gpytorch.kernels.ScaleKernel(
+        gpytorch.kernels.PeriodicKernel()
+    ).double()
+    kernel.base_kernel.period_length = p
+    kernel.base_kernel.lengthscale = 1.0
+    kernel.outputscale = 1.0
+    K = kernel(X_plot).evaluate() + 1e-6 * torch.eye(len(X_plot), dtype=torch.float64)
+    prior = gpytorch.distributions.MultivariateNormal(
+        torch.zeros_like(X_plot), K
+    )
+    sample = prior.sample().numpy()
+    ax.plot(X_plot.numpy(), sample, color=color, alpha=0.85, linewidth=1.2,
+            label=fr'$p={p}$')
+ax.set_title('Periodic kernel')
+ax.set_xlabel('$x$')
+ax.set_ylabel('$f(x)$')
+ax.set_ylim(-3, 3)
+ax.legend(framealpha=0.9)
+ax.axhline(0, color='grey', linewidth=0.5, linestyle='--')
+
+fig.tight_layout()
+plt.show()
+```
+
+The SE kernel, also called the radial basis function (RBF) kernel, is defined as
+$$
+k_{\text{SE}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{\|\vx - \vx'\|^2}{2\ell^2}\right),
+$$ {#eq-se-kernel}
+
+and is the most widely used GP kernel in practice [@rasmussen_gaussian_2008]. A small $\ell$ allows the function to vary rapidly over short distances, producing rough wiggly samples, while a large $\ell$ enforces smoothly varying functions. The periodic kernel,
+$$
+k_{\text{per}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{2\sin^2\!\left(\pi|\vx - \vx'|/p\right)}{\ell^2}\right),
+$$ {#eq-periodic-kernel}
+
+explicitly encodes a repeating structure with period $p$, making it suitable for modelling seasonal or cyclical signals [@rasmussen_gaussian_2008]. Kernels can also be combined — sums and products of valid kernels are themselves valid kernels — enabling the construction of structured priors that capture multiple scales or mixed behaviours [@rasmussen_gaussian_2008, ch.~4; @scholkopf_learning_2002].
+
+## Choosing Kernel Hyperparameters {#sec-kernel-hyperparams}
+
+The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, also known as *type-II maximum likelihood* or *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @rasmussen_gaussian_2008],
+
+<!--- underline each section in the LML expression and explain its interpretation --->
+$$
+\begin{aligned}
+\log p(\vy \mid \vX, \boldsymbol{\theta}) &= -\frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1}\vy \quad\text{(data fit)} \\
+&\quad - \frac{1}{2}\log |K + \sigma_n^2\vI| \quad\text{(complexity penalty)} \\
+&\quad - \frac{n}{2}\log 2\pi \quad\text{(normalisation constant)}.
+\end{aligned}
+$$ {#eq-log-marginal-likelihood}
+
+This LML has 3 interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$ [@rasmussen_gaussian_2008]. However, the LML is non-convex and can have multiple local optima, so it is common to perform multiple random restarts to increase the chances of finding a good solution. Additionally, since kernel hyperparameters are typically constrained to be positive, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
+
+## GP Regression {#sec-gp-regression}
+
+Given noisy training observations $\vy = \vf + \vepsilon$ with $\vepsilon \sim \N(\vzero, \sigma_n^2 \vI)$ independent of $\vf$, the three blocks of the joint covariance follow directly from the GP prior (see [Appendix @sec-covariance-blocks] for the full expansion):
+
+$$
+\begin{aligned}
+\Cov[\vy, \vy] &= \Cov[\vf + \vepsilon, \vf + \vepsilon] = K + \sigma_n^2 \vI, \\
+\Cov[\vy, f_*] &= \Cov[\vf + \vepsilon, f(\vx_*)] = \vk_*, \\
+\Cov[f_*, f_*] &= k(\vx_*, \vx_*) = k_{**},
+\end{aligned}
+$$
+
+where $[\vk_*]_i = k(\vx_i, \vx_*)$ and $k_{**} = k(\vx_*, \vx_*)$. Since $\vy$ and $f_*$ are jointly Gaussian as linear functions of the GP, the joint distribution over training outputs and test value $f_* = f(\vx_*)$ is:
+$$
+\begin{bmatrix} \vy \\ f_* \end{bmatrix}
+\sim
+\N\!\left(
+\vzero,\;
+\begin{bmatrix} K + \sigma_n^2 \vI & \vk_* \\ \vk_*^\top & k_{**} \end{bmatrix}
+\right).
+$$ {#eq-joint-gp}
+ Conditioning on $\vy$ via the standard Gaussian conditionals [@rasmussen_gaussian_2008, Equation 2.19; @bishop_pattern_2006, Section 2.3] gives the posterior predictive distribution:
+$$
+p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k_{**} - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
+$$ {#eq-gp-predictive}
+
+This is identical to the weight-space result in @eq-predictive-kernel-full, but expressed in terms of the kernel rather than the feature map. The posterior mean and covariance are therefore the same as the predictive mean and variance from @eq-predictive-kernel, and we can write the posterior GP as:
+
+$$
+\begin{aligned}
+m_{\text{post}}(\vx_*) &= \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy, \\
+k_{\text{post}}(\vx_*, \vx_*) &= k_{**} - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_*.
+\end{aligned}
+$$ {#eq-gp-posterior-moments}
+
+These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data — as more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Note that $\sigma_n^2$ enters both expressions through $(K + \sigma_n^2\vI)^{-1}$: noisier observations are down-weighted, so the posterior retains more prior uncertainty. The full predictive distribution over a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds a further $+\sigma_n^2$ to the variance, as in @eq-gp-predictive.
+
+@fig-gp-regression illustrates these properties : the left panel shows three samples from the GP prior, and the right panel shows the posterior after conditioning on observations, where uncertainty collapses near the data and the posterior mean tracks the observations.
+
+```{python}
+#| label: fig-gp-regression
+#| fig-cap: "GP regression with an SE kernel. Left: five prior samples before observing data. Right: posterior mean (blue), 95% credible interval (shaded), and five posterior samples after conditioning on five observations (red dots)."
+#| echo: false
+
+import torch
+import gpytorch
+import numpy as np
+import matplotlib.pyplot as plt
+
+torch.manual_seed(3)
+
+# --- GPyTorch model for exact GP regression ---
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super().__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ZeroMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(
+            gpytorch.kernels.RBFKernel()
+        )
+
+    def forward(self, x):
+        return gpytorch.distributions.MultivariateNormal(
+            self.mean_module(x), self.covar_module(x)
+        )
+
+# --- Setup ---
+n_grid = 200
+X_plot_np = np.linspace(-5, 5, n_grid)
+X_plot = torch.tensor(X_plot_np, dtype=torch.float64)
+
+# Build prior kernel and sample
+se_kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+se_kernel.base_kernel.lengthscale = 1.5
+se_kernel.outputscale = 1
+se_kernel = se_kernel.double()
+K_prior = se_kernel(X_plot).evaluate()
+K_prior = K_prior + 1e-6 * torch.eye(n_grid, dtype=torch.float64)
+prior_dist = gpytorch.distributions.MultivariateNormal(
+    torch.zeros(n_grid, dtype=torch.float64),
+    K_prior
+)
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8), sharey=True)
+BAND_COLOR  = '#1f77b4'
+MEAN_COLOR  = '#1f77b4'
+BAND_ALPHA  = 0.07
+SAMPLE_LW   = 1.0
+SAMPLE_ALPHA = 1
+
+# Left: prior samples
+ax = axes[0]
+prior_mean = np.zeros(n_grid)
+prior_std = K_prior.diagonal().sqrt().detach().numpy()
+prior_samples = prior_dist.sample(torch.Size([5]))
+ax.fill_between(X_plot_np, prior_mean - 2 * prior_std, prior_mean + 2 * prior_std,
+                alpha=BAND_ALPHA, color=BAND_COLOR, label='$\\pm 2\\sigma$')
+ax.plot(X_plot_np, prior_mean, color=MEAN_COLOR, linewidth=1.5, linestyle='--', label='Mean')
+for i in range(5):
+    ax.plot(X_plot_np, prior_samples[i].numpy(), linewidth=SAMPLE_LW, alpha=SAMPLE_ALPHA)
+ax.axhline(0, color='grey', linewidth=0.4, linestyle=':')
+ax.set_title('Prior $f \\sim \\mathcal{GP}(0, k_{\\mathrm{SE}})$')
+ax.set_xlabel('$x$')
+ax.set_ylabel('$f(x)$')
+ax.set_ylim(-3.5, 3.5)
+ax.legend(fontsize=9, framealpha=0.9, loc='upper left')
+
+# Right: posterior via GPyTorch exact inference
+ax = axes[1]
+rng = np.random.default_rng(12)
+X_train_np = np.array([-3.5, -1.5, -1.6, -1.4, 0.0, 2.0, 4.0])
+y_train_np = np.sin(X_train_np)
+X_train = torch.tensor(X_train_np, dtype=torch.float64)
+y_train = torch.tensor(y_train_np, dtype=torch.float64)
+
+likelihood = gpytorch.likelihoods.GaussianLikelihood()
+likelihood.noise = 0.04
+model = ExactGPModel(X_train, y_train, likelihood).double()
+model.covar_module.base_kernel.lengthscale = 1.5
+model.covar_module.outputscale = 1.0
+
+# Posterior predictions
+model.eval()
+likelihood.eval()
+with torch.no_grad(), gpytorch.settings.fast_pred_var():
+    posterior = model(X_plot)
+    mu_post = posterior.mean.numpy()
+    std_post = posterior.stddev.numpy()
+
+ax.fill_between(X_plot_np, mu_post - 2 * std_post, mu_post + 2 * std_post,
+                alpha=BAND_ALPHA, color=BAND_COLOR, label='$\\pm 2\\sigma$')
+ax.plot(X_plot_np, mu_post, color=MEAN_COLOR, linewidth=1.5, linestyle='--', label='Mean')
+
+# Posterior samples
+with torch.no_grad():
+    post_samples = posterior.sample(torch.Size([5]))
+for i in range(5):
+    ax.plot(X_plot_np, post_samples[i].numpy(), linewidth=SAMPLE_LW, alpha=SAMPLE_ALPHA)
+
+ax.scatter(X_train_np, y_train_np, c='red', s=40, zorder=5, edgecolors='k',
+           linewidths=0.5, label='Observations')
+ax.set_title('Posterior $f \\mid \\mathbf{X}, \\mathbf{y}$')
+ax.set_xlabel('$x$')
+ax.set_ylim(-3.5, 3.5)
+ax.legend(fontsize=9, framealpha=0.9, loc='upper left')
+
+fig.tight_layout()
+plt.show()
+```
+
+## Training a GP {#sec-gp-training}
+
+We showed in @sec-kernel-hyperparams that the kernel hyper-parameters $\boldsymbol{\theta}$ can be estimated by maximising the log marginal likelihood (LML) of the observed data. The LML is a non-convex function of $\boldsymbol{\theta}$, but its gradients can be computed efficiently using matrix calculus and automatic differentiation, enabling gradient-based optimisation methods such as L-BFGS or Adam [@kingma_adam_2015] to find good hyperparameter settings. However, computing the LML and its gradients requires an $\mathcal{O}(n^3)$ Cholesky decomposition of the covariance matrix $K + \sigma_n^2\vI$, which is tractable for moderate $n$ but becomes prohibitive for large datasets, motivating the development of sparse and approximate inference methods for scaling GPs to larger problems [@snelson_sparse_2006; @titsias_variational_2009].
+
+### Gradient of the Log Marginal Likelihood
+
+We have the LML expression from @eq-log-marginal-likelihood:
+$$\log p(\vy \mid \vX, \boldsymbol{\theta}) = -\frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1}\vy - \frac{1}{2}\log |K + \sigma_n^2\vI| - \frac{n}{2}\log 2\pi.$$ 
+
+The gradient of the LML with respect to a hyperparameter $\theta_j$ can be derived using the matrix derivative trace formula [@rasmussen_gaussian_2008, Equation 5.9], yielding:
+$$  \frac{\partial \log p(\vy \mid \vX, \boldsymbol{\theta})}{\partial \theta_j} = \frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j} (K + \sigma_n^2\vI)^{-1} \vy - \frac{1}{2}\text{tr}\!\left((K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j}\right). $$
+
+This expression consists of two terms: the first encourages the model to fit the data well by increasing the LML when the hyperparameter leads to a better fit, while the second penalises overly complex models by decreasing the LML when the hyperparameter increases model complexity. These gradients can be computed efficiently using automatic differentiation libraries, allowing for effective optimisation of the hyperparameters.
+
+In practice, the training loop iterates: (1) evaluate the negative LML via Cholesky factorisation of $K_\theta + \sigma_n^2\vI$; (2) backpropagate to obtain $\partial \mathcal{L}/\partial \theta_j$ for each hyperparameter; (3) apply an update step (e.g.\ Adam). Because the LML is non-convex, running multiple random restarts and keeping the solution with the lowest negative LML is common practice. Positive-constrained hyperparameters ($\ell$, $\sigma_f^2$, $\sigma_n^2$) are parameterised in log-space throughout to ensure positivity and improve the conditioning of the optimisation landscape. @fig-gp-training illustrates the effect of training: a GP with a poorly initialised length-scale produces an oversmoothed, miscalibrated fit, while the same model after 50 Adam steps accurately recovers the latent function.
+
+```{python}
+#| label: fig-gp-training
+#| fig-cap: "Effect of hyperparameter training on GP fit. Left: GP with a deliberately large initial length-scale and near-zero noise variance, producing a flat oversmoothed posterior. Centre: negative log marginal likelihood during 50 Adam iterations. Right: GP after training \u2014 the learnt hyperparameter values are shown in the subtitle."
+#| echo: false
+
+import torch
+import gpytorch
+import numpy as np
+import matplotlib.pyplot as plt
+
+torch.manual_seed(42)
+
+X_tr = torch.linspace(-5, 5, 20).double()
+y_tr = torch.sin(X_tr) + 0.2 * torch.randn(20, dtype=torch.float64)
+
+X_plt_np = np.linspace(-6, 6, 300)
+X_plt = torch.tensor(X_plt_np, dtype=torch.float64)
+
+class GPTrain(gpytorch.models.ExactGP):
+    def __init__(self, tx, ty, lik):
+        super().__init__(tx, ty, lik)
+        self.mean_module = gpytorch.means.ZeroMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+    def forward(self, x):
+        return gpytorch.distributions.MultivariateNormal(
+            self.mean_module(x), self.covar_module(x))
+
+def gp_predict(model, lik, X):
+    model.eval(); lik.eval()
+    with torch.no_grad():
+        p = model(X)
+    return p.mean.numpy(), p.stddev.numpy()
+
+def plot_fit(ax, X_tr, y_tr, xp, mu, sd, title):
+    ax.fill_between(xp, mu - 2*sd, mu + 2*sd, alpha=0.12, color='#1f77b4')
+    ax.plot(xp, mu, color='#1f77b4', linewidth=1.5, label='Posterior mean')
+    ax.plot(xp, np.sin(xp), color='grey', linewidth=1.0, linestyle='--',
+            alpha=0.7, label='True $f$')
+    ax.scatter(X_tr.numpy(), y_tr.numpy(), c='red', s=25, zorder=5,
+               edgecolors='k', linewidths=0.5, label='Data')
+    ax.set_ylim(-3, 3); ax.set_xlabel('$x$'); ax.set_title(title)
+
+# Before training
+lik0 = gpytorch.likelihoods.GaussianLikelihood().double()
+m0 = GPTrain(X_tr, y_tr, lik0).double()
+m0.covar_module.base_kernel.lengthscale = 15.0
+m0.covar_module.outputscale = 1.0
+lik0.noise = 0.001
+mu0, sd0 = gp_predict(m0, lik0, X_plt)
+
+# Training via Adam
+lik1 = gpytorch.likelihoods.GaussianLikelihood().double()
+m1 = GPTrain(X_tr, y_tr, lik1).double()
+m1.train(); lik1.train()
+optimizer = torch.optim.Adam([*m1.parameters(), *lik1.parameters()], lr=0.1)
+mll = gpytorch.mlls.ExactMarginalLogLikelihood(lik1, m1)
+nlml_trace = []
+for _ in range(50):
+    optimizer.zero_grad()
+    loss = -mll(m1(X_tr), y_tr)
+    loss.backward()
+    optimizer.step()
+    nlml_trace.append(loss.item())
+
+mu1, sd1 = gp_predict(m1, lik1, X_plt)
+ell = m1.covar_module.base_kernel.lengthscale.item()
+sn2 = lik1.noise.item()
+
+fig, axes = plt.subplots(1, 3, figsize=(13, 3.5))
+plot_fit(axes[0], X_tr, y_tr, X_plt_np, mu0, sd0,
+         'Before training\n($\\ell=15.0,\\;\\sigma_n^2=0.001$)')
+axes[0].set_ylabel('$f(x)$')
+
+axes[1].plot(nlml_trace, color='#1f77b4', linewidth=1.2)
+axes[1].set_xlabel('Iteration')
+axes[1].set_ylabel('Negative LML')
+axes[1].set_title('Training curve')
+
+plot_fit(axes[2], X_tr, y_tr, X_plt_np, mu1, sd1,
+         f'After training\n($\\ell={ell:.2f},\\;\\sigma_n^2={sn2:.3f}$)')
+axes[2].legend(fontsize=8, loc='upper right')
+fig.tight_layout()
+plt.show()
+```
+
+
+
+
+## Prediction {#sec-gp-prediction}
+
+With hyperparameters fixed at their optimised values $\hat{\boldsymbol{\theta}}$, prediction reduces to evaluating the posterior from @eq-gp-posterior-moments at any desired test location $\vx_*$. The dominant cost is forming the Cholesky factorisation $LL^\top = K_{\hat{\theta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ and performed once. Once cached, evaluating the predictive mean and variance at a new point requires only two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point — making prediction cheap at test time once training has been completed.
+
+The predictive variance at a test point $\vx_*$ decomposes naturally into two contributions:
+$$
+\mathbb{V}[f_* \mid \vx_*, \vX, \vy, \hat{\boldsymbol{\theta}}]
+= \underbrace{k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_*}_{\text{epistemic (reducible)}}
++ \underbrace{\sigma_n^2}_{\text{aleatoric (irreducible)}},
+$$ {#eq-variance-decomposition}
+
+where the first term is the *epistemic* uncertainty — reflecting ignorance about the latent function $f$ — and the second is the *aleatoric* noise variance [@kendall_what_2017]. The epistemic component shrinks as training observations accumulate near $\vx_*$, and recovers the full prior variance $k(\vx_*, \vx_*)$ only in regions with no data. The aleatoric term $\sigma_n^2$ is present whenever a noisy observation $y_* = f(\vx_*) + \epsilon_*$ is requested, but absent from the latent predictive distribution over $f(\vx_*)$ itself. This separation is a distinctive strength of the GP framework: the two sources of uncertainty are quantified separately and automatically, without requiring any post-hoc calibration [@rasmussen_gaussian_2008; @kendall_what_2017].
+
+This is visible in @fig-gp-regression: uncertainty collapses near the training observations (low epistemic uncertainty) and inflates in the gaps and at the extrapolation boundaries (high epistemic uncertainty), while the posterior mean threads through the data.
+

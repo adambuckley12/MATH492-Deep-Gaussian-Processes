@@ -1,0 +1,40 @@
+## Method Comparison
+
+The inference methods presented differ substantially in their computational properties, approximation quality, and practical applicability. This section synthesises these trade-offs to guide method selection.
+
+### Computational Complexity
+
+@tbl-complexity summarises the scaling behaviour of each method. Doubly stochastic variational inference achieves the best asymptotic complexity for large $n$, scaling linearly with minibatch size rather than dataset size.
+
+| Method | Training (per iteration) | Prediction | Memory |
+|--------|--------------------------|------------|--------|
+| Exact GP | $O(n^3)$ | $O(n^2)$ | $O(n^2)$ |
+| Sparse Variational GP | $O(nm^2)$ | $O(m^2)$ | $O(nm + m^2)$ |
+| Mean-field DGP | $O(n^3 L)$ | $O(n^2 L)$ | $O(n^2 L)$ |
+| Doubly Stochastic DGP | $O(|\mathcal{B}| m^2 L)$ | $O(m^2 L)$ | $O(m^2 L)$ |
+
+: Computational complexity for GP and DGP inference methods. Here $n$ is dataset size, $m$ is number of inducing points, $L$ is number of layers, and $|\mathcal{B}|$ is minibatch size. {#tbl-complexity}
+
+### Approximation Quality
+
+The methods differ in how they approximate the true posterior. Variational inference minimises $\KL(q \| p)$, which tends to underestimate posterior variance---the approximation concentrates on posterior modes rather than spreading mass across the full posterior support. This mode-seeking behaviour arises because $\KL(q \| p)$ heavily penalises placing probability mass where the true posterior has low density.
+
+The mean-field approximation in @damianou_deep_2013 breaks correlations between layers by treating each $\vF^{(\ell)}$ as independent. This can severely damage uncertainty propagation in deep models: uncertainty from early layers should compound through the hierarchy, but mean-field approximations suppress these correlations. The doubly stochastic approach preserves the conditional structure $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$, maintaining proper uncertainty propagation at the cost of Monte Carlo variance in gradient estimates.
+
+### Practical Considerations
+
+Several factors beyond asymptotic complexity influence method selection. The performance of sparse methods depends critically on inducing point placement [@titsias_variational_2009]. Joint optimisation of inducing locations $\vZ^{(\ell)}$ together with variational parameters generally outperforms fixed grids or random initialisation, though it can introduce additional local optima in the optimisation landscape. Initialisation via $k$-means clustering of training inputs, or placing inducing points at quantiles of the data distribution, has been shown to significantly improve convergence [@hensman_gaussian_2013]. For Deep GPs, each layer requires separate inducing point selection, and inappropriate placement in early layers propagates errors through the hierarchy, compounding approximation quality issues in deeper architectures.
+
+Doubly stochastic methods trade bias arising from the variational approximation for variance introduced by Monte Carlo sampling [@salimbeni_doubly_2017]. The gradient estimator variance grows with depth $L$ and decreases with both minibatch size $|\mathcal{B}|$ and sample count $S$. In practice, using $S=1$ sample per forward pass combined with large minibatches in the range $|\mathcal{B}| \approx 1000$--$10000$ effectively balances computational cost against gradient quality. Variance reduction techniques such as Rao-Blackwellisation or control variates can further stabilise training when gradient variance proves problematic [@ranganath_black_2014].
+
+An important optimisation technique for sparse variational GPs and DGPs is the use of *natural gradients* for the variational parameters $(\vm, S)$ [@salimbeni_natural_2018]. Standard gradient ascent applies uniform step sizes in Euclidean parameter space, which can be inefficient when the curvature of the ELBO varies substantially across parameters. Natural gradients precondition the update by the inverse Fisher information matrix of $q(\vu) = \mathcal{N}(\vu \mid \vm, S)$, performing gradient ascent on the statistical manifold of Gaussian distributions rather than in flat parameter space [@amari_natural_1998]. For Gaussian variational posteriors the natural gradient update is equivalent to a single Newton step in the natural parameter space and can be computed in closed form. In practice, combining natural gradients for $(\vm, S)$ with Adam for kernel and inducing point parameters converges significantly faster than using Adam for all parameters, often achieving comparable solution quality in far fewer epochs [@salimbeni_natural_2018].
+
+Deep models introduce numerous hyperparameters that interact in complex ways: per-layer kernel lengthscales $\ell^{(\ell)}$, signal variances $\sigma_f^{(\ell)}$, inducing point counts $m_\ell$, and layer widths $d_\ell$ all require careful specification [@damianou_deep_2013]. Small lengthscales in early layers create highly nonlinear transformations but may cause gradient pathologies analogous to the vanishing gradients observed in deep neural networks [@duvenaud_avoiding_2014]. Conversely, large lengthscales produce smooth, nearly linear transformations that limit the expressiveness gained from depth. Careful initialisation and learning rate scheduling are often necessary to navigate these trade-offs successfully.
+
+### Empirical Performance
+
+Comparative studies [@salimbeni_doubly_2017] consistently show that doubly stochastic variational inference provides the best trade-off between computational cost and predictive performance for large-scale regression tasks, scaling to millions of data points while maintaining predictive accuracy comparable to more expensive schemes.
+
+The choice of inference method depends on specific requirements. For large-scale regression prioritising scalability, doubly stochastic VI with $S=1$ samples is an excellent default. For moderate-sized datasets where careful uncertainty quantification matters, increasing $S$ or the number of inducing points improves posterior calibration at additional cost [@bui_deep_2016].
+
+With the inference framework established, we now turn to architectural advances that address known pathologies of standard DGPs and improve their expressiveness and interpretability.

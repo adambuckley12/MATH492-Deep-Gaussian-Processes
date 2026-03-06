@@ -1,0 +1,57 @@
+## Intractability of Exact Inference
+
+For standard single-layer GPs, the posterior $p(f_* \mid \vX, \vy)$ and marginal likelihood $p(\vy \mid \vX)$ give closed-form expressions due to Gaussian conjugacy [@rasmussen_gaussian_2008]. In DGPs this is lost because composition of GPs produces a non-Gaussian joint distribution.
+
+The marginal likelihood requires integrating out all latent functions:
+
+$$
+p(\vy \mid \vX) = \int p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) \, d\vF^{(1)} \cdots d\vF^{(L)},
+$$ {#eq-dgp_marginal_likelihood}
+
+where $\vF^{(0)} = \vX$. This integral has no closed-form solution for $L \geq 2$ with non-degenerate kernels.
+
+To see why, consider a two-layer DGP. The covariance matrix $K^{(2)}$ depends on $\vF^{(1)}$ through $[K^{(2)}]_{ij} = k^{(2)}(f_i^{(1)}, f_j^{(1)})$. For the squared exponential kernel:
+
+$$
+k^{(2)}(h_1, h_2) = \sigma_f^2 \exp\left(-\frac{(h_1 - h_2)^2}{2\ell^2}\right),
+$$ {#eq-se_random_inputs}
+
+this is a nonlinear function of the Gaussian random variables $(f_i^{(1)}, f_j^{(1)})$. The integral
+
+$$
+\int \mathcal{N}(\vF^{(2)} \mid \vzero, K^{(2)}(\vF^{(1)})) \mathcal{N}(\vF^{(1)} \mid \vzero, K^{(1)}) \, d\vF^{(1)}
+$$
+
+is a mixture of Gaussians with continuously varying covariance. No closed form exists for these integrals.
+
+As well as the intractability of the marginal likelihood, the resulting distribution over outputs is non-Gaussian. Consider a two-layer DGP with first-layer outputs $h_1 = f^{(1)}(x_1)$, $h_2 = f^{(1)}(x_2)$. From the GP prior:
+
+$$
+\begin{bmatrix} h_1 \\ h_2 \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(1)}_{11} & k^{(1)}_{12} \\ k^{(1)}_{12} & k^{(1)}_{22} \end{bmatrix}\right).
+$$ {#eq-first_layer_joint}
+
+Conditioned on $(h_1, h_2)$, the outputs follow:
+
+$$
+\begin{bmatrix} y_1 \\ y_2 \end{bmatrix} \Bigg| h_1, h_2 \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(2)}(h_1, h_1) & k^{(2)}(h_1, h_2) \\ k^{(2)}(h_1, h_2) & k^{(2)}(h_2, h_2) \end{bmatrix}\right).
+$$ {#eq-second_layer_conditional}
+
+The marginal distribution
+
+$$
+p(y_1, y_2) = \int p(y_1, y_2 \mid h_1, h_2) \, p(h_1, h_2) \, dh_1 \, dh_2
+$$ {#eq-marginal_y}
+
+is a continuous mixture of Gaussians with varying covariance matrices. Since $k^{(2)}(h_1, h_2)$ is a nonlinear function of $(h_1, h_2)$, this mixture is not Gaussian.
+
+This can be verified by noting that a Gaussian mixture with continuously varying covariance matrices produces a distribution whose higher moments (e.g., kurtosis) differ from those of any single Gaussian. In particular, the marginal density of $y_1$ under such a mixture is generally heavier-tailed than any individual Gaussian component [@gelman_bayesian_2025].
+
+The posterior over all latent functions is:
+
+$$
+p(\vF^{(1:L)} \mid \vX, \vy) = \frac{p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vF^{(\ell-1)})}{p(\vy \mid \vX)}.
+$$ {#eq-dgp_posterior}
+
+Since both the numerator (a product of coupled Gaussians) and the denominator (the intractable marginal likelihood) lack closed forms, exact posterior computation is infeasible.
+
+Even numerical integration is impractical. The integration is over $\sum_{\ell=1}^{L} n d_\ell$ continuous variables, which cannot be factored across layers due to kernel dependencies. This motivates the development of approximate inference methods for DGP learning [@damianou_deep_2013; @salimbeni_doubly_2017].
