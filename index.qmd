@@ -7,3 +7,10 @@ authors:
     corresponding: true
 bibliography: references.bib
 ---
+
+<!-- Introduction section -->
+{{< include sections/0-intro/intro.qmd >}}
+
+<!-- Gaussian Processes section -->
+{{< include sections/1-gps/0-gp-intro.qmd >}}
+

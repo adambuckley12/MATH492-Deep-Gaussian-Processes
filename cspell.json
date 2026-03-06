@@ -1,0 +1,106 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "languageSettings": [
+    {
+      "languageId": "markdown,html",
+      "locale": "en-gb"
+    }
+  ], 
+  "dictionaries": [
+    "en-gb"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "/spell-check/**",
+    "**/.venv/**",
+    "references.bib",
+    "**/*.quarto_ipynb",
+    "**/*.lua",
+    "**/*.json",
+    "_manuscript/**",
+    "code/**",
+    "build/**",
+    ".quarto/**",
+    "_macros.tex",
+    "_macros.typ",
+    "_quarto.yml"
+    
+  ],
+  "useGitignore": true,
+  "patterns": [
+    {
+      "name": "href-links",
+      "pattern": "href\\s*=\\s*\"[^\"]*\""
+    },
+    {
+      "name": "markdown-inline-links",
+      "pattern": "\\]\\([^)]*\\)"
+    },
+    {
+      "name": "markdown-reference-links",
+      "pattern": "\\]\\[[^\\]]*\\]"
+    },
+    {
+      "name": "markdown-autolinks",
+      "pattern": "<https?://[^>]+>"
+    },
+    {
+      "name": "markdown-code-spans",
+      "pattern": "`[^`]+`"
+    },
+    {
+      "name": "markdown-code-blocks",
+      "pattern": "```[\\s\\S]+?```"
+    },
+    {
+      "name": "markdown-inline-math",
+      "pattern": "\\$[^$]+\\$"
+    },
+    {
+      "name": "markdown-block-math",
+      "pattern": "\\$\\$[^$]+\\$\\$"
+    }
+    ,
+    {
+      "name": "quarto-citations",
+      "pattern": "\\[@[^\\]]+\\]"
+    }
+  ],
+  "overrides": [
+    {
+      "filename": "**/*.{htm,html}",
+      "ignoreRegExpList": ["href-links"]
+    },
+    {
+      "filename": "**/*.md",
+      "ignoreRegExpList": [
+        "href-links",
+        "markdown-inline-links",
+        "markdown-code-spans",
+        "markdown-code-blocks",
+        "markdown-inline-math",
+        "markdown-block-math",
+        "quarto-citations"
+      ]
+    }
+    ,
+    {
+      "filename": "**/*.qmd",
+      "ignoreRegExpList": [
+        "href-links",
+        "markdown-inline-links",
+        "markdown-code-spans",
+        "markdown-code-blocks",
+        "markdown-inline-math",
+        "markdown-block-math",
+        "quarto-citations"
+      ]
+    }
+  ],
+  "cache": {
+    "useCache": true,
+    "cacheLocation": "./spell-check/.cspellcache-en-gb.json",
+    "cacheStrategy": "metadata"
+  }
+}

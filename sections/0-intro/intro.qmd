@@ -1,0 +1,14 @@
+# Introduction
+
+
+Gaussian processes (GPs) provide a non-parametric framework for Bayesian inference, allowing for both predictions and uncertainty estimates. The flexibility of GPs comes from their kernel functions, which encode prior assumptions about function structure.
+
+However, the expressiveness of a standard GP is limited by its kernel [@wilson_kernel_2013]. Choosing an appropriate kernel often requires domain expertise and trial and error, and a fixed kernel may fail to capture the complex, multi-scale structure present in real data. This motivated *Deep Gaussian Processes* (DGPs) [@damianou_deep_2013], which compose multiple GP layers into a hierarchy that can learn rich representations automatically.
+
+DGPs stack multiple GP layers so that each layer's output becomes the next layer's input. This composition allows the model to learn features at multiple levels of abstraction — much like deep neural networks — while retaining the principled uncertainty quantification of the GP framework. The price of this flexibility is tractability: although each layer is individually Gaussian, the composition produces a non-Gaussian joint distribution over latent functions, making exact inference intractable.
+
+This dissertation provides an exploration of Gaussian Processes and Deep Gaussian Processes, progressing from foundational theory to advanced architectures. We derive standard GP regression from first principles, show how composing GPs into deep hierarchies yields greater expressiveness at the cost of tractability, and develop the variational inference machinery needed to train these models at scale. 
+
+Finally, we apply DGPs to real-world datasets within finance, demonstrating their ability to capture complex patterns and provide calibrated uncertainty estimates that are crucial for risk based decision making. We compare DGPs to standard GPs and standard machine learning models, and show that GP based models lead to better calibrated uncertainty estimates.
+
+We begin by deriving the theory of standard GPs.

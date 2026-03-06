@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "cspell": "^9.7.0",
+    "husky": "^9.1.7"
+  },
+  "scripts": {
+    "lint:spelling": "cspell \"**/*.{md,qmd,tex,txt}\" --config ./cspell.json",
+    "prepare": "husky"
+  }
+}

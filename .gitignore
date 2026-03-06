@@ -3,3 +3,6 @@
 
 /.luarc.json
 **/.venv/*
+_manuscript/**
+node_modules/**
+spell-check/.cspellcache-en-gb.json
