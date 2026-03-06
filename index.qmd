@@ -13,4 +13,8 @@ bibliography: references.bib
 
 <!-- Gaussian Processes section -->
 {{< include sections/1-gps/0-gp-intro.qmd >}}
+{{< include sections/1-gps/1-weight-space.qmd >}}
+{{< include sections/1-gps/2-posterior-over-weights.qmd >}}
 
+
+{{< include sections/99-appendix/0-gps-appendix.qmd >}}

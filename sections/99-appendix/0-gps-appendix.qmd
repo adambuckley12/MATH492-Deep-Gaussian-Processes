@@ -1,0 +1,107 @@
+# Appendix {.unnumbered}
+
+## Design Matrix Construction {#sec-design-matrix}
+
+With $\vy = [y_1, \ldots, y_n]^\top$ and the design matrix $\Phi \in \R^{n \times M}$ where $\Phi_{ij} = \phi_j(\vx_i)$, the $i$-th row of $\Phi$ is $\vphi(\vx_i)^\top$. The vector of predicted means is therefore
+
+$$
+\begin{bmatrix} \vphi(\vx_1)^\top \vw \\ \vdots \\ \vphi(\vx_n)^\top \vw \end{bmatrix} =
+\begin{bmatrix} \vphi(\vx_1)^\top \\ \vdots \\ \vphi(\vx_n)^\top \end{bmatrix} \vw = \Phi \vw.
+$$ {#eq-design-matrix-mean}
+
+## Completing the Square for the Posterior over Weights {#sec-completing-the-square}
+
+Starting from the log-posterior of the Bayesian linear regression model (ignoring terms independent of $\vw$):
+
+$$
+\log p(\vw \mid \vX, \vy) \propto -\frac{1}{2\sigma_n^2}(\vy - \Phi\vw)^\top(\vy - \Phi\vw) - \frac{1}{2}\vw^\top \Sigma_p^{-1}\vw,
+$$
+
+expanding the quadratic in $\vy - \Phi\vw$ and collecting terms in $\vw$ gives
+
+$$
+-\frac{1}{2}\vw^\top\!\bigl(\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1}\bigr)\vw + \sigma_n^{-2}\vy^\top\Phi\,\vw + \text{const}.
+$$ {#eq-quadratic-expansion}
+
+We verify that this can be written as
+$-\frac{1}{2}(\vw - \bar{\vw})^\top \Sigma_w^{-1} (\vw - \bar{\vw})$ plus terms independent of $\vw$, which identifies the posterior as Gaussian with mean $\bar{\vw}$.
+
+Expanding the squared form gives
+
+$$
+\begin{aligned}
+-\frac{1}{2}(\vw - \bar{\vw})^\top \Sigma_w^{-1} (\vw - \bar{\vw})
+&= -\frac{1}{2}(\vw^\top - \bar{\vw}^\top) \Sigma_w^{-1} (\vw - \bar{\vw}) \\
+&= -\frac{1}{2}\vw^\top \Sigma_w^{-1} \vw + \frac{1}{2}\vw^\top \Sigma_w^{-1} \bar{\vw}
+  + \frac{1}{2}\bar{\vw}^\top \Sigma_w^{-1} \vw - \frac{1}{2}\bar{\vw}^\top \Sigma_w^{-1} \bar{\vw}.
+\end{aligned}
+$$
+
+Since $\Sigma_w^{-1}$ is symmetric, we have $\bar{\vw}^\top \Sigma_w^{-1} \vw = \vw^\top \Sigma_w^{-1} \bar{\vw}$, so the two middle terms combine to give
+
+$$
+-\frac{1}{2}(\vw - \bar{\vw})^\top \Sigma_w^{-1} (\vw - \bar{\vw}) = -\frac{1}{2}\vw^\top \Sigma_w^{-1} \vw + \vw^\top \Sigma_w^{-1} \bar{\vw} - \frac{1}{2}\bar{\vw}^\top \Sigma_w^{-1} \bar{\vw}.
+$$ {#eq-completed-square-expansion}
+
+Comparing the linear term in $\vw$ from @eq-quadratic-expansion with @eq-completed-square-expansion, we require
+
+$$
+\vw^\top \Sigma_w^{-1} \bar{\vw} = \sigma_n^{-2}\vy^\top \Phi \vw.
+$$ {#eq-linear-term-match}
+
+Writing the left side as $(\Sigma_w^{-1} \bar{\vw})^\top \vw$ and the right side as $(\sigma_n^{-2}\Phi^\top \vy)^\top \vw$, and noting this must hold for all $\vw$, we get $\Sigma_w^{-1} \bar{\vw} = \sigma_n^{-2}\Phi^\top \vy$, which gives the posterior mean $\bar{\vw} = \sigma_n^{-2} \Sigma_w \Phi^\top \vy$ as stated in @eq-posterior-mean.
+
+## Predictive Mean and Variance via Linear Transformation {#sec-predictive-variance}
+
+Since $f_* = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw \mid \vX, \vy \sim \N(\bar{\vw}, \Sigma_w)$, both the mean and variance follow from standard results for linear transformations of Gaussians.
+
+**Mean:**
+
+$$
+\begin{aligned}
+\E[f_* \mid \vx_*, \vX, \vy] &= \E[\vphi(\vx_*)^\top \vw \mid \vX, \vy] \\
+&= \vphi(\vx_*)^\top \E[\vw \mid \vX, \vy] \\
+&= \vphi(\vx_*)^\top \bar{\vw} \\
+&= \sigma_n^{-2} \vphi(\vx_*)^\top \Sigma_w \Phi^\top \vy.
+\end{aligned}
+$$
+
+**Variance:**
+
+$$
+\begin{aligned}
+\Var[f_* \mid \vx_*, \vX, \vy]
+&= \Var[\vphi(\vx_*)^\top \vw \mid \vX, \vy] \\
+&= \E[(\vphi(\vx_*)^\top \vw - \vphi(\vx_*)^\top \bar{\vw})^2 \mid \vX, \vy] \\
+&= \vphi(\vx_*)^\top \E[(\vw - \bar{\vw})(\vw - \bar{\vw})^\top \mid \vX, \vy]\, \vphi(\vx_*) \\
+&= \vphi(\vx_*)^\top \Sigma_w \vphi(\vx_*).
+\end{aligned}
+$$
+
+## Covariance Blocks of the Joint Distribution {#sec-covariance-blocks}
+
+With $\vy = \Phi\vw + \vepsilon$ where $\vepsilon \sim \N(\vzero, \sigma_n^2\vI)$ is independent of $\vw \sim \N(\vzero, \Sigma_p)$, and $f_* = \vphi(\vx_*)^\top \vw$, the three covariance blocks are computed as follows.
+
+**Output covariance:**
+$$
+\begin{aligned}
+\Cov[\vy, \vy] &= \Cov[\Phi\vw + \vepsilon, \Phi\vw + \vepsilon] \\
+&= \Phi\Cov[\vw]\Phi^\top + \Cov[\vepsilon, \vepsilon] \\
+&= \Phi\Sigma_p\Phi^\top + \sigma_n^2\vI.
+\end{aligned}
+$$
+
+**Cross-covariance** (noise $\vepsilon$ is independent of $f_*$):
+$$
+\begin{aligned}
+\Cov[\vy, f_*] &= \Cov[\Phi\vw + \vepsilon,\, \vphi(\vx_*)^\top \vw] \\
+&= \Phi\Cov[\vw]\vphi(\vx_*) = \Phi\Sigma_p\vphi(\vx_*).
+\end{aligned}
+$$
+
+**Test-point variance:**
+
+$$
+\Cov[f_*, f_*] = \vphi(\vx_*)^\top\Cov[\vw]\vphi(\vx_*) = \vphi(\vx_*)^\top\Sigma_p\vphi(\vx_*).
+$$
+
