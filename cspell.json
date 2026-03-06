@@ -6,7 +6,7 @@
       "languageId": "markdown,html",
       "locale": "en-gb"
     }
-  ], 
+  ],
   "dictionaries": [
     "en-gb"
   ],
@@ -25,7 +25,6 @@
     "_macros.tex",
     "_macros.typ",
     "_quarto.yml"
-    
   ],
   "useGitignore": true,
   "patterns": [
@@ -64,8 +63,7 @@
     {
       "name": "latex-commands",
       "pattern": "/\\\\[a-zA-Z]+/g"
-    }
-    ,
+    },
     {
       "name": "quarto-citations",
       "pattern": "\\[@[^\\]]+\\]"
@@ -74,7 +72,9 @@
   "overrides": [
     {
       "filename": "**/*.{htm,html}",
-      "ignoreRegExpList": ["href-links"]
+      "ignoreRegExpList": [
+        "href-links"
+      ]
     },
     {
       "filename": "**/*.md",
@@ -88,8 +88,7 @@
         "latex-commands",
         "quarto-citations"
       ]
-    }
-    ,
+    },
     {
       "filename": "**/*.qmd",
       "ignoreRegExpList": [
@@ -108,5 +107,10 @@
     "useCache": true,
     "cacheLocation": "./spell-check/.cspellcache-en-gb.json",
     "cacheStrategy": "metadata"
-  }
+  },
+  "words": [
+    "autograd",
+    "hyperparameters",
+    "hyperparams"
+  ]
 }

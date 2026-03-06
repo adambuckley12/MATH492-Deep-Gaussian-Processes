@@ -3,7 +3,7 @@
 
 Gaussian processes (GPs) provide a non-parametric framework for Bayesian inference, allowing for both predictions and uncertainty estimates. The flexibility of GPs comes from their kernel functions, which encode prior assumptions about function structure.
 
-However, the expressiveness of a standard GP is limited by its kernel [@wilson_kernel_2013]. Choosing an appropriate kernel often requires domain expertise and trial and error, and a fixed kernel may fail to capture the complex, multi-scale structure present in real data. This motivated *Deep Gaussian Processes* (DGPs) [@damianou_deep_2013], which compose multiple GP layers into a hierarchy that can learn rich representations automatically.
+However, the expressiveness of a standard GP is limited by its kernel [@pmlr-v117-pravesh20a]. Choosing an appropriate kernel often requires domain expertise and trial and error, and a fixed kernel may fail to capture the complex, multi-scale structure present in real data. This motivated *Deep Gaussian Processes* (DGPs) [@damianou_deep_2013], which compose multiple GP layers into a hierarchy that can learn rich representations automatically.
 
 DGPs stack multiple GP layers so that each layer's output becomes the next layer's input. This composition allows the model to learn features at multiple levels of abstraction — much like deep neural networks — while retaining the principled uncertainty quantification of the GP framework. The price of this flexibility is tractability: although each layer is individually Gaussian, the composition produces a non-Gaussian joint distribution over latent functions, making exact inference intractable.
 

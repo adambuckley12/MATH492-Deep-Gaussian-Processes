@@ -7,7 +7,7 @@ manuscript:
 
 number-sections: true
 toc: true
-toc-depth: 3
+toc-depth: 2
 reference-section-title: "References"
 link-citations: true
 
@@ -32,9 +32,6 @@ format:
 filters:
   - expand-macros.lua
 
-execute:
-  freeze: false
-  cache: false
 
 
 
