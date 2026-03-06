@@ -15,7 +15,11 @@ where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basi
 
 Given training data $\mathcal{D}$, our goal is to learn the weights $\vw$. Maximum likelihood estimation would yield a single point estimate, but this ignores the fact that many different weight vectors could explain the observed data equally well yet make very different predictions elsewhere.
 
-A Bayesian approach addresses this by placing a prior distribution over $\vw$, turning the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2013]. A natural choice is a zero-mean Gaussian prior:
+## Bayesian Linear Regression
+
+### Prior and Likelihood
+
+A Bayesian approach addresses this by placing a prior distribution over $\vw$, turning the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
 $$
 p(\vw) = \N(\vw \mid \vzero, \Sigma_p),
 $$ {#eq-weight-prior}
@@ -37,7 +41,9 @@ $$
 p(\vy \mid \vX, \vw) = \N(\vy \mid \Phi \vw, \sigma_n^2 \vI).
 $$ {#eq-joint-likelihood}
 
-Applying Bayes' theorem:
+### Posterior over Weights
+
+Applying Bayes' theorem gives the posterior distribution over weights:
 $$
 p(\vw \mid \vX, \vy) = \frac{p(\vy \mid \vX, \vw) p(\vw)}{p(\vy \mid \vX)}.
 $$ {#eq-bayes-theorem}
@@ -57,4 +63,70 @@ $$
 p(\vw \mid \vX, \vy) = \N(\vw \mid \bar{\vw}, \Sigma_w).
 $$ {#eq-posterior-weights}
 
-The observed data updates our prior beliefs about the weights to give this posterior, a foundational result of Bayesian linear regression [@bishop_pattern_2006; @murphy_machine_2013]. This posterior captures the uncertainty in the weights given the data, and allows for principled predictions that account for this uncertainty.
+## Predictive Distribution
+
+This posterior distribution captures uncertainty about the weights given the observed data. We can use it to make predictions at a new input $\vx_*$ by marginalising over $\vw$:
+$$
+p(f_* \mid \vx_*, \vX, \vy) = \int p(f_* \mid \vx_*, \vw) p(\vw \mid \vX, \vy) \, d\vw,
+$$ {#eq-predictive-distribution}
+
+where $f_* = f(\vx_*)$ is the predicted output at $\vx_*$. Since $f(\vx_*) = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw$, the predictive distribution is also Gaussian, with mean and variance given by standard results for linear transformations of Gaussian random variables (see [Appendix @sec-predictive-variance] for the full derivation):
+
+$$
+\begin{aligned}
+\text{mean:} \quad & \E[f_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \bar{\vw}, \\
+\text{variance:} \quad & \Var[f_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \Sigma_w \vphi(\vx_*) + \sigma_n^2.
+\end{aligned}
+$$ {#eq-predictive-mean-var}
+
+## From Weight Space to Function Space {#sec-weight-to-function-space}
+
+The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. A critical observation is that $\vphi$ only ever appears through *inner products* of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. This suggests defining a *kernel function* [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
+$$
+k(\vx, \vx') = \vphi(\vx)^\top \Sigma_p \vphi(\vx'),
+$$ {#eq-kernel-def}
+which measures similarity between inputs in the feature space, weighted by the prior covariance $\Sigma_p$.
+
+With this definition, collecting pairwise kernel evaluations over the training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$, we can rewrite the predictive entirely in terms of the kernel. The key step is to reparametrize the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
+$$
+(A + UCV)^{-1} = A^{-1} - A^{-1}U\bigl(C^{-1} + VA^{-1}U\bigr)^{-1}VA^{-1},
+$$ {#eq-matrix-inversion-lemma}
+setting $A = \Sigma_p^{-1}$, $U = \Phi^\top$, $C = \sigma_n^{-2}\vI$, $V = \Phi$, which yields the equivalent $n \times n$ expression:
+$$
+\Sigma_w = \Sigma_p - \Sigma_p\Phi^\top\bigl(\sigma_n^2\vI + \Phi\Sigma_p\Phi^\top\bigr)^{-1}\Phi\Sigma_p.
+$$ {#eq-sigma-w-kernel}
+
+In matrix form $K = \Phi\Sigma_p\Phi^\top$ and $\vk_* = \Phi\Sigma_p\vphi(\vx_*)$. Substituting @eq-sigma-w-kernel into the predictive mean $\E[f_*] = \sigma_n^{-2}\vphi(\vx_*)^\top\Sigma_w\Phi^\top\vy$:
+$$
+\begin{aligned}
+\E[f_*]
+&= \sigma_n^{-2}\vphi(\vx_*)^\top\Sigma_p\Phi^\top\vy - \sigma_n^{-2}\vk_*^\top(K + \sigma_n^2\vI)^{-1}K\vy \\
+&= \vk_*^\top\bigl[\sigma_n^{-2}\vI - \sigma_n^{-2}(K+\sigma_n^2\vI)^{-1}K\bigr]\vy \\
+&= \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,
+\end{aligned}
+$$
+where the last step uses $\sigma_n^{-2}(K+\sigma_n^2\vI)^{-1}[(K+\sigma_n^2\vI)-K] = (K+\sigma_n^2\vI)^{-1}$. Substituting into the variance $\Var[f_*] = \vphi(\vx_*)^\top\Sigma_w\vphi(\vx_*) + \sigma_n^2$:
+$$
+\begin{aligned}
+\Var[f_*]
+&= \vphi(\vx_*)^\top\Sigma_p\vphi(\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2 \\
+&= k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2.
+\end{aligned}
+$$
+
+The predictive distribution in terms of the kernel is therefore:
+$$
+\begin{aligned}
+\E[f_* \mid \vx_*, \vX, \vy] &= \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vy, \\
+\Var[f_* \mid \vx_*, \vX, \vy] &= k(\vx_*, \vx_*) - \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vk_* + \sigma_n^2.
+\end{aligned}
+$$ {#eq-predictive-kernel}
+
+Substituting these into the Gaussian predictive distribution from @eq-predictive-distribution gives:
+$$
+p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
+$$ {#eq-predictive-kernel-full}
+
+Crucially, $\vphi$ has vanished entirely — the predictions depend only on kernel evaluations between data points. This means we are free to specify $k$ directly, without ever constructing an explicit feature map. In particular, if we allow $M \to \infty$ — infinitely many basis functions — and define $k$ to be the corresponding limiting inner product, the model becomes *non-parametric*: its effective complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998].
+
+This is precisely the function space perspective. Instead of reasoning about an infinite weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.
