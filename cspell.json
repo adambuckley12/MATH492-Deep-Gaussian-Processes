@@ -8,7 +8,8 @@
     }
   ],
   "dictionaries": [
-    "en-gb"
+    "en-gb",
+    "custom-dictionary"
   ],
   "ignorePaths": [
     "node_modules",
@@ -111,6 +112,13 @@
   "words": [
     "autograd",
     "hyperparameters",
-    "hyperparams"
+    "hyperparams",
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "custom-dictionary",
+      "path": "./.cspell/custom-dictionary.txt",
+      "addWords": true
+    }
   ]
 }
