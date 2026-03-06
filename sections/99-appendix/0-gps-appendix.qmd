@@ -53,7 +53,7 @@ Writing the left side as $(\Sigma_w^{-1} \bar{\vw})^\top \vw$ and the right side
 
 ## Predictive Mean and Variance via Linear Transformation {#sec-predictive-variance}
 
-Since $f_* = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw \mid \vX, \vy \sim \N(\bar{\vw}, \Sigma_w)$, both the mean and variance follow from standard results for linear transformations of Gaussians.
+Since $f_* = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw \mid \vX, \vy \sim \N(\bar{\vw}, \Sigma_w)$, both the mean and variance follow from standard results for linear transformations of Gaussian random variables [@murphy_machine_2013].
 
 **Mean:**
 

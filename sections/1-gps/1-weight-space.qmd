@@ -1,6 +1,6 @@
 ## The Weight Space View
 
-Before moving to the full function space perspective, it helps to build intuition through a finite-dimensional parametric approach. The weight space view treats regression as inference over weight vectors, and shows how Bayesian reasoning naturally leads to predictions that depend only on inner products between feature vectors.
+Before moving to the full function space perspective, it helps to build intuition through a finite-dimensional parametric approach. The weight space view treats regression as inference over weight vectors, and the resulting structure naturally motivates the transition to Gaussian processes.
 
 We begin with a linear model of the form
 $$
@@ -13,57 +13,48 @@ $$ {#eq-basis-expansion}
 
 where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basis functions mapping the input to an $M$-dimensional feature space, with weights $\vw = [w_1, \ldots, w_M]^\top$. This is more general than the simple linear model, allowing non-linear relationships through the choice of basis functions $\phi_j(\cdot)$, without breaking linearity in the parameters $\vw$.
 
-Our goal is to learn the weights $\vw$. Maximum likelihood estimation would yield a single point estimate, but this ignores the fact that many different weight vectors could explain the observed data equally well yet make very different predictions elsewhere. 
+Given training data $\mathcal{D}$, our goal is to learn the weights $\vw$. Maximum likelihood estimation would yield a single point estimate, but this ignores the fact that many different weight vectors could explain the observed data equally well yet make very different predictions elsewhere.
 
-A Bayesian approach addresses this by placing a prior distribution over $\vw$, turning the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2013].
-
-A common choice is a zero-mean Gaussian prior:
+A Bayesian approach addresses this by placing a prior distribution over $\vw$, turning the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2013]. A natural choice is a zero-mean Gaussian prior:
 $$
 p(\vw) = \N(\vw \mid \vzero, \Sigma_p),
 $$ {#eq-weight-prior}
 
-where $\Sigma_p \in \R^{M \times M}$ is the prior covariance matrix. For simplicity, we often take $\Sigma_p = \sigma_w^2 \vI$, which gives independent, identically distributed (i.i.d.) Gaussian weights with variance $\sigma_w^2$ [@mackay_practical_1992]. 
+where $\Sigma_p \in \R^{M \times M}$ is the prior covariance matrix. A common isotropic special case is $\Sigma_p = \sigma_w^2 \vI$, which gives i.i.d. Gaussian weights with variance $\sigma_w^2$ [@mackay_practical_1992].
 
-Assuming additive Gaussian noise across all $y_i = f(\vx_i) + \epsilon_i$ with $\epsilon_i \sim \N(0, \sigma_n^2)$, the likelihood function for a single observation is
-
+Modelling each observation as $y_i = f(\vx_i) + \epsilon_i$ with independent noise $\epsilon_i \sim \N(0, \sigma_n^2)$, the likelihood for a single observation is
 $$
-p(y_i \mid \vx_i, \vw) = \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2),
+p(y_i \mid \vx_i, \vw) = \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood}
 
-where $\sigma_n^2$ is the variance of the noise. Therefore, for dataset $\mathcal{D} = \{(\vx_i, y_i)\}_{i=1}^{n}$, assuming independent observations, and conditional on weights $\vw$, we get
-
+Assuming independence across observations and conditioning on $\vw$, the joint likelihood over $\mathcal{D}$ is
 $$
 p(\vy \mid \vX, \vw) = \prod_{i=1}^{n} \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood-product}
 
-Collecting observations into the *design matrix* $\Phi \in \R^{n \times M}$ with $\Phi_{ij} = \phi_j(\vx_i)$ [@rasmussen_gaussian_2008], the mean vector of all outputs is simply $\Phi\vw$ (see [Appendix @sec-design-matrix] for the explicit construction). Since noise values are independent with variance $\sigma_n^2$, the covariance matrix of $\vy$ is $\sigma_n^2 \vI$, and @eq-likelihood-product can be written as a single multivariate Gaussian:
-
+Collecting observations into the *design matrix* $\Phi \in \R^{n \times M}$ with $\Phi_{ij} = \phi_j(\vx_i)$ [@rasmussen_gaussian_2008] (see [Appendix @sec-design-matrix] for the explicit construction), @eq-likelihood-product compresses to a single multivariate Gaussian:
 $$
 p(\vy \mid \vX, \vw) = \N(\vy \mid \Phi \vw, \sigma_n^2 \vI).
 $$ {#eq-joint-likelihood}
 
-From Bayes' theorem:
-
+Applying Bayes' theorem:
 $$
 p(\vw \mid \vX, \vy) = \frac{p(\vy \mid \vX, \vw) p(\vw)}{p(\vy \mid \vX)}.
 $$ {#eq-bayes-theorem}
 
-Since both the prior and likelihood are Gaussian, the posterior is also Gaussian [@bernardo_bayesian_2000]. The posterior parameters are obtained by completing the square in the exponent of the joint density (see [Appendix @sec-completing-the-square] for the full derivation). Defining the posterior covariance matrix as
-
+Because the Gaussian prior is conjugate to the Gaussian likelihood, the posterior is also Gaussian [@bernardo_bayesian_2000]. Completing the square in the joint exponent (see [Appendix @sec-completing-the-square] for the full derivation) gives the posterior covariance
 $$
 \Sigma_w = \left(\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1}\right)^{-1},
 $$ {#eq-posterior-cov}
 
-the posterior mean is
-
+and posterior mean
 $$
 \bar{\vw} = \sigma_n^{-2} \Sigma_w \Phi^\top \vy.
 $$ {#eq-posterior-mean}
 
-Therefore, the posterior distribution over the weights is
-
+The posterior distribution over the weights is therefore
 $$
 p(\vw \mid \vX, \vy) = \N(\vw \mid \bar{\vw}, \Sigma_w).
 $$ {#eq-posterior-weights}
 
-The observed data updates our prior beliefs about the weights to give this posterior, a foundational result of Bayesian linear regression [@bishop_pattern_2006; @murphy_machine_2013].
+The observed data updates our prior beliefs about the weights to give this posterior, a foundational result of Bayesian linear regression [@bishop_pattern_2006; @murphy_machine_2013]. This posterior captures the uncertainty in the weights given the data, and allows for principled predictions that account for this uncertainty.

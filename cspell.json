@@ -54,12 +54,16 @@
       "pattern": "```[\\s\\S]+?```"
     },
     {
-      "name": "markdown-inline-math",
-      "pattern": "\\$[^$]+\\$"
+      "name": "markdown-block-math",
+      "pattern": "/\\$\\$[\\s\\S]*?\\$\\$/g"
     },
     {
-      "name": "markdown-block-math",
-      "pattern": "\\$\\$[^$]+\\$\\$"
+      "name": "markdown-inline-math",
+      "pattern": "/\\$[^$\\n]+\\$/g"
+    },
+    {
+      "name": "latex-commands",
+      "pattern": "/\\\\[a-zA-Z]+/g"
     }
     ,
     {
@@ -79,8 +83,9 @@
         "markdown-inline-links",
         "markdown-code-spans",
         "markdown-code-blocks",
-        "markdown-inline-math",
         "markdown-block-math",
+        "markdown-inline-math",
+        "latex-commands",
         "quarto-citations"
       ]
     }
@@ -92,8 +97,9 @@
         "markdown-inline-links",
         "markdown-code-spans",
         "markdown-code-blocks",
-        "markdown-inline-math",
         "markdown-block-math",
+        "markdown-inline-math",
+        "latex-commands",
         "quarto-citations"
       ]
     }
