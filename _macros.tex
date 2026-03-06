@@ -1,0 +1,129 @@
+% _macros.tex  –  custom math commands included in PDF output
+% (expand-macros.lua performs the same expansions for HTML and Typst,
+%  so all formats share the same macro vocabulary.)
+\usepackage{bm}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+
+% ---------- Exclude "References" from TOC and section numbering ----------
+% Pandoc emits \addcontentsline{toc}{section}{References} + \section*{References}.
+% We suppress the TOC entry. AtBeginDocument ensures we override hyperref's
+% own redefinition of \addcontentsline, which would otherwise undo this.
+\makeatletter
+\AtBeginDocument{%
+  \let\@orig@addcontentsline\addcontentsline
+  \renewcommand{\addcontentsline}[3]{%
+    \def\@acltmp{#3}\def\@aclref{References}%
+    \ifx\@acltmp\@aclref\else\@orig@addcontentsline{#1}{#2}{#3}\fi
+  }%
+}
+\makeatother
+
+% ---------- Lowercase bold vectors ----------
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\vy}{\mathbf{y}}
+\newcommand{\vz}{\mathbf{z}}
+\newcommand{\vf}{\mathbf{f}}
+\newcommand{\vw}{\mathbf{w}}
+\newcommand{\vu}{\mathbf{u}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\va}{\mathbf{a}}
+\newcommand{\vb}{\mathbf{b}}
+\newcommand{\vc}{\mathbf{c}}
+\newcommand{\vj}{\mathbf{j}}
+\newcommand{\vm}{\mathbf{m}}
+\newcommand{\vn}{\mathbf{n}}
+\newcommand{\vp}{\mathbf{p}}
+\newcommand{\vq}{\mathbf{q}}
+\newcommand{\vr}{\mathbf{r}}
+\newcommand{\vs}{\mathbf{s}}
+\newcommand{\vt}{\mathbf{t}}
+\newcommand{\vk}{\mathbf{k}}
+\newcommand{\vh}{\mathbf{h}}
+\newcommand{\ve}{\mathbf{e}}
+\newcommand{\vJ}{\mathbf{J}}
+\newcommand{\vG}{\mathbf{G}}
+
+% ---------- Uppercase bold matrices ----------
+\newcommand{\vA}{\mathbf{A}}
+\newcommand{\vB}{\mathbf{B}}
+\newcommand{\vC}{\mathbf{C}}
+\newcommand{\vD}{\mathbf{D}}
+\newcommand{\vF}{\mathbf{F}}
+\newcommand{\vH}{\mathbf{H}}
+\newcommand{\vI}{\mathbf{I}}
+\newcommand{\vK}{\mathbf{K}}
+\newcommand{\vL}{\mathbf{L}}
+\newcommand{\vM}{\mathbf{M}}
+\newcommand{\vP}{\mathbf{P}}
+\newcommand{\vQ}{\mathbf{Q}}
+\newcommand{\vR}{\mathbf{R}}
+\newcommand{\vS}{\mathbf{S}}
+\newcommand{\vU}{\mathbf{U}}
+\newcommand{\vV}{\mathbf{V}}
+\newcommand{\vW}{\mathbf{W}}
+\newcommand{\vX}{\mathbf{X}}
+\newcommand{\vY}{\mathbf{Y}}
+\newcommand{\vZ}{\mathbf{Z}}
+
+% ---------- Greek bold vectors ----------
+\newcommand{\valpha}{\boldsymbol{\alpha}}
+\newcommand{\vbeta}{\boldsymbol{\beta}}
+\newcommand{\vgamma}{\boldsymbol{\gamma}}
+\newcommand{\vdelta}{\boldsymbol{\delta}}
+\newcommand{\vepsilon}{\boldsymbol{\epsilon}}
+\newcommand{\veta}{\boldsymbol{\eta}}
+\newcommand{\vlambda}{\boldsymbol{\lambda}}
+\newcommand{\vmu}{\boldsymbol{\mu}}
+\newcommand{\vnu}{\boldsymbol{\nu}}
+\newcommand{\vphi}{\boldsymbol{\phi}}
+\newcommand{\vpsi}{\boldsymbol{\psi}}
+\newcommand{\vsigma}{\boldsymbol{\sigma}}
+\newcommand{\vtheta}{\boldsymbol{\theta}}
+\newcommand{\vxi}{\boldsymbol{\xi}}
+\newcommand{\vomega}{\boldsymbol{\omega}}
+\newcommand{\vtau}{\boldsymbol{\tau}}
+\newcommand{\vell}{\boldsymbol{\ell}}
+\newcommand{\vzero}{\mathbf{0}}
+
+% ---------- Greek bold matrices ----------
+\newcommand{\vSigma}{\boldsymbol{\Sigma}}
+\newcommand{\vLambda}{\boldsymbol{\Lambda}}
+\newcommand{\vGamma}{\boldsymbol{\Gamma}}
+\newcommand{\vPhi}{\boldsymbol{\Phi}}
+\newcommand{\vPsi}{\boldsymbol{\Psi}}
+\newcommand{\vOmega}{\boldsymbol{\Omega}}
+\newcommand{\vTheta}{\boldsymbol{\Theta}}
+
+% ---------- Mathematical operators ----------
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\GP}{\mathcal{GP}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\argmin}{\operatorname{arg\,min}}
+\newcommand{\argmax}{\operatorname{arg\,max}}
+
+% ---------- Misc ----------
+\newcommand{\given}{\mid}
+\newcommand{\iid}{\stackrel{\text{iid}}{\sim}}
+\newcommand{\ind}{\stackrel{\text{ind}}{\sim}}
+\newcommand{\defeq}{\coloneqq}
+
+% ---------- Section numbering: 1.0 / 1.1 / 1.1.1 ----------
+\renewcommand{\thesection}{\arabic{section}.0}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+
+% ---------- TOC number column width (wider to fit "1.0" style numbers) ----------
+\RedeclareSectionCommand[tocnumwidth=2.5em]{section}
+\RedeclareSectionCommand[tocnumwidth=3.5em]{subsection}
+\RedeclareSectionCommand[tocnumwidth=4.5em]{subsubsection}
+
+% ---------- Calculus shorthands ----------
+\newcommand{\dd}[2]{\frac{d\,#1}{d\,#2}}
+\newcommand{\pd}[2]{\frac{\partial\,#1}{\partial\,#2}}
+\newcommand{\pdd}[2]{\frac{\partial^{2}\,#1}{\partial\,#2^{2}}}

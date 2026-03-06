@@ -1,0 +1,9 @@
+---
+title: Deep Gaussian Processes
+authors:
+  - name: Adam Buckley
+    affiliation: Lancaster University
+    roles: writing
+    corresponding: true
+bibliography: references.bib
+---
