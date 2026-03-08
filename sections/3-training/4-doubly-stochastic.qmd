@@ -39,7 +39,7 @@ $$
 \end{aligned}
 $$ {#eq-layer1_moments}
 
-where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$.
+where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$. The mean $\mu_i^{(1)}$ is the posterior GP mean at $\vx_i$: a weighted sum of inducing values $\vM^{(1)}$, weighted by how correlated $\vx_i$ is with each inducing point. The variance $\sigma_i^{(1)2}$ is the prior variance $k_{ii}^{(1)}$ minus the information contributed by the inducing points, plus additional uncertainty from $\vS^{(1)}$ reflecting that our beliefs about $\vU^{(1)}$ are not perfectly sharp.
 
 Sampling $f_i^{(1)} \sim \mathcal{N}(\mu_i^{(1)}, \sigma_i^{(1)2})$ gives a realisation of the first layer output. For subsequent layers $\ell = 2, \ldots, L$, we condition on the sampled value from the previous layer. The distribution at layer $\ell$ given sampled $f_i^{(\ell-1)}$ is:
 
@@ -56,6 +56,8 @@ $$
 \end{aligned}
 $$ {#eq-layer_ell_moments}
 
+The same formula applies as at layer 1, except that the input is now the *sampled* value $f_i^{(\ell-1)}$ from the previous layer rather than the fixed training input $\vx_i$. This is how uncertainty propagates: each layer outputs a Gaussian whose mean and variance depend on a random draw from the layer below, so uncertainty compounds as samples pass through the hierarchy.
+
 The kernel evaluations now depend on the random variable $f_i^{(\ell-1)}$ from the previous layer, creating the propagation of uncertainty.
 
 After sampling through all $L$ layers, we obtain $f_i^{(L)}$ and evaluate $\log p(y_i \mid f_i^{(L)})$. With $S$ independent sample paths, the Monte Carlo estimate of the ELBO is:
@@ -66,8 +68,8 @@ $$ {#eq-dsvi_mc_elbo}
 
 where $\mathcal{B} \subset \{1, \ldots, n\}$ is a minibatch and $f_i^{(L,s)}$ denotes the $s$-th sample at the final layer for point $i$. The factor $n/|\mathcal{B}|$ corrects for minibatch subsampling, ensuring the estimate remains unbiased.
 
-The term "doubly stochastic" refers to two sources of randomness: minibatch subsampling (stochasticity over data) and Monte Carlo sampling through layers (stochasticity over latent functions). Both maintain unbiasedness of gradient estimates, which is crucial for stochastic optimisation convergence.
+The term "doubly stochastic" refers to two sources of randomness: minibatch subsampling (stochasticity over data) and Monte Carlo sampling through layers (stochasticity over latent functions). Both maintain unbiasedness of gradient estimates, which is crucial for stochastic optimisation convergence. In practice the two sources of noise act independently: increasing the minibatch size $|\mathcal{B}|$ reduces noise from data sampling, while increasing the sample count $S$ reduces noise from layer propagation.
 
-Gradient computation requires differentiating through the sampling operations. The reparameterisation trick [@kingma_auto-encoding_2014] makes this tractable: instead of sampling $f \sim \mathcal{N}(\mu, \sigma^2)$ directly, we write $f = \mu + \sigma\epsilon$ with $\epsilon \sim \mathcal{N}(0,1)$, so that gradients with respect to $\mu$ and $\sigma$ flow through the deterministic transformation while the stochastic node $\epsilon$ carries no parameters.
+Gradient computation requires differentiating through the sampling operations. The reparametrisation trick [@kingma_auto-encoding_2014] makes this tractable: instead of sampling $f \sim \mathcal{N}(\mu, \sigma^2)$ directly, we write $f = \mu + \sigma\epsilon$ with $\epsilon \sim \mathcal{N}(0,1)$, so that gradients with respect to $\mu$ and $\sigma$ flow through the deterministic transformation while the stochastic node $\epsilon$ carries no parameters. In effect, the randomness is "pushed outside" the computation graph, so automatic differentiation can treat $\mu$ and $\sigma$ as ordinary differentiable variables.
 
 Computational cost per iteration is $O(|\mathcal{B}| m^2 L S)$ for forward propagation of $S$ samples through $L$ layers, plus $O(m^3 L)$ for the KL terms. Crucially, this is independent of $n$, enabling scalability to large datasets. Empirically, a single sample ($S=1$) often suffices when $|\mathcal{B}|$ is large, as averaging over many data points provides natural variance reduction.

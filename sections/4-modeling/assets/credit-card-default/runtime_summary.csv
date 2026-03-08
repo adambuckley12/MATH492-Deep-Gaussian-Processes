@@ -1,0 +1,16 @@
+model,base_model,family,stage,calibration_method,train_time_sec
+Logistic Regression + Isotonic,Logistic Regression,classical,post_hoc,isotonic,0.0033
+Logistic Regression + Platt,Logistic Regression,classical,post_hoc,platt,0.0018
+Random Forest + Isotonic,Random Forest,classical,post_hoc,isotonic,0.0011
+Random Forest + Platt,Random Forest,classical,post_hoc,platt,0.0017
+XGBoost + Isotonic,XGBoost,classical,post_hoc,isotonic,0.0009
+XGBoost + Platt,XGBoost,classical,post_hoc,platt,0.0012
+Logistic Regression (unweighted),Logistic Regression,classical,pre_hoc,unweighted,0.0304
+Random Forest (unweighted),Random Forest,classical,pre_hoc,unweighted,3.8831
+XGBoost (unweighted),XGBoost,classical,pre_hoc,unweighted,0.214
+Logistic Regression,Logistic Regression,classical,raw,none,0.0217
+Random Forest,Random Forest,classical,raw,none,3.2739
+XGBoost,XGBoost,classical,raw,none,0.3179
+DSVGP-2L,DSVGP-2L,dgp,raw,none,137.4133
+DSVGP-3L,DSVGP-3L,dgp,raw,none,543.1736
+SVGP,SVGP,gp,raw,none,117.7378

@@ -8,3 +8,13 @@ node_modules/**
 spell-check/.cspellcache-en-gb.json
 sections/1-gps/2-gaussian-processes_files/**
 site_libs/**
+code/credit-card-pd-uci/src/results/models/weights/**
+code/credit-card-pd-uci/.venv/**
+code/credit-card-pd-uci/.pytest_cache/**
+
+code/credit-card-pd-uci/src/**/__pycache__/**
+index.aux
+index.fdb_latexmk
+index.pdf
+index.synctex.gz
+index.toc

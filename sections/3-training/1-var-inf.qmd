@@ -14,7 +14,7 @@ $$
 \mathcal{L}(q) = \mathbb{E}_{q(\vz)}[\log p(\vy, \vz)] - \mathbb{E}_{q(\vz)}[\log q(\vz)] = \mathbb{E}_{q(\vz)}[\log p(\vy \mid \vz)] - \KL(q(\vz) \| p(\vz)).
 $$ {#eq-elbo}
 
-Since KL divergence is non-negative, $\mathcal{L}(q) \leq \log p(\vy)$ with equality when $q(\vz) = p(\vz \mid \vy)$.
+Since KL divergence is non-negative, $\mathcal{L}(q) \leq \log p(\vy)$ with equality when $q(\vz) = p(\vz \mid \vy)$. This is the central insight: rather than computing the intractable posterior directly, we turn the problem into an optimisation — find the $q$ that maximises the ELBO, which simultaneously tightens the bound and minimises the error of our approximation.
 
 To show @eq-vi_decomposition, start from the definition of KL divergence:
 
@@ -25,7 +25,7 @@ $$
 \end{aligned}
 $$
 
-Rearranging gives @eq-vi_decomposition. Since $\KL(q \| p)$ cannot be computed directly (it is intractable), we instead maximise the ELBO, which is equivalent to minimising KL divergence.
+Rearranging gives @eq-vi_decomposition. Since $\KL(q \| p)$ cannot be computed directly (it is intractable), we instead maximise the ELBO, which is equivalent to minimising KL divergence. This replaces an intractable posterior computation with a tractable optimisation problem — the core trade of variational inference.
 
 The second form @eq-elbo illuminates the ELBO's structure. The expected log-likelihood $\mathbb{E}_{q}[\log p(\vy \mid \vz)]$ encourages $q$ to concentrate where the data is well-explained, while the KL term $\KL(q \| p(\vz))$ regularises $q$ toward the prior, preventing overfitting [@bishop_pattern_2006]. This trade-off mirrors the data-fit versus complexity balance in exact Bayesian inference.
 
@@ -43,4 +43,4 @@ $$
 \KL(q(\vf) \| p(\vf)) = \frac{1}{2}\left[\tr(K^{-1}S) + \vm^\top K^{-1} \vm - n + \log|K| - \log|S|\right],
 $$ {#eq-kl_gaussian}
 
-where $K$ is the prior covariance. Optimisation over a full-rank matrix $S \in \mathbb{R}^{n \times n}$ still involves $O(n^2)$ parameters, which becomes problematic for large $n$. The key to resolving this is to restrict the variational family to a lower-dimensional subspace defined by $m \ll n$ *inducing points*, as developed in the following section.
+where $K$ is the prior covariance. Each term has a clear role: $\vm^\top K^{-1} \vm$ penalises the variational mean for straying far from zero in units of the prior length-scale; $\tr(K^{-1}S)$ penalises the variational covariance for being larger than the prior; and $\log|K| - \log|S|$ is a log-volume ratio that rewards $q$ for being more concentrated than the prior. Together they ensure $q$ cannot deviate from $p(\vf)$ without paying a KL cost. Optimisation over a full-rank matrix $S \in \mathbb{R}^{n \times n}$ still involves $O(n^2)$ parameters, which becomes problematic for large $n$. The key to resolving this is to restrict the variational family to a lower-dimensional subspace defined by $m \ll n$ *inducing points*, as developed in the following section.

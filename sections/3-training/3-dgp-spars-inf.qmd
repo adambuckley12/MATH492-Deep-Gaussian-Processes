@@ -8,7 +8,7 @@ $$
 q(\{\vF^{(\ell)}, \vU^{(\ell)}\}_{\ell=1}^L) = \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) q(\vU^{(\ell)}),
 $$ {#eq-dgp_variational_factorization}
 
-where $q(\vU^{(\ell)}) = \mathcal{N}(\vU^{(\ell)} \mid \vM^{(\ell)}, \vS^{(\ell)})$ with variational parameters $\vM^{(\ell)} \in \mathbb{R}^{m_\ell \times d_\ell}$ and covariances $\vS^{(\ell)}$.
+where $q(\vU^{(\ell)}) = \mathcal{N}(\vU^{(\ell)} \mid \vM^{(\ell)}, \vS^{(\ell)})$ with variational parameters $\vM^{(\ell)} \in \mathbb{R}^{m_\ell \times d_\ell}$ and covariances $\vS^{(\ell)}$. The factorisation is a key design choice: rather than placing a variational distribution over each layer's full $n \times d_\ell$ output matrix, we only learn distributions over the much smaller $m_\ell \times d_\ell$ inducing outputs at each layer; the per-layer GP conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ then propagates information from inducing values to all training points.
 
 The conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ uses the GP prior structure. For layer $\ell$ with inputs from the previous layer $\vF^{(\ell-1)}$ and inducing inputs $\vZ^{(\ell)}$:
 
@@ -24,7 +24,7 @@ $$
 \mathcal{L} = \mathbb{E}_{q(\vF^{(1:L)})}[\log p(\vy \mid \vF^{(L)})] - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})).
 $$ {#eq-dgp_elbo}
 
-The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian. However, the expected log-likelihood requires integration over all layer outputs $\vF^{(1:L)}$, which is intractable due to the nested structure.
+The structure is intuitive: there is one data-fit term (the expected log-likelihood at the final layer) and one KL "regulariser" per layer, penalising each layer's variational posterior for deviating from its GP prior. The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian. However, the expected log-likelihood requires integration over all layer outputs $\vF^{(1:L)}$, which is intractable due to the nested structure.
 
 The expectation in @eq-dgp_elbo involves:
 
@@ -43,6 +43,8 @@ This integral is Gaussian:
 $$
 q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vM^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}\right).
 $$ {#eq-marginal_q_layer_explicit}
+
+Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this variational marginal has a non-zero mean (coming from $\vM^{(\ell)}$) and reduced variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ subtracts the uncertainty explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). Despite being Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend nonlinearly on the random $\vF^{(\ell-1)}$.
 
 The nested structure of @eq-dgp_nested_expectation presents the core challenge: even though each layer's conditional is Gaussian, the covariance matrices $K^{(\ell)}$ depend nonlinearly on $\vF^{(\ell-1)}$, precluding closed-form evaluation.
 

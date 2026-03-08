@@ -69,6 +69,15 @@
       "name": "quarto-citations",
       "pattern": "\\[@[^\\]]+\\]"
     }
+    ,
+    {
+      "name": "quarto-inline-labels",
+      "pattern": "\\{#[-A-Za-z0-9_]+\\}"
+    },
+    {
+      "name": "bare-citations",
+      "pattern": "\\@[A-Za-z0-9_\\-]+"
+    }
   ],
   "overrides": [
     {
@@ -87,7 +96,9 @@
         "markdown-block-math",
         "markdown-inline-math",
         "latex-commands",
-        "quarto-citations"
+        "quarto-citations",
+        "quarto-inline-labels",
+        "bare-citations"
       ]
     },
     {
@@ -100,7 +111,9 @@
         "markdown-block-math",
         "markdown-inline-math",
         "latex-commands",
-        "quarto-citations"
+        "quarto-citations",
+        "quarto-inline-labels",
+        "bare-citations"
       ]
     }
   ],

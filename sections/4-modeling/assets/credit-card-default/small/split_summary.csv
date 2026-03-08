@@ -1,0 +1,5 @@
+split,rows,default_rate,mode
+train,1020,0.22058823529411764,small
+validation,180,0.2222222222222222,small
+calibration,400,0.2225,small
+test,6000,0.22116666666666668,small

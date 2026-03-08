@@ -104,3 +104,167 @@ $$
 $$
 \Cov[f_*, f_*] = \vphi(\vx_*)^\top\Cov[\vw]\vphi(\vx_*) = \vphi(\vx_*)^\top\Sigma_p\vphi(\vx_*).
 $$
+
+## Credit-Risk Pipeline Snippets {#sec-credit-risk-pipeline-snippets}
+
+The main text refers to four implementation details of the UCI credit-card experiment: the four-way split protocol, the post-hoc calibration loop, the SVGP training loop, and the deep GP training loop. The excerpts below are included so that the empirical claims in Section @sec-credit-card can be tied directly to the code used to generate the results.
+
+### Four-Way Split Protocol {#sec-credit-risk-splits-snippet}
+
+```python
+cal_fraction_of_dev = self.calibration_size / (1.0 - self.test_size)
+X_model, X_cal, y_model, y_cal = train_test_split(
+  X_dev,
+  y_dev,
+  test_size=cal_fraction_of_dev,
+  random_state=self.random_state,
+  stratify=y_dev,
+)
+
+if self.validation_size > 0:
+  val_fraction_of_model = self.validation_size / (1.0 - self.test_size - self.calibration_size)
+  X_train, X_val, y_train, y_val = train_test_split(
+    X_model,
+    y_model,
+    test_size=val_fraction_of_model,
+    random_state=self.random_state,
+    stratify=y_model,
+  )
+```
+
+This is the key methodological change relative to a simple train/test study. It reserves a distinct calibration split for Platt scaling and isotonic regression instead of fitting a calibrator on the same data used for model development.
+
+### Post-Hoc Calibration Loop {#sec-credit-risk-calibration-snippet}
+
+```python
+for base_model in ["Logistic Regression", "Random Forest", "XGBoost"]:
+  cal_probs = raw_classical_probs_cal[base_model]
+  test_probs = raw_classical_probs_test[base_model]
+  for method in ["platt", "isotonic"]:
+    calibrator, cal_time = fit_with_timer(
+      lambda method=method, cal_probs=cal_probs: fit_probability_calibrator(
+        method,
+        cal_probs,
+        y_cal.to_numpy(),
+      )
+    )
+    results.append(
+      ExperimentResult(
+        label=f"{base_model} + {method.title()}",
+        base_model=base_model,
+        family="classical",
+        stage="post_hoc",
+        calibration_method=method,
+        y_prob=calibrator.predict(test_probs),
+        train_time_sec=cal_time,
+      )
+    )
+```
+
+This excerpt shows the distinction between the raw and post-hoc stages. The underlying classifier is held fixed, calibration is fitted on held-out calibration-set scores, and only then are recalibrated probabilities produced for the test set.
+
+### SVGP Training Loop {#sec-credit-risk-svgp-snippet}
+
+```python
+optimizer = torch.optim.Adam(
+  list(self._model.parameters()) + list(self._likelihood.parameters()),
+  lr=self.lr,
+)
+mll = VariationalELBO(self._likelihood, self._model, num_data=len(y))
+
+for epoch in range(1, self.n_epochs + 1):
+  for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
+    X_batch = X_batch.to(self.device)
+    y_batch = y_batch.to(self.device)
+    optimizer.zero_grad()
+    output = self._model(X_batch)
+    loss = -mll(output, y_batch)
+    loss.backward()
+    optimizer.step()
+```
+
+This is standard mini-batch stochastic variational inference for a sparse GP classifier. The variational ELBO is optimized jointly over the inducing-point representation and the Bernoulli likelihood parameters.
+
+### DSVGP Training Loop {#sec-credit-risk-dsvgp-snippet}
+
+```python
+optimizer = torch.optim.Adam(self._model.parameters(), lr=self.lr)
+mll = DeepApproximateMLL(
+  VariationalELBO(
+    self._model.likelihood,
+    self._model,
+    num_data=len(y),
+  )
+)
+
+train_samples = min(self.num_samples, 10)
+
+for epoch in range(1, self.n_epochs + 1):
+  for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
+    X_batch = X_batch.to(self.device)
+    y_batch = y_batch.to(self.device)
+
+    with gpytorch.settings.num_likelihood_samples(train_samples):
+      optimizer.zero_grad()
+      output = self._model(X_batch)
+      loss = -mll(output, y_batch)
+      loss.backward()
+      optimizer.step()
+```
+
+This is the doubly stochastic variational setup used for the deep GP models. The first source of stochasticity is mini-batch optimization; the second is Monte Carlo sampling through the layered latent structure via `num_likelihood_samples`. In that sense, yes: the deep GP experiments in this dissertation use the DSVI-style training approach.
+
+### UCI Credit Card: Supplementary Tables {#sec-uci-supp-tables}
+
+#### Fixed-Threshold Reference Comparison {#tbl-app-uci-fixed-threshold}
+
+```{python}
+#| label: tbl-app-uci-fixed-threshold
+#| tbl-cap: "Six-model comparison at the conventional fixed threshold of $0.5$. Compare with @tbl-uci-main-optimal to see the systematic artefact introduced by a fixed cutoff for GP-family models."
+#| echo: false
+
+import pandas as pd
+
+metrics = pd.read_csv("sections/4-modeling/assets/credit-card-default/main_metrics.csv")
+table = metrics[["model","roc_auc","f1","balanced_accuracy","brier","ece"]].copy()
+table.columns = ["Model","ROC-AUC","F1","Bal.Acc","Brier","ECE"]
+table = table.round(4)
+table
+```
+
+#### Classical Calibration Study Detail {#tbl-app-uci-classical-calibration}
+
+```{python}
+#| label: tbl-app-uci-classical-calibration
+#| tbl-cap: "Calibration study for the three classical baselines across raw, pre-hoc (no class-imbalance weighting), and post-hoc (Platt scaling, isotonic regression) variants."
+#| echo: false
+
+import pandas as pd
+
+calib = pd.read_csv("sections/4-modeling/assets/credit-card-default/classical_calibration_metrics.csv")
+table = calib[["model","stage","calibration_method","roc_auc","brier","ece"]].copy()
+table.columns = ["Model","Stage","Method","ROC-AUC","Brier","ECE"]
+table = table.round(4)
+table
+```
+
+#### F1-Optimal Threshold Summary — Classical Baselines {#tbl-app-uci-threshold-optima}
+
+```{python}
+#| label: tbl-app-uci-threshold-optima
+#| tbl-cap: "F1-optimal operating thresholds for the three classical baselines in raw and post-hoc recalibrated form."
+#| echo: false
+
+import pandas as pd
+
+optima = pd.read_csv("sections/4-modeling/assets/credit-card-default/threshold_optima.csv")
+table = optima.loc[
+    optima["target_metric"].eq("f1")
+    & optima["family"].eq("classical")
+    & optima["stage"].isin(["raw", "post_hoc"]),
+    ["model","stage","calibration_method","best_threshold","best_value"],
+].copy()
+table.columns = ["Model","Stage","Method","Opt. Threshold","F1*"]
+table = table.round(4)
+table
+```

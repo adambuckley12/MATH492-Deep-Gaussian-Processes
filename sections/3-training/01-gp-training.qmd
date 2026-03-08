@@ -6,12 +6,12 @@ Starting from the GP prior $\vf \mid \vX \sim \mathcal{N}(\vzero, K_{\vtheta})$ 
 $$
 p(\vy \mid \vX, \vtheta) = \int p(\vy \mid \vf) p(\vf \mid \vX, \vtheta) \, d\vf = \mathcal{N}(\vy \mid \vzero, K_{\vtheta} + \sigma_n^2 \vI),
 $$ {#eq-gp_marginal_likelihood}
-giving the LML of @eq-log-marginal-likelihood. Hyperparameters are found via gradient ascent; the gradient with respect to $\theta_j$ is [@rasmussen_gaussian_2008]:
+giving the LML of @eq-log-marginal-likelihood. The key step is that a Gaussian prior on $\vf$ multiplied by a Gaussian likelihood in $\vy$ integrates analytically: the product of two Gaussians is proportional to a Gaussian, so the $\vf$-integral collapses to a single multivariate normal with covariance $K_{\vtheta} + \sigma_n^2 \vI$. This closed-form collapse is precisely what is lost in DGPs, where the covariance depends on random latent variables. Hyperparameters are found via gradient ascent; the gradient with respect to $\theta_j$ is [@rasmussen_gaussian_2008]:
 
 $$
 \frac{\partial \log p(\vy)}{\partial \theta_j} = \frac{1}{2}\tr\left((\valpha \valpha^\top - K_y^{-1}) \frac{\partial K_y}{\partial \theta_j}\right),
 $$ {#eq-gradient}
 
-where $\valpha = K_y^{-1} \vy$ and $K_y = K_{\vtheta} + \sigma_n^2 \vI$. This follows from the matrix calculus identities $\frac{\partial}{\partial \theta} \log|K| = \tr(K^{-1} \frac{\partial K}{\partial \theta})$ and $\frac{\partial K^{-1}}{\partial \theta} = -K^{-1} \frac{\partial K}{\partial \theta} K^{-1}$.
+where $\valpha = K_y^{-1} \vy$ and $K_y = K_{\vtheta} + \sigma_n^2 \vI$. The matrix $\valpha \valpha^\top - K_y^{-1}$ has a natural interpretation: $\valpha \valpha^\top$ is a rank-one outer product that captures how the data predicts itself under the current model, while $K_y^{-1}$ reflects the full model uncertainty; a large positive difference for $\partial K_y / \partial \theta_j$ indicates that increasing $\theta_j$ improves the data fit more than it increases model complexity. This follows from the matrix calculus identities $\frac{\partial}{\partial \theta} \log|K| = \tr(K^{-1} \frac{\partial K}{\partial \theta})$ and $\frac{\partial K^{-1}}{\partial \theta} = -K^{-1} \frac{\partial K}{\partial \theta} K^{-1}$.
 
 Each gradient step requires $K_y^{-1}$, computed via Cholesky decomposition at $O(n^3)$ cost with $O(n^2)$ storage [@rasmussen_gaussian_2008]. For small to moderate datasets ($n \lesssim 10{,}000$) this is typically feasible and remains the gold standard: the LML gradients are exact, and no approximation is introduced beyond the choice of kernel. For larger datasets the cubic cost becomes prohibitive, motivating the sparse variational approach of the following section.

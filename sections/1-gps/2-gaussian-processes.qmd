@@ -1,14 +1,20 @@
 # Gaussian Processes {#sec-gp-definition}
 
-Formally, a Gaussian process is a collection of random variables, any finite number of which have a joint Gaussian distribution [@rasmussen_gaussian_2008]. A GP is fully specified by its mean function $m(\vx) = \E[f(\vx)]$ and covariance function (or kernel) $k(\vx, \vx') = \E[(f(\vx) - m(\vx))(f(\vx') - m(\vx'))] = \Cov[f(\vx), f(\vx')]$. We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions — rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space — and the choice of kernel is the primary modelling decision.
+Formally, a Gaussian process is a collection of random variables, any finite number of which have a joint Gaussian distribution [@rasmussen_gaussian_2008]. A GP is fully specified by its mean function $m(\vx) = \E[f(\vx)]$ and covariance function (or kernel) 
+$$
+k(\vx, \vx') = \E[(f(\vx) - m(\vx))(f(\vx') - m(\vx'))] = \Cov[f(\vx), f(\vx')]
+$$
+
+We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions directly, rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space. 
 
 ## The GP Prior {#sec-gp-prior}
 
-Placing a GP prior on $f$ gives concrete meaning to the phrase "prior over functions". Evaluating $f$ at any finite collection of inputs $\vX = \{\vx_1, \ldots, \vx_n\}$ yields a joint Gaussian over the corresponding function values $\vf = [f(\vx_1), \ldots, f(\vx_n)]^\top$,
+Placing a GP prior on $f$ gives a "prior over functions". Evaluating $f$ at any finite collection of inputs $\vX = \{\vx_1, \ldots, \vx_n\}$ gives a joint Gaussian over the corresponding function values $\vf = [f(\vx_1), \ldots, f(\vx_n)]^\top$,
 $$
 \vf \mid \vX \sim \N(\vm, K),
 $$ {#eq-gp-prior}
-where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This *marginalisation property* — that every finite-dimensional marginal is Gaussian — is the defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression it is standard to take $m \equiv 0$, since any non-zero prior mean can be absorbed into the model or estimated from data [@mackay_introduction_1998].
+
+where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This property that every finite-dimensional marginal is Gaussian is a defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression, it is standard to take $m \equiv 0$, as any non-zero prior mean can be absorbed into the model or estimated from data [@mackay_introduction_1998], and by doing so we focus attention on the kernel as the key modelling choice.
 
 ## Kernels and Covariance Functions {#sec-kernels}
 

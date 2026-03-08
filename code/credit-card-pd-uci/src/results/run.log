@@ -1,0 +1,125 @@
+
+════════════════════════════════════════════════════
+  Credit Default Prediction Pipeline
+════════════════════════════════════════════════════
+
+Train: (24000, 26)  |  Test: (6000, 26)
+Train default rate: 0.221
+Test  default rate: 0.221
+
+════════════════════════════════════════════════════
+  Classical Models
+════════════════════════════════════════════════════
+
+Training Logistic Regression...
+
+─────────────────────────────────────────────
+  Logistic Regression
+─────────────────────────────────────────────
+  ROC-AUC          : 0.7388
+  Avg Precision    : 0.4933
+  F1  (class 1)    : 0.4998
+  Precision (cl.1) : 0.4214
+  Recall    (cl.1) : 0.6142
+  Brier Score      : 0.1992
+  Accuracy         : 0.7282
+─────────────────────────────────────────────
+              precision    recall  f1-score   support
+
+  No Default       0.87      0.76      0.81      4673
+     Default       0.42      0.61      0.50      1327
+
+    accuracy                           0.73      6000
+   macro avg       0.65      0.69      0.66      6000
+weighted avg       0.77      0.73      0.74      6000
+
+Top 10 features by |coef|:
+    feature  abs_coef
+EDUCATION_4  1.001323
+    PAY_SEP  0.468854
+PAY_AMT_SEP  0.188429
+ MARRIAGE_2  0.176371
+PAY_AMT_AUG  0.173915
+PAY_AMT_JUL  0.158176
+  LIMIT_BAL  0.149698
+ MARRIAGE_3  0.128021
+EDUCATION_3  0.124295
+   BILL_MAY  0.117413
+
+Training Random Forest...
+  [Random Forest] OOB score: 0.8070
+
+─────────────────────────────────────────────
+  Random Forest
+─────────────────────────────────────────────
+  ROC-AUC          : 0.7706
+  Avg Precision    : 0.5502
+  F1  (class 1)    : 0.5327
+  Precision (cl.1) : 0.5667
+  Recall    (cl.1) : 0.5026
+  Brier Score      : 0.1461
+  Accuracy         : 0.8050
+─────────────────────────────────────────────
+              precision    recall  f1-score   support
+
+  No Default       0.86      0.89      0.88      4673
+     Default       0.57      0.50      0.53      1327
+
+    accuracy                           0.81      6000
+   macro avg       0.71      0.70      0.70      6000
+weighted avg       0.80      0.81      0.80      6000
+
+Top 10 features by Gini importance:
+    feature  importance
+    PAY_SEP    0.127580
+   BILL_SEP    0.058611
+  LIMIT_BAL    0.056593
+    PAY_AUG    0.055141
+PAY_AMT_SEP    0.052019
+PAY_AMT_AUG    0.050860
+   BILL_AUG    0.049965
+PAY_AMT_JUL    0.049062
+        AGE    0.048207
+   BILL_JUL    0.046868
+
+Training XGBoost...
+  [XGBoost] Best iteration: 59
+
+─────────────────────────────────────────────
+  XGBoost
+─────────────────────────────────────────────
+  ROC-AUC          : 0.7783
+  Avg Precision    : 0.5529
+  F1  (class 1)    : 0.5388
+  Precision (cl.1) : 0.4794
+  Recall    (cl.1) : 0.6149
+  Brier Score      : 0.1796
+  Accuracy         : 0.7672
+─────────────────────────────────────────────
+              precision    recall  f1-score   support
+
+  No Default       0.88      0.81      0.84      4673
+     Default       0.48      0.61      0.54      1327
+
+    accuracy                           0.77      6000
+   macro avg       0.68      0.71      0.69      6000
+weighted avg       0.79      0.77      0.78      6000
+
+Top 10 features by gain:
+    feature     gain
+    PAY_SEP 0.421584
+    PAY_AUG 0.092609
+    PAY_JUL 0.075161
+    PAY_MAY 0.037444
+    PAY_JUN 0.034703
+    PAY_APR 0.026875
+PAY_AMT_SEP 0.022889
+PAY_AMT_AUG 0.021809
+  LIMIT_BAL 0.021642
+   BILL_SEP 0.020774
+
+════════════════════════════════════════════════════
+  Gaussian Process Models
+════════════════════════════════════════════════════
+
+Training SVGP...
