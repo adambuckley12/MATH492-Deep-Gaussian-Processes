@@ -38,11 +38,9 @@ The $0.5$-threshold comparison (@tbl-app-uci-fixed-threshold) produces a mislead
 
 ### Probability Calibration {#sec-uci-calibration}
 
-::: {layout-ncol=2}
 ![Reliability diagrams — raw models. GP-family models track the diagonal closely; classical baselines are strongly miscalibrated.](/sections/4-modeling/assets/credit-card-default/calibration.png){#fig-uci-calibration}
 
 ![Reliability diagrams — classical baselines before and after post-hoc calibration. Platt scaling largely removes the miscalibration visible in the raw models.](/sections/4-modeling/assets/credit-card-default/classical_calibration_comparison.png){#fig-uci-classical-calibration}
-:::
 
 The principal advantage of GP and DGP classifiers on this dataset is native probability calibration. DSVGP-2L achieves ECE = 0.0111 and Brier = 0.1350; SVGP: ECE = 0.0127, Brier = 0.1356; DSVGP-3L: ECE = 0.0136, Brier = 0.1358. Classical baselines are substantially worse: logistic regression ECE = 0.2232, XGBoost ECE = 0.2096, random forest ECE = 0.0862. This pattern aligns with @niculescu_mizil_predicting_2005, who show empirically that random forests and gradient-boosted ensembles are systematically overconfident while probit- or sigmoid-linked models tend toward under-confidence. The GP models are well-calibrated natively because the variational ELBO penalises over-confident posteriors and the Bernoulli-sigmoid link ensures appropriate uncertainty near the decision boundary.
 
