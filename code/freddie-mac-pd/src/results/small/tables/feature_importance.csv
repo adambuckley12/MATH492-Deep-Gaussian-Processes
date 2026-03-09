@@ -1,0 +1,88 @@
+feature,abs_coef,model,importance,gain
+property_type_SF,2.839309922810074,Logistic Regression,,
+orig_ltv,2.5285428588525733,Logistic Regression,,
+num_borrowers,2.122040615563199,Logistic Regression,,
+credit_score,1.71300163987257,Logistic Regression,,
+property_type_PU,1.6885420179473274,Logistic Regression,,
+orig_upb,1.4660298221232864,Logistic Regression,,
+mi_pct,1.3957624490835658,Logistic Regression,,
+loan_purpose_P,1.3499904357282422,Logistic Regression,,
+region_West,1.2490105228473192,Logistic Regression,,
+ltv_bucket_low,1.202059707050314,Logistic Regression,,
+loan_purpose_N,1.1283304060285444,Logistic Regression,,
+ltv_bucket_medium,1.0980278492839037,Logistic Regression,,
+refi_bucket_in_the_money,0.9620117984545621,Logistic Regression,,
+region_South,0.915884651721524,Logistic Regression,,
+occupancy_P,0.8998094080486582,Logistic Regression,,
+channel_C,0.7854186054593184,Logistic Regression,,
+num_units,0.6551852174664833,Logistic Regression,,
+orig_term,0.6170862550325245,Logistic Regression,,
+region_Northeast,0.37843641151237134,Logistic Regression,,
+channel_R,0.3306976191432972,Logistic Regression,,
+refi_bucket_out_of_the_money,0.30851111123833824,Logistic Regression,,
+rate_spread,0.21491648766230192,Logistic Regression,,
+orig_rate,0.2149164876622984,Logistic Regression,,
+orig_dti,0.1581087990270275,Logistic Regression,,
+occupancy_S,0.14353496380423733,Logistic Regression,,
+first_time_buyer_Y,0.12272297385837823,Logistic Regression,,
+property_type_MH,0.08048429825555546,Logistic Regression,,
+property_type_CP,0.005944442836128483,Logistic Regression,,
+orig_year,0.0,Logistic Regression,,
+credit_score,,Random Forest,0.2119863120000062,
+property_type_SF,,Random Forest,0.0957309063702196,
+orig_upb,,Random Forest,0.09058062762043918,
+orig_ltv,,Random Forest,0.08962107337406779,
+rate_spread,,Random Forest,0.08005167861695232,
+orig_dti,,Random Forest,0.0771684928778668,
+num_borrowers,,Random Forest,0.0731254767009309,
+orig_rate,,Random Forest,0.06858910758740325,
+mi_pct,,Random Forest,0.047507514439408316,
+property_type_PU,,Random Forest,0.03318547767319842,
+region_South,,Random Forest,0.025635267129844742,
+ltv_bucket_low,,Random Forest,0.01665811981859847,
+channel_R,,Random Forest,0.015775359913832422,
+ltv_bucket_medium,,Random Forest,0.013010521063223928,
+channel_C,,Random Forest,0.012807520975339408,
+first_time_buyer_Y,,Random Forest,0.012489821284562911,
+region_Northeast,,Random Forest,0.009843407698414623,
+region_West,,Random Forest,0.009540969505264537,
+loan_purpose_P,,Random Forest,0.008476799607217478,
+occupancy_P,,Random Forest,0.0031566943531102045,
+refi_bucket_in_the_money,,Random Forest,0.002419242521058006,
+orig_term,,Random Forest,0.001377188704872052,
+loan_purpose_N,,Random Forest,0.0006280216428755894,
+num_units,,Random Forest,0.0003349343325145465,
+refi_bucket_out_of_the_money,,Random Forest,0.0002994641887781229,
+occupancy_S,,Random Forest,1.1810689818423032e-16,
+property_type_CP,,Random Forest,0.0,
+orig_year,,Random Forest,0.0,
+property_type_MH,,Random Forest,0.0,
+channel_C,,XGBoost,,0.18798353
+credit_score,,XGBoost,,0.16350487
+property_type_SF,,XGBoost,,0.14764267
+orig_ltv,,XGBoost,,0.10965495
+num_borrowers,,XGBoost,,0.076372564
+channel_R,,XGBoost,,0.065795876
+orig_rate,,XGBoost,,0.06492982
+orig_dti,,XGBoost,,0.060106877
+orig_upb,,XGBoost,,0.047208685
+region_Northeast,,XGBoost,,0.04468125
+region_South,,XGBoost,,0.028985504
+region_West,,XGBoost,,0.0019570559
+first_time_buyer_Y,,XGBoost,,0.0011763028
+loan_purpose_P,,XGBoost,,0.0
+mi_pct,,XGBoost,,0.0
+num_units,,XGBoost,,0.0
+ltv_bucket_medium,,XGBoost,,0.0
+ltv_bucket_low,,XGBoost,,0.0
+refi_bucket_out_of_the_money,,XGBoost,,0.0
+refi_bucket_in_the_money,,XGBoost,,0.0
+orig_term,,XGBoost,,0.0
+property_type_CP,,XGBoost,,0.0
+rate_spread,,XGBoost,,0.0
+occupancy_S,,XGBoost,,0.0
+occupancy_P,,XGBoost,,0.0
+orig_year,,XGBoost,,0.0
+property_type_PU,,XGBoost,,0.0
+loan_purpose_N,,XGBoost,,0.0
+property_type_MH,,XGBoost,,0.0

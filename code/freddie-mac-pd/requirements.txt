@@ -1,0 +1,12 @@
+# Requirements for the Freddie Mac mortgage PD pipeline.
+# Identical to the credit-card-pd-uci project — both share the
+# same modelling stack via code/shared/.
+
+torch>=2.0.0
+gpytorch>=1.11
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+xgboost>=2.0
+matplotlib>=3.7
+joblib

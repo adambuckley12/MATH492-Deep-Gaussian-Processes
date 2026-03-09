@@ -1,0 +1,88 @@
+feature,abs_coef,model,importance,gain
+refi_bucket_out_of_the_money,2.270463608262977,Logistic Regression,,
+orig_term,1.8568143042643943,Logistic Regression,,
+orig_ltv,1.573361916140876,Logistic Regression,,
+property_type_PU,1.2623712736434805,Logistic Regression,,
+loan_purpose_P,1.2417316550482755,Logistic Regression,,
+ltv_bucket_medium,1.162606195135902,Logistic Regression,,
+credit_score,1.0574300335458702,Logistic Regression,,
+property_type_MH,0.7767563586504944,Logistic Regression,,
+channel_C,0.7247915477115805,Logistic Regression,,
+loan_purpose_N,0.6998424402258541,Logistic Regression,,
+refi_bucket_in_the_money,0.6134807543164535,Logistic Regression,,
+property_type_CP,0.5883756533084147,Logistic Regression,,
+mi_pct,0.5822461455715827,Logistic Regression,,
+property_type_SF,0.5726322902721483,Logistic Regression,,
+occupancy_S,0.5190715769383768,Logistic Regression,,
+region_South,0.5185297681282771,Logistic Regression,,
+first_time_buyer_Y,0.4223484586001342,Logistic Regression,,
+num_borrowers,0.4217010886392824,Logistic Regression,,
+region_Northeast,0.3407930230237323,Logistic Regression,,
+num_units,0.26218230314800023,Logistic Regression,,
+orig_year,0.1757874791207131,Logistic Regression,,
+orig_dti,0.16847559217447308,Logistic Regression,,
+region_West,0.15686585511611564,Logistic Regression,,
+channel_R,0.11804670030881013,Logistic Regression,,
+occupancy_P,0.10584721411820534,Logistic Regression,,
+ltv_bucket_low,0.07949828806140391,Logistic Regression,,
+rate_spread,0.0640386168152334,Logistic Regression,,
+orig_rate,0.060947428436150385,Logistic Regression,,
+orig_upb,0.02396041850729916,Logistic Regression,,
+credit_score,,Random Forest,0.2348579493616002,
+orig_upb,,Random Forest,0.11284522260773662,
+orig_dti,,Random Forest,0.09548921083092705,
+orig_ltv,,Random Forest,0.08406976543414675,
+orig_rate,,Random Forest,0.08314848395583972,
+rate_spread,,Random Forest,0.08277783799140435,
+mi_pct,,Random Forest,0.0539642482933853,
+num_borrowers,,Random Forest,0.03248285110876165,
+property_type_PU,,Random Forest,0.02426059064143457,
+channel_C,,Random Forest,0.02141033973136115,
+loan_purpose_P,,Random Forest,0.02110554301376377,
+region_South,,Random Forest,0.018072262026488026,
+first_time_buyer_Y,,Random Forest,0.016734458976279436,
+property_type_SF,,Random Forest,0.0165433540071007,
+channel_R,,Random Forest,0.014062799940899531,
+ltv_bucket_medium,,Random Forest,0.013233566182173697,
+region_West,,Random Forest,0.012075890103423461,
+ltv_bucket_low,,Random Forest,0.009602231438448489,
+region_Northeast,,Random Forest,0.009567109012806555,
+num_units,,Random Forest,0.008933168506205695,
+orig_term,,Random Forest,0.008377086979028562,
+occupancy_P,,Random Forest,0.007412395462803315,
+property_type_MH,,Random Forest,0.007197390994078392,
+loan_purpose_N,,Random Forest,0.005472094344666643,
+refi_bucket_in_the_money,,Random Forest,0.004823339173573636,
+refi_bucket_out_of_the_money,,Random Forest,0.0012028579854613593,
+occupancy_S,,Random Forest,0.0002779518962011788,
+property_type_CP,,Random Forest,0.0,
+orig_year,,Random Forest,0.0,
+credit_score,,XGBoost,,0.10985664
+loan_purpose_P,,XGBoost,,0.1012382
+num_borrowers,,XGBoost,,0.079202786
+mi_pct,,XGBoost,,0.068144545
+num_units,,XGBoost,,0.06658392
+loan_purpose_N,,XGBoost,,0.060285017
+region_South,,XGBoost,,0.057136472
+orig_ltv,,XGBoost,,0.056569915
+property_type_MH,,XGBoost,,0.05132508
+rate_spread,,XGBoost,,0.046325196
+orig_rate,,XGBoost,,0.04139403
+orig_term,,XGBoost,,0.03829434
+region_West,,XGBoost,,0.03732711
+orig_upb,,XGBoost,,0.03649036
+ltv_bucket_medium,,XGBoost,,0.03505115
+property_type_PU,,XGBoost,,0.03394991
+orig_dti,,XGBoost,,0.033676196
+property_type_SF,,XGBoost,,0.021107545
+channel_C,,XGBoost,,0.01757635
+first_time_buyer_Y,,XGBoost,,0.008465249
+property_type_CP,,XGBoost,,0.0
+occupancy_P,,XGBoost,,0.0
+occupancy_S,,XGBoost,,0.0
+orig_year,,XGBoost,,0.0
+channel_R,,XGBoost,,0.0
+refi_bucket_in_the_money,,XGBoost,,0.0
+refi_bucket_out_of_the_money,,XGBoost,,0.0
+ltv_bucket_low,,XGBoost,,0.0
+region_Northeast,,XGBoost,,0.0

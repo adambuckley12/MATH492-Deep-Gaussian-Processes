@@ -1,0 +1,4 @@
+split,rows,default_rate,size
+train,4250,0.2211764705882353,medium
+validation,750,0.22133333333333333,medium
+test,6000,0.22116666666666668,medium

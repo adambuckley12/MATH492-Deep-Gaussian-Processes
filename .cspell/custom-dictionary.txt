@@ -1,12 +1,19 @@
 # Custom Dictionary Words
+backtesting
 deisenroth
 dgps
+DSVGP
 elbo
 ELBO's
 Gaussians
+IFRS
 minibatch
 Minibatches
+miscalibrated
 miscalibration
+ncol
 overfitting
 stochasticity
+SVGP
 unbiasedness
+unpenalised

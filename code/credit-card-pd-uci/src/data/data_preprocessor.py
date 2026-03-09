@@ -13,7 +13,6 @@ Handles all preprocessing steps after DataCleaner.clean():
   3. Stratified multi-split protocol
       - train      : model fitting
       - validation : model-selection / early stopping
-      - calibration: post-hoc probability calibration
       - test       : untouched final evaluation
   4. Optional PCA applied to the *scaled continuous* columns only
       (not on the one-hot dummies — PCA on binary indicators is not useful)
@@ -22,12 +21,11 @@ Usage
 -----
     from data.data_preprocessor import DataPreprocessor
 
-    pre = DataPreprocessor(test_size=0.2, calibration_size=0.2,
-                      validation_size=0.1, random_state=42)
+    pre = DataPreprocessor(test_size=0.2, validation_size=0.15,
+                           random_state=42)
     splits = pre.fit_transform_splits(X, y)
     X_train, y_train = splits["train"]
     X_val, y_val = splits["validation"]
-    X_cal, y_cal = splits["calibration"]
     X_test, y_test = splits["test"]
 """
 
@@ -72,14 +70,12 @@ class DataPreprocessor:
     def __init__(
         self,
         test_size: float = 0.2,
-        calibration_size: float = 0.2,
-        validation_size: float = 0.1,
+        validation_size: float = 0.15,
         random_state: int = 42,
         apply_pca: bool = False,
         pca_variance: float = 0.95,
     ):
         self.test_size    = test_size
-        self.calibration_size = calibration_size
         self.validation_size = validation_size
         self.random_state = random_state
         self.apply_pca    = apply_pca
@@ -124,11 +120,10 @@ class DataPreprocessor:
         self, X: pd.DataFrame, y: pd.Series
     ) -> dict[str, tuple[pd.DataFrame, pd.Series]]:
         """
-        Build stratified train / validation / calibration / test splits.
+        Build stratified train / validation / test splits.
 
         The preprocessor is fit on the *train* split only, then applied to the
-        remaining splits. This avoids leakage from validation, calibration, or
-        test data into the learned scaling / PCA parameters.
+        remaining splits to avoid leakage.
         """
         raw_splits = self.split_raw(X, y)
 
@@ -139,7 +134,7 @@ class DataPreprocessor:
             y_train.reset_index(drop=True),
         )
 
-        for split_name in ["validation", "calibration", "test"]:
+        for split_name in ["validation", "test"]:
             X_part, y_part = raw_splits[split_name]
             transformed[split_name] = (
                 self.transform(X_part),
@@ -159,15 +154,11 @@ class DataPreprocessor:
         self, X: pd.DataFrame, y: pd.Series
     ) -> dict[str, tuple[pd.DataFrame, pd.Series]]:
         """
-        Create raw stratified train / validation / calibration / test splits.
-
-        Fractions are interpreted as proportions of the *full* dataset.
-        Defaults correspond to 50 % train, 10 % validation, 20 % calibration,
-        and 20 % test.
+        Create raw stratified train / validation / test splits.
         """
-        total_holdout = self.test_size + self.calibration_size + self.validation_size
+        total_holdout = self.test_size + self.validation_size
         if total_holdout >= 1.0:
-            raise ValueError("test_size + calibration_size + validation_size must be < 1.")
+            raise ValueError("test_size + validation_size must be < 1.")
 
         X_dev, X_test, y_dev, y_test = train_test_split(
             X,
@@ -177,33 +168,23 @@ class DataPreprocessor:
             stratify=y,
         )
 
-        cal_fraction_of_dev = self.calibration_size / (1.0 - self.test_size)
-        X_model, X_cal, y_model, y_cal = train_test_split(
-            X_dev,
-            y_dev,
-            test_size=cal_fraction_of_dev,
-            random_state=self.random_state,
-            stratify=y_dev,
-        )
-
         if self.validation_size > 0:
-            val_fraction_of_model = self.validation_size / (1.0 - self.test_size - self.calibration_size)
+            val_fraction_of_dev = self.validation_size / (1.0 - self.test_size)
             X_train, X_val, y_train, y_val = train_test_split(
-                X_model,
-                y_model,
-                test_size=val_fraction_of_model,
+                X_dev,
+                y_dev,
+                test_size=val_fraction_of_dev,
                 random_state=self.random_state,
-                stratify=y_model,
+                stratify=y_dev,
             )
         else:
-            X_train, y_train = X_model, y_model
-            X_val = X_model.iloc[0:0].copy()
+            X_train, y_train = X_dev, y_dev
+            X_val = X_dev.iloc[0:0].copy()
             y_val = y_model.iloc[0:0].copy()
 
         return {
             "train": (X_train.reset_index(drop=True), y_train.reset_index(drop=True)),
             "validation": (X_val.reset_index(drop=True), y_val.reset_index(drop=True)),
-            "calibration": (X_cal.reset_index(drop=True), y_cal.reset_index(drop=True)),
             "test": (X_test.reset_index(drop=True), y_test.reset_index(drop=True)),
         }
 
@@ -213,6 +194,7 @@ class DataPreprocessor:
         X_enc = self._fit_scale(X_enc)
         if self.apply_pca:
             X_enc = self._fit_pca(X_enc)
+        self._encoded_cols = list(X_enc.columns)
         return X_enc
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -220,6 +202,8 @@ class DataPreprocessor:
         if self._scaler is None:
             raise RuntimeError("Call fit_transform (or fit_transform_split) before transform.")
         X_enc = self._encode_categoricals(X)
+        # Align columns to match training set (missing dummies → 0)
+        X_enc = X_enc.reindex(columns=self._encoded_cols, fill_value=0)
         X_enc = self._apply_scale(X_enc)
         if self.apply_pca:
             X_enc = self._apply_pca(X_enc)

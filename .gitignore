@@ -18,3 +18,13 @@ index.fdb_latexmk
 index.pdf
 index.synctex.gz
 index.toc
+code/credit-card-pd-uci/src/results/large/weights/**
+code/credit-card-pd-uci/src/results/medium/weights/**
+code/credit-card-pd-uci/src/results/small/weights/**
+
+code/freddie-mac-pd/src/dataset/**
+code/freddie-mac-pd/src/results/medium/weights/**
+code/freddie-mac-pd/src/results/small/weights/**
+code/freddie-mac-pd/src/results/large/weights/**
+
+code/**/__pycache__/**

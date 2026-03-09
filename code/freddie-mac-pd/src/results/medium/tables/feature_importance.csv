@@ -1,0 +1,88 @@
+feature,abs_coef,model,importance,gain
+refi_bucket_out_of_the_money,2.7915664020728563,Logistic Regression,,
+property_type_MH,2.2445965975374746,Logistic Regression,,
+refi_bucket_in_the_money,1.425771815912382,Logistic Regression,,
+occupancy_P,1.3493750868433658,Logistic Regression,,
+loan_purpose_N,1.213901186605591,Logistic Regression,,
+ltv_bucket_low,1.082689575053946,Logistic Regression,,
+credit_score,0.9792672642753372,Logistic Regression,,
+loan_purpose_P,0.9176055136070222,Logistic Regression,,
+occupancy_S,0.8182990959392734,Logistic Regression,,
+property_type_SF,0.6819920630518759,Logistic Regression,,
+region_Northeast,0.6612465124426261,Logistic Regression,,
+ltv_bucket_medium,0.6001423092815398,Logistic Regression,,
+region_West,0.5235568241965706,Logistic Regression,,
+orig_dti,0.5012973190243655,Logistic Regression,,
+num_borrowers,0.49411762433393763,Logistic Regression,,
+property_type_CP,0.48393728073626263,Logistic Regression,,
+orig_ltv,0.4398577531396014,Logistic Regression,,
+property_type_PU,0.3066659269017349,Logistic Regression,,
+mi_pct,0.3017379483923765,Logistic Regression,,
+channel_R,0.22379321289850068,Logistic Regression,,
+orig_year,0.14174319644199385,Logistic Regression,,
+orig_term,0.09439250025155047,Logistic Regression,,
+num_units,0.08304011564030116,Logistic Regression,,
+rate_spread,0.07648239148440837,Logistic Regression,,
+orig_rate,0.07345868347540743,Logistic Regression,,
+region_South,0.0702863021948803,Logistic Regression,,
+first_time_buyer_Y,0.04600787372680043,Logistic Regression,,
+orig_upb,0.04190887786786454,Logistic Regression,,
+channel_C,0.0003601384709822214,Logistic Regression,,
+credit_score,,Random Forest,0.25952149751416387,
+orig_dti,,Random Forest,0.11651120365527888,
+orig_upb,,Random Forest,0.11169832632139885,
+rate_spread,,Random Forest,0.0811178980574946,
+orig_rate,,Random Forest,0.07977394957122129,
+orig_ltv,,Random Forest,0.07634500124538572,
+num_borrowers,,Random Forest,0.04412352632715988,
+mi_pct,,Random Forest,0.030481647326894186,
+region_South,,Random Forest,0.020137239642356017,
+first_time_buyer_Y,,Random Forest,0.01868917010782609,
+property_type_SF,,Random Forest,0.018227838231857856,
+region_West,,Random Forest,0.01712039256934314,
+property_type_PU,,Random Forest,0.01544806809770556,
+channel_C,,Random Forest,0.014706041355596096,
+channel_R,,Random Forest,0.014375956371521682,
+loan_purpose_P,,Random Forest,0.011966637425410582,
+ltv_bucket_medium,,Random Forest,0.011899299107502155,
+region_Northeast,,Random Forest,0.01073097225452419,
+ltv_bucket_low,,Random Forest,0.010710238963038542,
+num_units,,Random Forest,0.008338490128257664,
+occupancy_P,,Random Forest,0.0082827336378067,
+refi_bucket_in_the_money,,Random Forest,0.0047384226509860385,
+orig_term,,Random Forest,0.004522511810265666,
+property_type_MH,,Random Forest,0.003929165539302594,
+loan_purpose_N,,Random Forest,0.0026458119460687816,
+refi_bucket_out_of_the_money,,Random Forest,0.0025936019641424678,
+occupancy_S,,Random Forest,0.001351328050884824,
+property_type_CP,,Random Forest,1.3030126605839613e-05,
+orig_year,,Random Forest,0.0,
+credit_score,,XGBoost,,0.079916246
+num_borrowers,,XGBoost,,0.06763114
+property_type_MH,,XGBoost,,0.05240027
+orig_dti,,XGBoost,,0.044159587
+property_type_SF,,XGBoost,,0.043466773
+num_units,,XGBoost,,0.04224812
+region_West,,XGBoost,,0.040784154
+mi_pct,,XGBoost,,0.040341917
+orig_upb,,XGBoost,,0.039787874
+occupancy_P,,XGBoost,,0.039158296
+first_time_buyer_Y,,XGBoost,,0.03792177
+orig_rate,,XGBoost,,0.037844636
+rate_spread,,XGBoost,,0.03718029
+orig_ltv,,XGBoost,,0.03705508
+occupancy_S,,XGBoost,,0.035623144
+region_South,,XGBoost,,0.035547365
+ltv_bucket_medium,,XGBoost,,0.0353202
+loan_purpose_P,,XGBoost,,0.035176396
+channel_C,,XGBoost,,0.03354462
+loan_purpose_N,,XGBoost,,0.033229925
+region_Northeast,,XGBoost,,0.02960832
+property_type_PU,,XGBoost,,0.029595561
+ltv_bucket_low,,XGBoost,,0.028861316
+orig_term,,XGBoost,,0.027872333
+channel_R,,XGBoost,,0.025250142
+refi_bucket_in_the_money,,XGBoost,,0.010474463
+property_type_CP,,XGBoost,,0.0
+orig_year,,XGBoost,,0.0
+refi_bucket_out_of_the_money,,XGBoost,,0.0

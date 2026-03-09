@@ -213,7 +213,7 @@ def summarize_threshold_optima(
     if metrics is None:
         metrics = ["f1", "precision", "recall", "balanced_accuracy", "mcc", "specificity"]
 
-    group_cols = ["model", "base_model", "family", "stage", "calibration_method"]
+    group_cols = [c for c in ["model", "family"] if c in threshold_df.columns]
     rows = []
     for group_key, group_df in threshold_df.groupby(group_cols, dropna=False):
         group_df = group_df.sort_values("threshold").reset_index(drop=True)

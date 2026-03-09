@@ -30,8 +30,6 @@ class DataLoader:
   
         # metadata 
         print(default_of_credit_card_clients.metadata) 
-  
-        # variable information 
         print(default_of_credit_card_clients.variables) 
 
         # Save the dataset to /dataset/credit_risk.csv using stable column names

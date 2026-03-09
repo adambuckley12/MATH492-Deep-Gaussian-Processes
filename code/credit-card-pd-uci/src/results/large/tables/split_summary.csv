@@ -1,0 +1,4 @@
+split,rows,default_rate,size
+train,20400,0.22122549019607843,large
+validation,3600,0.22111111111111112,large
+test,6000,0.22116666666666668,large
