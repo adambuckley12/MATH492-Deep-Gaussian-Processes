@@ -1,6 +1,6 @@
 ## Variational Inference
 
-When exact inference is intractable, variational inference provides a principled approximation framework [@jordan_introduction_1999; @blei_variational_2017]. The idea is to approximate the true posterior $p(\vz \mid \vy)$ with a tractable distribution $q(\vz)$, chosen to minimise the Kullback–Leibler divergence between them.
+When exact inference is intractable, variational inference gives an approximation framework [@jordan_introduction_1999; @blei_variational_2017]. The idea is to approximate the true posterior $p(\vz \mid \vy)$ with a simpler, and tractable distribution $q(\vz)$, which is chosen to minimise the Kullback–Leibler divergence between $q$ and $p$:
 
 For latent variables $\vz$ and observations $\vy$, the log marginal likelihood separates as:
 
