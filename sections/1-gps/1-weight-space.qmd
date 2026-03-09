@@ -1,55 +1,57 @@
 ## The Weight Space View
 
-Before moving to the full function space perspective, it is helpful to build intuition through a finite-dimensional parametric approach. The *weight space view* treats regression as Bayesian inference over a weight vector. We show how the the structure of the resulting predictive distribution can be expressed in terms of inner products between inputs, which naturally motivates the transition to Gaussian processes [@rasmussen_gaussian_2008; @mackay_introduction_1998].
+Before moving to the full function space perspective, it is helpful to build intuition through a finite-dimensional parametric approach. The *weight space view* treats regression as Bayesian inference over a weight vector. We show how the the structure of the resulting predictive distribution can be expressed in terms of inner products between inputs, which naturally motivates the transition into Gaussian processes [@rasmussen_gaussian_2008; @mackay_introduction_1998].
 
 We begin with a linear model of the form
 $$
 f(\vx) = \vx^\top \vw,
 $$ {#eq-linear-model}
 
-where $\vw \in \R^D$ is a weight vector. To make this more general, consider an expansion of basis functions [@bishop_pattern_2006]
+where $\vw \in \R^D$ is a weight vector. To make this more general, we consider an expansion of basis functions [@bishop_pattern_2006]
 $$
 f(\vx) = \sum_{j=1}^{M} w_j \phi_j(\vx) = \vphi(\vx)^\top \vw,
 $$ {#eq-basis-expansion}
 
-where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basis functions mapping the input to an $M$-dimensional feature space, with weights $\vw = [w_1, \ldots, w_M]^\top$. This is more general than the simple linear model, allowing non-linear relationships through the choice of basis functions $\phi_j(\cdot)$, without breaking linearity in the parameters $\vw$.
+where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basis functions, which maps the input to an $M$-dimensional feature space, with weights $\vw = [w_1, \ldots, w_M]^\top$. This becomes more general than the simple linear model, allowing the modeling of non-linear relationships through the choice of basis functions $\phi_j(\cdot)$, without breaking linearity in the parameters $\vw$.
 
-Given training data $\mathcal{D}$, our goal is to learn the weights $\vw$. Maximum likelihood estimation (MLE) would yield a single point estimate $\hat{\vw}_{\text{MLE}} = (\Phi^\top\Phi)^{-1}\Phi^\top\vy$ [@bishop_pattern_2006; @murphy_machine_2013]. However, this ignores how different weight vectors may explain the observed data equally well, but make very different predictions in unobserved region. 
+Given some training data $\mathcal{D}$, our goal is to learn a set of weights $\vw$ that best describes the data - which we call $\hat{\vw}$. A common approach is to use maximum likelihood estimation (MLE) [@bishop_pattern_2006; @murphy_machine_2013], which finds the single best set of weights that maximises the likelihood of the observed data. However, this ignores how it is possible for different weight vectors to explain the observed data equally well, but make very different predictions in unobserved region. MLE can also lead to overfitting, where the model fits the training data too closely and fails to generalise to new data.
+
+This motivates a Bayesian approach.
 
 ## Bayesian Linear Regression
 
 ### Prior and Likelihood
 
-A Bayesian approach addresses this by placing a prior distribution over $\vw$, turning the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
+A Bayesian approach addresses these issues by placing a prior distribution over $\vw$, which turns the the problem into so-called *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
 $$
 p(\vw) = \N(\vw \mid \vzero, \Sigma_p),
 $$ {#eq-weight-prior}
 
-where $\Sigma_p \in \R^{M \times M}$ is the prior covariance matrix. A common prior is $\Sigma_p = \sigma_w^2 \vI$, which gives i.i.d. Gaussian weights with variance $\sigma_w^2$ [@mackay_practical_1992].
+where $\Sigma_p \in \R^{M \times M}$ is the prior covariance matrix. A common prior is $\Sigma_p = \sigma_w^2 \vI$, which gives independent, identically distributed, (i.i.d.) Gaussian weights with variance $\sigma_w^2$ [@mackay_practical_1992].
 
-Modelling each observation as $y_i = f(\vx_i) + \epsilon_i$ with independent noise $\epsilon_i \sim \N(0, \sigma_n^2)$, we get a likelihood for a single observation of the form
+When modelling each observation as $y_i = f(\vx_i) + \epsilon_i$, where $\epsilon_i$ is independent noise $\epsilon_i \sim \N(0, \sigma_n^2)$, we get a likelihood for a single observation of the form
 $$
 p(y_i \mid \vx_i, \vw) = \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood}
 
-Assuming independence across observations, and conditioning on $\vw$, we have that the joint likelihood over $\mathcal{D}$ is
+Assuming that there is independence across observations, and conditioning on $\vw$, we have that the joint likelihood over $\mathcal{D}$ becomes
 $$
 p(\vy \mid \vX, \vw) = \prod_{i=1}^{n} \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood-product}
 
-Collecting observations into the *design matrix* $\Phi \in \R^{n \times M}$ with $\Phi_{ij} = \phi_j(\vx_i)$ [@rasmussen_gaussian_2008] (see [Appendix @sec-design-matrix] for the explicit construction), @eq-likelihood-product becomes a single multivariate Gaussian:
+Collecting observations into the *design matrix* $\Phi \in \R^{n \times M}$ with $\Phi_{ij} = \phi_j(\vx_i)$ [@rasmussen_gaussian_2008] (see [Appendix @sec-design-matrix] for the explicit construction), @eq-likelihood-product becomes a single multivariate Gaussian rather than a product of univariate Gaussians:
 $$
 p(\vy \mid \vX, \vw) = \N(\vy \mid \Phi \vw, \sigma_n^2 \vI).
 $$ {#eq-joint-likelihood}
 
 ### Posterior over Weights
 
-Applying Bayes' theorem gives the posterior distribution over weights:
+Applying Bayes' theorem to this gives the posterior distribution over weights:
 $$
 p(\vw \mid \vX, \vy) = \frac{p(\vy \mid \vX, \vw) p(\vw)}{p(\vy \mid \vX)}.
 $$ {#eq-bayes-theorem}
 
-Because the Gaussian prior is a product of Gaussians, and the likelihood is also Gaussian, the posterior is Gaussian as well [@bishop_pattern_2006; @bernardo_bayesian_2000]. The prior and likelihood are conjugate distributions, so the posterior is in the same family as the prior, this is called *conjugacy* [@gelman_bayesian_2025] and is a key property that allows for closed-form inference. Evaluating the posterior gives the covariance
+Because the Gaussian prior is a product of Gaussians, and the likelihood is also Gaussian, the posterior is Gaussian as well [@bishop_pattern_2006; @bernardo_bayesian_2000]. The prior and likelihood are conjugate distributions, so the posterior is in the same family as the prior, this is called *conjugacy* [@gelman_bayesian_2025] and is a property that allows for closed-form inference. Evaluating the posterior gives covariance
 
 $$
 \Sigma_w = \left(\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1}\right)^{-1},
@@ -58,16 +60,18 @@ $$ {#eq-posterior-cov}
 and posterior mean
 $$
 \bar{\vw} = \sigma_n^{-2} \Sigma_w \Phi^\top \vy.
-$$ {#eq-posterior-mean}
+$$ {#eq-posterior-mean} 
 
 The posterior distribution over the weights is therefore
 $$
 p(\vw \mid \vX, \vy) = \N(\vw \mid \bar{\vw}, \Sigma_w).
 $$ {#eq-posterior-weights}
 
+See [Appendix @sec-posterior-derivation] for the full derivation of the posterior mean and covariance.
+
 ## Predictive Distribution
 
-This posterior distribution captures uncertainty about the weights given the observed data. We can use it to make predictions at a new input $\vx_*$ by marginalising over the weight posterior:
+This posterior distribution captures both the best estimate of the weights $\bar{\vw}$, and the uncertainty about the weights $\Sigma_w$. We can use this to make predictions at a new input $\vx_*$ by marginalising over the weight posterior:
 $$
 p(f_* \mid \vx_*, \vX, \vy) = \int p(f_* \mid \vx_*, \vw) p(\vw \mid \vX, \vy) \, d\vw,
 $$ {#eq-predictive-distribution}
@@ -83,14 +87,14 @@ $$ {#eq-predictive-mean-var}
 
 ## From Weight Space to Function Space {#sec-weight-to-function-space}
 
-The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. However, we can note that $\vphi$ only appears through inner products of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. This motivates defining a *kernel function* (interchangeably called a *covariance function*) as an inner product in the feature space: [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
+The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. However, we can see $\vphi$ appears only through inner products with the posterior covariance $\Sigma_w$, of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. We can define this *kernel function* (interchangeably called a *covariance function*) as an inner product in the feature space: [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
 $$
 k(\vx, \vx') = \vphi(\vx)^\top \Sigma_p \vphi(\vx'),
 $$ {#eq-kernel-def}
 
 which measures similarity between inputs in the feature space, weighted by the prior covariance $\Sigma_p$.
 
-With this definition, collecting pairwise kernel evaluations over the training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$, we can rewrite the predictive equation entirely in terms of the kernel. This can be done by reparametrizing the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
+With this definition, we can collect all pairwise kernel evaluations over the training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$. This allows for rewriting the predictive equation entirely in terms of the kernel. This can be done by reparametrizing the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
 $$
 (A + UCV)^{-1} = A^{-1} - A^{-1}U\bigl(C^{-1} + VA^{-1}U\bigr)^{-1}VA^{-1},
 $$ {#eq-matrix-inversion-lemma}
@@ -132,6 +136,6 @@ $$
 p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-predictive-kernel-full}
 
-The important observation here is that $\vphi$ has vanished entirely. The predictions now depend only on kernel evaluations between data points. We are completely free to specify $k$ directly, and we never need to construct an explicit feature map. In particular, if we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding limiting inner product, the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally showing the connection between the weight-space and function-space views.
+The most important observation here is that $\vphi$ has vanished entirely. The predictions clearly now depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. In particular, if we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.
 
 This is the so called *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.

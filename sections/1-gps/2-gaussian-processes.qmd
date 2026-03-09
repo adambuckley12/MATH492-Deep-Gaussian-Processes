@@ -3,9 +3,9 @@
 Formally, a Gaussian process is a collection of random variables, any finite number of which have a joint Gaussian distribution [@rasmussen_gaussian_2008]. A GP is fully specified by its mean function $m(\vx) = \E[f(\vx)]$ and covariance function (or kernel) 
 $$
 k(\vx, \vx') = \E[(f(\vx) - m(\vx))(f(\vx') - m(\vx'))] = \Cov[f(\vx), f(\vx')]
-$$
+$$ {#eq-kernel-covariance}
 
-We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions directly, rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space. 
+We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions, rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space. 
 
 ## The GP Prior {#sec-gp-prior}
 
@@ -14,11 +14,11 @@ $$
 \vf \mid \vX \sim \N(\vm, K),
 $$ {#eq-gp-prior}
 
-where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This property that every finite-dimensional marginal is Gaussian is a defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression, it is standard to take $m \equiv 0$, as any non-zero prior mean can be absorbed into the model or estimated from data [@mackay_introduction_1998], and by doing so we focus attention on the kernel as the key modelling choice.
+where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This property that every finite-dimensional marginal is Gaussian is a defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression, it is standard practice to take $m \equiv 0$: the training targets can be centred by subtracting their mean, and any residual structure is captured by the kernel [@mackay_introduction_1998]. However, non-zero mean functions can be useful for encoding strong prior beliefs about the function shape, such as a linear trend or periodicity [@rasmussen_gaussian_2008, Section 2.2].
 
 ## Kernels and Covariance Functions {#sec-kernels}
 
-All of the structure of the prior is encoded in the kernel $k$. The kernel determines how function values co-vary across input space: inputs that are close according to $k$ will have strongly correlated function values, while distant inputs are nearly independent. Kernel hyper-parameters directly control interpretable properties such as the characteristic length-scale (how rapidly the function varies), the output scale (the typical amplitude), and whether the function is stationary or periodic. @fig-kernels illustrates this with two common choices: the squared exponential (SE) kernel, which produces infinitely differentiable functions whose roughness is controlled by a length-scale parameter $\ell$, and the periodic kernel, whose period parameter $p$ fixes the repetition frequency of the sampled functions.
+All of the structure of the prior is encoded in the kernel $k$. The kernel determines how function values co-vary across input space: inputs that are 'close', as measured by the kernel $k$, will have strongly correlated function values, while distant inputs are nearly independent. Kernel hyper-parameters directly control the interpretable properties such as the length-scale (how rapidly the function varies), the output scale (the typical amplitude), and whether the function is stationary or periodic. @fig-kernels illustrates this with two common choices: the squared exponential (SE) kernel, which produces infinitely differentiable functions whose roughness is controlled by a length-scale parameter $\ell$, and the periodic kernel, whose period parameter $p$ fixes the repetition frequency of the sampled functions. 
 
 ```{python}
 #| label: fig-kernels
@@ -86,7 +86,7 @@ fig.tight_layout()
 plt.show()
 ```
 
-The SE kernel, also called the radial basis function (RBF) kernel, is defined as
+The SE kernel, which is interchangeably called the radial basis function (RBF) kernel, is defined as
 $$
 k_{\text{SE}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{\|\vx - \vx'\|^2}{2\ell^2}\right),
 $$ {#eq-se-kernel}
@@ -96,11 +96,15 @@ $$
 k_{\text{per}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{2\sin^2\!\left(\pi|\vx - \vx'|/p\right)}{\ell^2}\right),
 $$ {#eq-periodic-kernel}
 
-explicitly encodes a repeating structure with period $p$, making it suitable for modelling seasonal or cyclical signals [@rasmussen_gaussian_2008]. Kernels can also be combined — sums and products of valid kernels are themselves valid kernels — enabling the construction of structured priors that capture multiple scales or mixed behaviours [@rasmussen_gaussian_2008, ch.~4; @scholkopf_learning_2002].
+explicitly encodes a repeating structure with period $p$, making it suitable for modelling seasonal or cyclical signals. 
+
+Other common kernels include the Matérn family, which has an additional smoothness parameter that controls the differentiability of the sampled functions, and the rational quadratic kernel, which can be seen as a scale mixture of SE kernels and can capture varying length-scales [@rasmussen_gaussian_2008, Section 4.2-4.3].
+
+Kernels can also be combined — sums and products of valid kernels are themselves valid kernels — enabling the construction of structured priors that capture multiple scales or mixed behaviours [@scholkopf_learning_2002].
 
 ## Choosing Kernel Hyperparameters {#sec-kernel-hyperparams}
 
-The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, also known as *type-II maximum likelihood* or *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @rasmussen_gaussian_2008],
+The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, which is known as *type-II* or *level-II* maximum likelihood or sometimes as *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @deisenroth_practical_2010],
 
 <!--- underline each section in the LML expression and explain its interpretation --->
 $$
@@ -111,7 +115,7 @@ $$
 \end{aligned}
 $$ {#eq-log-marginal-likelihood}
 
-This LML has 3 interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$ [@rasmussen_gaussian_2008]. However, the LML is non-convex and can have multiple local optima, so it is common to perform multiple random restarts to increase the chances of finding a good solution. Additionally, since kernel hyperparameters are typically constrained to be positive, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
+This LML has three interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$ [@rasmussen_gaussian_2008]. However, the LML is non-convex and can have multiple local optima, so it is common to perform multiple random restarts to increase the chances of finding a good solution. Additionally, since kernel hyperparameters are typically constrained to be positive, as a negative length-scale or noise variance would not make sense, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
 
 ## GP Regression {#sec-gp-regression}
 
@@ -134,9 +138,10 @@ $$
 \begin{bmatrix} K + \sigma_n^2 \vI & \vk_* \\ \vk_*^\top & k_{**} \end{bmatrix}
 \right).
 $$ {#eq-joint-gp}
- Conditioning on $\vy$ via the standard Gaussian conditionals [@rasmussen_gaussian_2008, Equation 2.19; @bishop_pattern_2006, Section 2.3] gives the posterior predictive distribution:
+
+Conditioning on $\vy$ via the standard Gaussian conditionals [@rasmussen_gaussian_2008, Equation 2.19; @bishop_pattern_2006, Section 2.3] gives the posterior predictive distribution:
 $$
-p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k_{**} - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
+p(y_* \mid \vx_*, \vX, \vy) = \N\!\left(y_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k_{**} - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-gp-predictive}
 
 This is identical to the weight-space result in @eq-predictive-kernel-full, but expressed in terms of the kernel rather than the feature map. The posterior mean and covariance are therefore the same as the predictive mean and variance from @eq-predictive-kernel, and we can write the posterior GP as:
@@ -148,7 +153,7 @@ k_{\text{post}}(\vx_*, \vx_*) &= k_{**} - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_
 \end{aligned}
 $$ {#eq-gp-posterior-moments}
 
-These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data — as more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Note that $\sigma_n^2$ enters both expressions through $(K + \sigma_n^2\vI)^{-1}$: noisier observations are down-weighted, so the posterior retains more prior uncertainty. The full predictive distribution over a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds a further $+\sigma_n^2$ to the variance, as in @eq-gp-predictive.
+These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data. As more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Note that $\sigma_n^2$ enters both posterior expressions through $(K + \sigma_n^2\vI)^{-1}$: noisier observations are down-weighted, so the posterior retains more prior uncertainty. The full predictive distribution for a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds $+\sigma_n^2$ to the latent posterior variance, giving @eq-gp-predictive.
 
 @fig-gp-regression illustrates these properties : the left panel shows three samples from the GP prior, and the right panel shows the posterior after conditioning on observations, where uncertainty collapses near the data and the posterior mean tracks the observations.
 
@@ -368,11 +373,11 @@ plt.show()
 
 ## Prediction {#sec-gp-prediction}
 
-With hyperparameters fixed at their optimised values $\hat{\boldsymbol{\theta}}$, prediction reduces to evaluating the posterior from @eq-gp-posterior-moments at any desired test location $\vx_*$. The dominant cost is forming the Cholesky factorisation $LL^\top = K_{\hat{\theta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ and performed once. Once cached, evaluating the predictive mean and variance at a new point requires only two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point — making prediction cheap at test time once training has been completed.
+With hyperparameters fixed at their optimised values $\hat{\boldsymbol{\theta}}$, prediction reduces to evaluating the posterior from @eq-gp-posterior-moments at any desired test location $\vx_*$. The dominant cost is forming the Cholesky factorisation $LL^\top = K_{\hat{\vtheta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ and performed once. Once cached, evaluating the predictive mean and variance at a new point requires only two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point — making prediction cheap at test time once training has been completed.
 
 The predictive variance at a test point $\vx_*$ decomposes naturally into two contributions:
 $$
-\mathbb{V}[f_* \mid \vx_*, \vX, \vy, \hat{\boldsymbol{\theta}}]
+\Var[y_* \mid \vx_*, \vX, \vy, \hat{\vtheta}]
 = \underbrace{k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_*}_{\text{epistemic (reducible)}}
 + \underbrace{\sigma_n^2}_{\text{aleatoric (irreducible)}},
 $$ {#eq-variance-decomposition}
