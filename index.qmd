@@ -34,6 +34,7 @@ bibliography: references.bib
 <!-- Modeling -->
 {{< include sections/4-modeling/0-overview.qmd >}}
 {{< include sections/4-modeling/1-uci-credit-card-default.qmd >}}
+{{< include sections/4-modeling/2-freddie-mac.qmd >}}
 
 
 {{< include sections/99-appendix/0-gps-appendix.qmd >}}

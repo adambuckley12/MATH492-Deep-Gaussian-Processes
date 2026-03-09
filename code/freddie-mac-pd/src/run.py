@@ -44,6 +44,7 @@ from figures import generate_all_figures
 
 SEED = 42
 NO_VIZ = "--no-viz" in sys.argv
+FIGURES_ONLY = "--figures-only" in sys.argv
 
 ROOT = _HERE
 RESULTS_DIR = os.path.join(ROOT, "results")
@@ -147,11 +148,26 @@ def run_tier(
         weights_dir=dirs["weights"],
     )
     run_pipeline(splits, cfg, dataset_name="Freddie Mac Mortgage Default", size_label=label)
-    generate_all_figures(dirs["tables"], dirs["predictions"], dirs["figures"])
+    generate_all_figures(dirs["tables"], dirs["predictions"], dirs["figures"],
+                         calibration_strategy="uniform")
 
 
 def main() -> None:
     from sklearn.model_selection import train_test_split
+
+    explicit = [k for k in SIZE_TIERS if f"--{k}" in sys.argv]
+
+    if FIGURES_ONLY:
+        # Regenerate figures from saved predictions without retraining
+        for label in (explicit if explicit else list(SIZE_TIERS.keys())):
+            dirs = _dirs(label)
+            if not os.path.exists(os.path.join(dirs["predictions"], "predictions.csv")):
+                print(f"  [{label}] No saved predictions found, skipping.")
+                continue
+            print(f"  [{label}] Regenerating figures from saved predictions...")
+            generate_all_figures(dirs["tables"], dirs["predictions"], dirs["figures"],
+                                 calibration_strategy="uniform")
+        return
 
     os.makedirs(DATASET_DIR, exist_ok=True)
 
@@ -175,7 +191,6 @@ def main() -> None:
 
     preprocessor = DataPreprocessor(random_state=SEED)
 
-    explicit = [k for k in SIZE_TIERS if f"--{k}" in sys.argv]
     tiers = explicit if explicit else ["small", "medium"]
 
     for label in tiers:

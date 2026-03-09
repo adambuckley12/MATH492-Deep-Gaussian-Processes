@@ -94,7 +94,20 @@ def plot_roc_pr(preds: pd.DataFrame, fig_dir: str) -> None:
     plt.close(fig)
 
 
-def plot_calibration(preds: pd.DataFrame, fig_dir: str) -> None:
+def plot_calibration(
+    preds: pd.DataFrame,
+    fig_dir: str,
+    strategy: str = "quantile",
+) -> None:
+    """Plot reliability diagrams.
+
+    Parameters
+    ----------
+    strategy : {"quantile", "uniform"}
+        Bin strategy passed to sklearn's ``calibration_curve``.
+        Use ``"uniform"`` for low-prevalence datasets where quantile
+        bins collapse into a narrow probability range.
+    """
     classical = [m for m in MODELS[:3]]
     gp = [m for m in MODELS[3:]]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5))
@@ -104,7 +117,7 @@ def plot_calibration(preds: pd.DataFrame, fig_dir: str) -> None:
                         color="0.9", alpha=0.5, label="±0.05")
         for m in grp:
             yt, yp = _slice(preds, m)
-            frac, mp = calibration_curve(yt, yp, n_bins=15, strategy="quantile")
+            frac, mp = calibration_curve(yt, yp, n_bins=15, strategy=strategy)
             ece = expected_calibration_error(yt, yp, n_bins=15)
             ax.plot(mp, frac, "o-", color=PALETTE[m], label=f"{m} (ECE={ece:.4f})")
         ax.set(title=title, xlabel="Mean predicted prob.", ylabel="Fraction of positives",
@@ -177,12 +190,17 @@ def plot_threshold(thresh: pd.DataFrame, fig_dir: str) -> None:
     plt.close(fig)
 
 
-def generate_all_figures(tables_dir: str, predictions_dir: str, fig_dir: str) -> None:
+def generate_all_figures(
+    tables_dir: str,
+    predictions_dir: str,
+    fig_dir: str,
+    calibration_strategy: str = "quantile",
+) -> None:
     apply_style()
     os.makedirs(fig_dir, exist_ok=True)
     metrics, preds, thresh, fi, _ = load_results(tables_dir, predictions_dir)
     plot_roc_pr(preds, fig_dir)
-    plot_calibration(preds, fig_dir)
+    plot_calibration(preds, fig_dir, strategy=calibration_strategy)
     plot_confusion(preds, fig_dir)
     plot_feature_importance(fi, fig_dir)
     plot_runtime(metrics, fig_dir)
