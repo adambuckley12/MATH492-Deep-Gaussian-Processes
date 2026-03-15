@@ -62,7 +62,7 @@ class DataPreprocessor:
         self._numeric_cols: list[str] = []
         self.split_summary_: dict[str, dict[str, float | int]] = {}
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # -- Public API ------------------------------------------------------------
 
     def fit_transform_splits(
         self, X: pd.DataFrame, y: pd.Series,
@@ -111,7 +111,7 @@ class DataPreprocessor:
         X_enc = self._apply_scale(X_enc)
         return X_enc
 
-    # ── Splitting ─────────────────────────────────────────────────────────────
+    # -- Splitting -------------------------------------------------------------
 
     def _split_raw(
         self, X: pd.DataFrame, y: pd.Series,
@@ -142,7 +142,7 @@ class DataPreprocessor:
             "test": (X_test.reset_index(drop=True), y_test.reset_index(drop=True)),
         }
 
-    # ── Encoding ──────────────────────────────────────────────────────────────
+    # -- Encoding --------------------------------------------------------------
 
     @staticmethod
     def _encode_categoricals(X: pd.DataFrame) -> pd.DataFrame:
@@ -156,7 +156,7 @@ class DataPreprocessor:
             X = pd.get_dummies(X, columns=cat_cols, drop_first=True, dtype=int)
         return X
 
-    # ── Scaling ───────────────────────────────────────────────────────────────
+    # -- Scaling ---------------------------------------------------------------
 
     def _fit_scale(self, X: pd.DataFrame) -> pd.DataFrame:
         """Identify numeric columns, fit StandardScaler, transform."""

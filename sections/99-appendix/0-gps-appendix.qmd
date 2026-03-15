@@ -107,164 +107,269 @@ $$
 
 ## Credit-Risk Pipeline Snippets {#sec-credit-risk-pipeline-snippets}
 
-The main text refers to four implementation details of the UCI credit-card experiment: the four-way split protocol, the post-hoc calibration loop, the SVGP training loop, and the deep GP training loop. The excerpts below are included so that the empirical claims in Section @sec-credit-card can be tied directly to the code used to generate the results.
+The main text refers to three implementation details of the credit-risk experiments: the multi-tier split protocol, the SVGP training loop, and the deep GP training loop. The excerpts below are included so that the empirical claims in @sec-credit-card and @sec-freddie-mac can be tied directly to the code used to generate the results.
 
-### Four-Way Split Protocol {#sec-credit-risk-splits-snippet}
+### Multi-Tier Split Protocol {#sec-credit-risk-splits-snippet}
+
+Both datasets use the same tiered evaluation design. A fixed 20% test set is stratified-sampled once from the full dataset; the remaining 80% forms the development pool. Three training-set sizes are drawn from this pool (small, medium, large), with 15% of each tier's development set reserved for validation:
 
 ```python
-cal_fraction_of_dev = self.calibration_size / (1.0 - self.test_size)
-X_model, X_cal, y_model, y_cal = train_test_split(
-  X_dev,
-  y_dev,
-  test_size=cal_fraction_of_dev,
-  random_state=self.random_state,
-  stratify=y_dev,
+# Split off fixed test set (20 % of full data)
+X_dev, X_test, y_dev, y_test = train_test_split(
+    X_raw, y_raw, test_size=0.2, stratify=y_raw, random_state=SEED,
 )
 
-if self.validation_size > 0:
-  val_fraction_of_model = self.validation_size / (1.0 - self.test_size - self.calibration_size)
-  X_train, X_val, y_train, y_val = train_test_split(
-    X_model,
-    y_model,
-    test_size=val_fraction_of_model,
-    random_state=self.random_state,
-    stratify=y_model,
-  )
+# Within each tier: subsample dev, then split train/val
+def run_tier(X_dev, y_dev, X_test, y_test, label, n_dev):
+    if n_dev is not None:
+        Xd, yd = _subsample(X_dev, y_dev, min(n_dev, len(y_dev)))
+    else:
+        Xd, yd = X_dev, y_dev
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        Xd, yd, test_size=VAL_FRAC, stratify=yd, random_state=SEED,
+    )
+    # ... preprocess (fit scaler on train only), then run shared pipeline
 ```
 
-This is the key methodological change relative to a simple train/test study. It reserves a distinct calibration split for Platt scaling and isotonic regression instead of fitting a calibrator on the same data used for model development.
+This produces a three-way split (train / validation / test) per tier. The validation set is used for XGBoost early stopping; all other models train on the combined train+validation set. All tiers share the same held-out test set, ensuring comparability across data-efficiency curves.
 
-### Post-Hoc Calibration Loop {#sec-credit-risk-calibration-snippet}
+### Pre-Processing Pipeline {#sec-credit-risk-preprocessing-snippet}
+
+The `DataPreprocessor` class handles categorical encoding, numeric scaling, and split construction. The scaler is fit on the training set only and applied to validation and test sets, preventing leakage.
 
 ```python
-for base_model in ["Logistic Regression", "Random Forest", "XGBoost"]:
-  cal_probs = raw_classical_probs_cal[base_model]
-  test_probs = raw_classical_probs_test[base_model]
-  for method in ["platt", "isotonic"]:
-    calibrator, cal_time = fit_with_timer(
-      lambda method=method, cal_probs=cal_probs: fit_probability_calibrator(
-        method,
-        cal_probs,
-        y_cal.to_numpy(),
-      )
+@staticmethod
+def _encode_categoricals(X: pd.DataFrame) -> pd.DataFrame:
+    """SEX → binary; EDUCATION and MARRIAGE → one-hot (drop_first=True)."""
+    X = X.copy()
+    if "SEX" in X.columns:
+        X["SEX"] = X["SEX"].map({1: 0, 2: 1}).astype(int)  # 1=male→0, 2=female→1
+    ohe_cols = [c for c in ["EDUCATION", "MARRIAGE"] if c in X.columns]
+    if ohe_cols:
+        X = pd.get_dummies(X, columns=ohe_cols, drop_first=True, dtype=int)
+    return X
+
+def fit_transform(self, X: pd.DataFrame) -> pd.DataFrame:
+    """Fit encoders/scaler on X (training set) and return transformed copy."""
+    X_enc = self._encode_categoricals(X)
+    num_cols = [c for c in _NUMERIC if c in X_enc.columns]
+    self._numeric_cols = num_cols
+    self._scaler = StandardScaler()
+    X_enc = X_enc.copy()
+    X_enc[num_cols] = self._scaler.fit_transform(X_enc[num_cols].astype(float))
+    return X_enc
+
+def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+    """Apply the already-fitted scaler to a new split (no re-fitting)."""
+    X_enc = self._encode_categoricals(X)
+    X_enc = X_enc.reindex(columns=self._encoded_cols, fill_value=0)  # align dummies
+    X_enc = X_enc.copy()
+    X_enc[self._numeric_cols] = self._scaler.transform(
+        X_enc[self._numeric_cols].astype(float)
     )
-    results.append(
-      ExperimentResult(
-        label=f"{base_model} + {method.title()}",
-        base_model=base_model,
-        family="classical",
-        stage="post_hoc",
-        calibration_method=method,
-        y_prob=calibrator.predict(test_probs),
-        train_time_sec=cal_time,
-      )
-    )
+    return X_enc
 ```
 
-This excerpt shows the distinction between the raw and post-hoc stages. The underlying classifier is held fixed, calibration is fitted on held-out calibration-set scores, and only then are recalibrated probabilities produced for the test set.
+The `_NUMERIC` constant covers `LIMIT_BAL`, `AGE`, the six `PAY_*` ordinal repayment-status codes, six `BILL_*` amounts, and six `PAY_AMT_*` repayment amounts. The same `DataPreprocessor` interface is used for Freddie Mac, extended with additional feature columns.
+
+### Post-Hoc Calibration Utility {#sec-credit-risk-calibration-snippet}
+
+A post-hoc calibration module is available for Platt scaling and isotonic regression but is **not** used in the default pipeline. The main text discusses why: post-hoc calibration introduces additional model risk under SR 11-7 [@federal_reserve_sr11_7], requires a held-out calibration set (reducing training data), and is difficult to validate on low-default portfolios. The code is included here for completeness:
+
+```python
+def fit_probability_calibrator(
+    method: str,
+    y_prob: np.ndarray,
+    y_true: np.ndarray,
+) -> FittedCalibrator:
+    """Fit a post-hoc calibrator from predicted probabilities."""
+    probs = np.clip(np.asarray(y_prob, dtype=float), 1e-6, 1.0 - 1e-6)
+    targets = np.asarray(y_true, dtype=int)
+    if method == "platt":
+        logits = np.log(probs / (1.0 - probs)).reshape(-1, 1)
+        model = LogisticRegression(solver="lbfgs", random_state=42)
+        model.fit(logits, targets)
+        return FittedCalibrator(method=method, model=model)
+    if method == "isotonic":
+        model = IsotonicRegression(out_of_bounds="clip")
+        model.fit(probs, targets)
+        return FittedCalibrator(method=method, model=model)
+```
 
 ### SVGP Training Loop {#sec-credit-risk-svgp-snippet}
 
 ```python
 optimizer = torch.optim.Adam(
-  list(self._model.parameters()) + list(self._likelihood.parameters()),
-  lr=self.lr,
+    list(self._model.parameters()) + list(self._likelihood.parameters()),
+    lr=self.lr,
 )
 mll = VariationalELBO(self._likelihood, self._model, num_data=len(y))
 
 for epoch in range(1, self.n_epochs + 1):
-  for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
-    X_batch = X_batch.to(self.device)
-    y_batch = y_batch.to(self.device)
-    optimizer.zero_grad()
-    output = self._model(X_batch)
-    loss = -mll(output, y_batch)
-    loss.backward()
-    optimizer.step()
+    for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
+        X_batch = X_batch.to(self.device)
+        y_batch = y_batch.to(self.device)
+        optimizer.zero_grad()
+        output = self._model(X_batch)
+        loss   = -mll(output, y_batch)
+        loss.backward()
+        optimizer.step()
 ```
 
-This is standard mini-batch stochastic variational inference for a sparse GP classifier. The variational ELBO is optimized jointly over the inducing-point representation and the Bernoulli likelihood parameters.
+This is standard mini-batch stochastic variational inference for a sparse GP classifier. The variational ELBO is optimised jointly over the inducing-point representation and the Bernoulli likelihood parameters.
 
 ### DSVGP Training Loop {#sec-credit-risk-dsvgp-snippet}
 
 ```python
 optimizer = torch.optim.Adam(self._model.parameters(), lr=self.lr)
 mll = DeepApproximateMLL(
-  VariationalELBO(
-    self._model.likelihood,
-    self._model,
-    num_data=len(y),
-  )
+    VariationalELBO(
+        self._model.likelihood,
+        self._model,
+        num_data=len(y),
+    )
 )
 
 train_samples = min(self.num_samples, 10)
 
 for epoch in range(1, self.n_epochs + 1):
-  for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
-    X_batch = X_batch.to(self.device)
-    y_batch = y_batch.to(self.device)
+    for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
+        X_batch = X_batch.to(self.device)
+        y_batch = y_batch.to(self.device)
 
-    with gpytorch.settings.num_likelihood_samples(train_samples):
-      optimizer.zero_grad()
-      output = self._model(X_batch)
-      loss = -mll(output, y_batch)
-      loss.backward()
-      optimizer.step()
+        with gpytorch.settings.num_likelihood_samples(train_samples):
+            optimizer.zero_grad()
+            output = self._model(X_batch)
+            loss   = -mll(output, y_batch)
+            loss.backward()
+            optimizer.step()
 ```
 
-This is the doubly stochastic variational setup used for the deep GP models. The first source of stochasticity is mini-batch optimization; the second is Monte Carlo sampling through the layered latent structure via `num_likelihood_samples`. In that sense, yes: the deep GP experiments in this dissertation use the DSVI-style training approach.
+This is the doubly stochastic variational setup used for the deep GP models. The first source of stochasticity is mini-batch optimisation; the second is Monte Carlo sampling through the layered latent structure via `num_likelihood_samples`. The deep GP experiments in this dissertation use the DSVI-style training approach of @salimbeni_doubly_2017.
 
-### UCI Credit Card: Supplementary Tables {#sec-uci-supp-tables}
+### Optimal Threshold Re-computation {#sec-credit-risk-regen-snippet}
 
-#### Fixed-Threshold Reference Comparison {#tbl-app-uci-fixed-threshold}
+After training, metrics are re-computed at each model's F1-optimal threshold rather than the conventional $t = 0.5$. The threshold search scans $[0.01, 0.99]$ at granularity $\Delta t = 0.001$:
 
-```{python}
-#| label: tbl-app-uci-fixed-threshold
-#| tbl-cap: "Six-model comparison at the conventional fixed threshold of $0.5$. Compare with @tbl-uci-main-optimal to see the systematic artefact introduced by a fixed cutoff for GP-family models."
-#| echo: false
-
-import pandas as pd
-
-metrics = pd.read_csv("sections/4-modeling/assets/credit-card-default/main_metrics.csv")
-table = metrics[["model","roc_auc","f1","balanced_accuracy","brier","ece"]].copy()
-table.columns = ["Model","ROC-AUC","F1","Bal.Acc","Brier","ECE"]
-table = table.round(4)
-table
+```python
+def find_optimal_threshold(y_true, y_prob, metric="f1", lo=0.01, hi=0.99,
+                           step=0.001):
+    thresholds = np.arange(lo, hi + step, step)
+    best_t, best_v = 0.5, 0.0
+    for t in thresholds:
+        y_pred = (y_prob >= t).astype(int)
+        if metric == "f1":
+            v = f1_score(y_true, y_pred, zero_division=0.0)
+        if v > best_v:
+            best_v, best_t = v, t
+    return best_t, best_v
 ```
 
-#### Classical Calibration Study Detail {#tbl-app-uci-classical-calibration}
+This is particularly important for the Freddie Mac dataset (1.73% default rate), where GP models produce well-calibrated probabilities concentrated near the base rate, requiring $t^* \approx 0.07$–$0.09$, while classical models require $t^* \approx 0.24$–$0.81$.
 
-```{python}
-#| label: tbl-app-uci-classical-calibration
-#| tbl-cap: "Calibration study for the three classical baselines across raw, pre-hoc (no class-imbalance weighting), and post-hoc (Platt scaling, isotonic regression) variants."
-#| echo: false
+## UCI Credit Card: Supplementary Scaling Figures {#sec-appendix-uci-scaling}
 
-import pandas as pd
+The figures below show ROC/precision-recall curves, reliability diagrams, confusion matrices, and threshold tradeoff plots for the UCI credit-card dataset at the **small** ($N_\text{dev} = 500$) and **medium** ($N_\text{dev} = 5{,}000$) tiers. These supplement the large-tier figures presented in @sec-uci-large.
 
-calib = pd.read_csv("sections/4-modeling/assets/credit-card-default/classical_calibration_metrics.csv")
-table = calib[["model","stage","calibration_method","roc_auc","brier","ece"]].copy()
-table.columns = ["Model","Stage","Method","ROC-AUC","Brier","ECE"]
-table = table.round(4)
-table
-```
+### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-uci-small}
 
-#### F1-Optimal Threshold Summary — Classical Baselines {#tbl-app-uci-threshold-optima}
+![ROC and precision-recall curves — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/roc_pr.png){#fig-app-uci-small-roc-pr}
 
-```{python}
-#| label: tbl-app-uci-threshold-optima
-#| tbl-cap: "F1-optimal operating thresholds for the three classical baselines in raw and post-hoc recalibrated form."
-#| echo: false
+![Reliability diagrams — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/calibration.png){#fig-app-uci-small-calibration}
 
-import pandas as pd
+![Confusion matrices at optimal threshold — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/confusion.png){#fig-app-uci-small-confusion}
 
-optima = pd.read_csv("sections/4-modeling/assets/credit-card-default/threshold_optima.csv")
-table = optima.loc[
-    optima["target_metric"].eq("f1")
-    & optima["family"].eq("classical")
-    & optima["stage"].isin(["raw", "post_hoc"]),
-    ["model","stage","calibration_method","best_threshold","best_value"],
-].copy()
-table.columns = ["Model","Stage","Method","Opt. Threshold","F1*"]
-table = table.round(4)
-table
-```
+![Threshold–F1 tradeoff curves — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/threshold.png){#fig-app-uci-small-threshold}
+
+### Medium Tier ($N_\text{dev} = 5{,}000$) {#sec-appendix-uci-medium}
+
+![ROC and precision-recall curves — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/roc_pr.png){#fig-app-uci-medium-roc-pr}
+
+![Reliability diagrams — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/calibration.png){#fig-app-uci-medium-calibration}
+
+![Confusion matrices at optimal threshold — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/confusion.png){#fig-app-uci-medium-confusion}
+
+![Threshold–F1 tradeoff curves — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/threshold.png){#fig-app-uci-medium-threshold}
+
+## Freddie Mac: Supplementary Scaling Figures {#sec-appendix-fm-scaling}
+
+The figures below show ROC/precision-recall curves, reliability diagrams, confusion matrices, and threshold tradeoff plots for the Freddie Mac mortgage dataset at the **small** ($N_\text{dev} = 500$) and **medium** ($N_\text{dev} = 5{,}000$) tiers. These supplement the large-tier figures presented in @sec-fm-large.
+
+### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-fm-small}
+
+![ROC and precision-recall curves — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/roc_pr.png){#fig-app-fm-small-roc-pr}
+
+![Reliability diagrams — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/calibration.png){#fig-app-fm-small-calibration}
+
+![Confusion matrices at optimal threshold — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/confusion.png){#fig-app-fm-small-confusion}
+
+![Threshold–F1 tradeoff curves — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/threshold.png){#fig-app-fm-small-threshold}
+
+### Medium Tier ($N_\text{dev} = 5{,}000$) {#sec-appendix-fm-medium}
+
+![ROC and precision-recall curves — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/roc_pr.png){#fig-app-fm-medium-roc-pr}
+
+![Reliability diagrams — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/calibration.png){#fig-app-fm-medium-calibration}
+
+![Confusion matrices at optimal threshold — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/confusion.png){#fig-app-fm-medium-confusion}
+
+![Threshold–F1 tradeoff curves — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/threshold.png){#fig-app-fm-medium-threshold}
+
+## UCI Credit Card: Supplementary Tables {#sec-uci-supp-tables}
+
+### F1-Optimal Threshold Summary — All Models {#sec-app-uci-threshold-optima}
+
+| Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
+|:------|:-----:|:----------:|:---------:|:------:|
+| Logistic Regression | 0.577 | 0.519 | 0.501 | 0.537 |
+| Random Forest | 0.490 | 0.541 | 0.550 | 0.533 |
+| XGBoost | 0.474 | 0.558 | 0.562 | 0.554 |
+| SVGP | 0.319 | 0.492 | 0.431 | 0.572 |
+| DSVGP-2L | 0.300 | 0.541 | 0.532 | 0.551 |
+| DSVGP-3L | 0.291 | 0.527 | 0.533 | 0.521 |
+
+: F1-optimal operating thresholds for all six models on the UCI credit-card dataset (large tier). GP models require thresholds approximately 0.17–0.28 below $0.5$, while classical models cluster near $0.5$. {#tbl-app-uci-threshold-optima}
+
+### Freddie Mac: F1-Optimal Threshold Summary — All Models {#sec-app-fm-threshold-optima}
+
+| Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
+|:------|:-----:|:----------:|:---------:|:------:|
+| Logistic Regression | 0.805 | 0.153 | 0.097 | 0.366 |
+| Random Forest | 0.243 | 0.143 | 0.108 | 0.211 |
+| XGBoost | 0.591 | 0.128 | 0.081 | 0.308 |
+| SVGP | 0.067 | 0.141 | 0.078 | 0.721 |
+| DSVGP-2L | 0.091 | 0.137 | 0.080 | 0.481 |
+| DSVGP-3L | 0.071 | 0.137 | 0.076 | 0.692 |
+
+: F1-optimal operating thresholds for all six models on the Freddie Mac dataset (large tier). The 50$\times$ variation in $t^*$ (0.067 to 0.805) reflects the extreme difference between well-calibrated GP posteriors and miscalibrated classical score functions at a 1.73% base rate. {#tbl-app-fm-threshold-optima}
+
+## Bootstrap Confidence Intervals {#sec-appendix-ci}
+
+All bootstrap CIs use 2,000 resamples drawn with replacement from the held-out test set (seed 42), with 95% percentile intervals. Results are reported for the large tier only; smaller tiers have wider CIs due to reduced test-set size.
+
+### UCI Credit Card — Large Tier (n = 6,000) {#sec-appendix-uci-ci}
+
+| Model | ROC-AUC | 95% CI | ECE | 95% CI |
+|:------|:-------:|:------:|:---:|:------:|
+| Logistic Regression | 0.739 | [0.723, 0.755] | 0.225 | [0.215, 0.235] |
+| Random Forest | 0.769 | [0.754, 0.783] | 0.087 | [0.078, 0.096] |
+| XGBoost | 0.779 | [0.765, 0.794] | 0.196 | [0.187, 0.205] |
+| SVGP | 0.776 | [0.760, 0.790] | 0.017 | [0.012, 0.027] |
+| DSVGP-2L | 0.779 | [0.764, 0.793] | 0.012 | [0.009, 0.024] |
+| DSVGP-3L | 0.777 | [0.762, 0.792] | 0.014 | [0.010, 0.025] |
+
+: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.027$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
+
+### Freddie Mac — Large Tier (n = 6,000, approx 104 positives) {#sec-appendix-fm-ci}
+
+| Model | ROC-AUC | 95% CI | ECE | 95% CI |
+|:------|:-------:|:------:|:---:|:------:|
+| Logistic Regression | 0.820 | [0.781, 0.855] | 0.337 | [0.330, 0.344] |
+| Random Forest | 0.774 | [0.729, 0.818] | 0.055 | [0.051, 0.058] |
+| XGBoost | 0.785 | [0.740, 0.826] | 0.400 | [0.396, 0.404] |
+| SVGP | 0.819 | [0.779, 0.857] | 0.003 | [0.001, 0.006] |
+| DSVGP-2L | 0.821 | [0.782, 0.858] | 0.002 | [0.000, 0.005] |
+| DSVGP-3L | 0.823 | [0.787, 0.859] | 0.004 | [0.001, 0.007] |
+
+: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the Freddie Mac large test set (6,000 observations, 1.73% default rate, $\approx 104$ positives). The wide ROC-AUC CIs ($\approx \pm 0.04$) reflect the low prevalence and limited positive-class information; all six models' intervals overlap substantially, and no pairwise ROC-AUC comparison is statistically significant. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.007$) and all classical models (lower bounds $\geq 0.051$), a highly significant advantage. {#tbl-app-fm-ci}

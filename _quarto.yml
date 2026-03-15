@@ -32,6 +32,6 @@ format:
 filters:
   - expand-macros.lua
 
-
-
-
+execute:
+  freeze: auto
+  cache: true

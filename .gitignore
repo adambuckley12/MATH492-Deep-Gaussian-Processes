@@ -28,3 +28,4 @@ code/freddie-mac-pd/src/results/small/weights/**
 code/freddie-mac-pd/src/results/large/weights/**
 
 code/**/__pycache__/**
+_freeze/

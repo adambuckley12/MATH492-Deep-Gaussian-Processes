@@ -1,0 +1,143 @@
+## Credit Card Probability of Default {#sec-credit-card}
+
+The first empirical study addresses a concrete question: can GP and DGP classifiers serve as credible probability-of-default (PD) models under realistic credit-risk conditions, and how does their performance scale with training set size? The benchmark used is the UCI default of credit card clients dataset [@yeh_comparisons_2009], comprising 30,000 observations and 23 predictor variables — credit limit, demographics, six months of repayment-status history, and corresponding billing and repayment amounts from April–September 2005. The target indicates default on the October 2005 payment. This benchmark is well-established in the credit-risk literature [@thomas_survey_2000; @huang_using_2011; @mahajan_gaussian_2022] and presents two simultaneous evaluation criteria that are especially revealing for probabilistic models: ranking quality (does the model correctly order clients by default risk?) and probability calibration (are the predicted default probabilities credible estimates of observed default frequencies?). Under the Basel IRB Advanced Approach, both criteria carry legal and capital weight [@basel_committee_basel_2011; @eba_gl_2017_16].
+
+### Data Preparation and Experimental Design
+
+Pre-processing followed the conventions established in the experimental pipeline. Undocumented education and marriage codes were collapsed into an "other" category; skewed monetary variables (bill amounts and repayment amounts) were log-transformed to reduce leverage from extreme values; categorical variables were one-hot encoded; and all continuous predictors were standardised to zero mean and unit variance before model fitting. The full 30,000-observation dataset was first split into a fixed held-out test set of 6,000 observations (20%), stratified by the target variable. The remaining 24,000 observations form the development pool, from which training and validation subsets are drawn. This design ensures that all model configurations across size tiers are evaluated on the identical test set, enabling fair comparison across training budgets.
+
+Three training-set size tiers were evaluated to study the effect of data quantity on model performance:
+
+- **Small** ($N_{\text{dev}} = 500$): 425 training, 75 validation observations.
+- **Medium** ($N_{\text{dev}} = 5{,}000$): 4,250 training, 750 validation observations.
+- **Large** ($N_{\text{dev}} = 24{,}000$): 20,400 training, 3,600 validation observations (full development set).
+
+The validation split (15% of dev) is used exclusively for XGBoost early stopping; all other models train on the full train+validation pool after hyperparameter selection, following the convention for small-data GP experiments in @hensman_gaussian_2013. The test set default rate is 22.1% across all tiers.
+
+### Model Set and Training Configuration {#sec-uci-models}
+
+The model set comprises three classical tabular baselines and three GP-family models:
+
+- **Logistic Regression** with `class_weight="balanced"` — the standard imbalance-aware linear baseline.
+- **Random Forest** with 500 trees and `class_weight="balanced_subsample"` — a bagging ensemble that provides implicit variance reduction.
+- **XGBoost** with `scale_pos_weight` — a gradient-boosted tree ensemble with early stopping tuned on the validation set, then refitted on train+validation at the best iteration count.
+- **SVGP** — sparse variational GP with 512 inducing points, 150 training epochs, and variational ELBO [@hensman_gaussian_2013].
+- **DSVGP-2L** — two-layer deep sparse variational GP with doubly stochastic inference [@salimbeni_doubly_2017], 128 inducing points per layer, hidden dimension 5.
+- **DSVGP-3L** — three-layer variant of the above.
+
+All classical models use class-weight rebalancing rather than post-hoc calibration. GP and DGP models receive no explicit class-weight adjustment; the Bernoulli likelihood with sigmoid link provides a natural probabilistic treatment of the binary outcome.
+
+An essential methodological note concerns decision thresholds. Reporting F1 and classification metrics at a fixed $0.5$ cutoff is a common but misleading convention in imbalanced settings [@niculescu_mizil_predicting_2005]: GP and DGP classifiers route probability mass away from the tails (the posterior mean passed through a sigmoid link has limited magnitude), so a $0.5$ threshold systematically penalises them relative to classical baselines with wider score ranges. All threshold-dependent metrics below are therefore reported at each model's F1-optimal threshold alongside the fixed-threshold results.
+
+### Results at Full Scale (Large Tier) {#sec-uci-large}
+
+| Model | ROC-AUC | Avg Prec | F1 ($t = 0.5$) | ECE | Brier | Log Loss | Time (s) |
+|:------|:-------:|:--------:|:--------------:|:---:|:-----:|:--------:|:--------:|
+| Logistic Regression | 0.739 | 0.493 | 0.500 | 0.225 | 0.199 | 0.590 | 0.04 |
+| Random Forest | 0.769 | 0.549 | 0.532 | 0.087 | 0.146 | 0.460 | 5.53 |
+| XGBoost | **0.779** | **0.553** | **0.536** | 0.196 | 0.177 | 0.539 | 0.58 |
+| SVGP | 0.776 | 0.551 | 0.472 | **0.015** | **0.136** | **0.432** | 143.7 |
+| DSVGP-2L | 0.778 | 0.548 | 0.480 | 0.017 | **0.135** | **0.430** | 168.2 |
+| DSVGP-3L | 0.777 | 0.546 | 0.488 | 0.016 | 0.136 | 0.433 | 582.8 |
+
+: Principal six-model comparison at full scale ($N_{\text{train}} = 20{,}400$, $N_{\text{test}} = 6{,}000$). Bold entries indicate leading values. {#tbl-uci-large}
+
+::: {layout-ncol=2}
+![ROC and precision-recall curves at full scale. XGBoost narrowly leads on ROC-AUC (0.779); GP-family models form the second group at 0.776–0.778.](/sections/4-modeling/assets/credit-card-default/large/roc_pr.png){#fig-uci-large-roc-pr}
+
+![Reliability diagrams at full scale. GP-family models track the diagonal closely (ECE $\leq 0.017$); logistic regression and XGBoost show substantial miscalibration (ECE $> 0.19$).](/sections/4-modeling/assets/credit-card-default/large/calibration.png){#fig-uci-large-calibration}
+:::
+
+#### Discriminative Performance {#sec-uci-large-discrimination}
+
+On threshold-independent ranking metrics, the six models form three tiers. XGBoost leads at ROC-AUC = 0.779 and average precision = 0.553, consistent with its strong performance on structured tabular data. The GP family follows closely: DSVGP-2L = 0.778, DSVGP-3L = 0.777, SVGP = 0.776 — a gap of $\Delta = 0.001$–$0.003$ from XGBoost that is well within typical variance for this dataset size. Random forest (0.769) and logistic regression (0.739) trail, the latter limited by its inability to capture the non-linear interactions between repayment-status history and monetary variables that dominate the feature-importance rankings.
+
+At the fixed $0.5$ threshold, XGBoost leads on F1 (0.536) while SVGP reaches only 0.472 — a gap that is a score-distribution artefact rather than a discriminative difference, as noted above. At F1-optimal thresholds, the gap narrows considerably: SVGP achieves F1 = 0.546 at threshold 0.30, DSVGP-2L = 0.541 at 0.30, and XGBoost = 0.543 at 0.55. The +15.7% relative F1 gain for SVGP from threshold optimisation versus +1.3% for XGBoost is a measurement correction that reflects the characteristic narrower score distribution of GP posteriors passed through the sigmoid link.
+
+#### Probability Calibration {#sec-uci-large-calibration}
+
+The principal advantage of GP and DGP classifiers on this dataset is probability calibration. SVGP achieves ECE = 0.015 and Brier = 0.136; DSVGP-3L: ECE = 0.016, Brier = 0.136; DSVGP-2L: ECE = 0.017, Brier = 0.135. Classical baselines are substantially worse: logistic regression ECE = 0.225, XGBoost ECE = 0.196, random forest ECE = 0.087. The GP models achieve approximately **12$\times$ lower ECE** than XGBoost and **13$\times$ lower** than logistic regression.
+
+This pattern aligns with @niculescu_mizil_predicting_2005, who show empirically that gradient-boosted ensembles are systematically overconfident while sigmoid-linked probabilistic models tend toward well-calibrated posteriors. The GP models are well-calibrated natively because the variational ELBO penalises over-confident posteriors and the Bernoulli-sigmoid link ensures appropriate uncertainty near the decision boundary [@hensman_gaussian_2013].
+
+Random forest occupies an intermediate position (ECE = 0.087): its bagging mechanism provides some calibration smoothing, but the frequency-based probability estimates from leaf nodes are still systematically biased relative to the Bayesian posterior of the GP family [@niculescu_mizil_predicting_2005].
+
+Under the Basel IRB Advanced Approach, PD estimates must track observed default rates across rating grades [@eba_gl_2017_16; @basel_committee_basel_2011]. A raw ECE of 0.196 (XGBoost) implies average deviations of nearly 20 percentage points per quantile bin — a level that would fail a standard supervisory calibration review and distort IFRS 9 expected credit loss provisions [@iasb_ifrs9_2014]. GP models satisfy this standard natively; classical models would require a post-hoc calibration stage (Platt scaling [@platt_probabilistic_1999] or isotonic regression [@zadrozny_transforming_2002]) that adds to both the data budget and the validation surface area under model risk frameworks such as SR 11-7 [@federal_reserve_sr11_7].
+
+### Scaling Behaviour Across Training Set Sizes {#sec-uci-scaling}
+
+| Model | ROC-AUC (S) | ROC-AUC (M) | ROC-AUC (L) | ECE (S) | ECE (M) | ECE (L) |
+|:------|:----------:|:----------:|:----------:|:------:|:------:|:------:|
+| Logistic Regression | 0.716 | 0.737 | 0.739 | 0.205 | 0.229 | 0.225 |
+| Random Forest | 0.746 | 0.760 | 0.769 | 0.091 | 0.091 | 0.087 |
+| XGBoost | 0.734 | 0.758 | **0.779** | 0.164 | 0.188 | 0.196 |
+| SVGP | 0.744 | 0.766 | 0.776 | **0.029** | **0.011** | **0.015** |
+| DSVGP-2L | 0.741 | **0.768** | 0.778 | 0.025 | 0.019 | 0.017 |
+| DSVGP-3L | 0.529 | 0.765 | 0.777 | 0.005 | 0.015 | 0.016 |
+
+: Scaling of ROC-AUC and ECE across training tiers. S = small (425 train), M = medium (4,250 train), L = large (20,400 train). All evaluated on the same 6,000-observation test set. {#tbl-uci-scaling}
+
+::: {layout-ncol=3}
+![ROC/PR — small ($N = 425$).](/sections/4-modeling/assets/credit-card-default/small/roc_pr.png){#fig-uci-small-roc-pr}
+
+![ROC/PR — medium ($N = 4{,}250$).](/sections/4-modeling/assets/credit-card-default/medium/roc_pr.png){#fig-uci-medium-roc-pr}
+
+![ROC/PR — large ($N = 20{,}400$).](/sections/4-modeling/assets/credit-card-default/large/roc_pr.png){#fig-uci-large-roc-pr-2}
+:::
+
+::: {layout-ncol=3}
+![Calibration — small.](/sections/4-modeling/assets/credit-card-default/small/calibration.png){#fig-uci-small-calibration}
+
+![Calibration — medium.](/sections/4-modeling/assets/credit-card-default/medium/calibration.png){#fig-uci-medium-calibration}
+
+![Calibration — large.](/sections/4-modeling/assets/credit-card-default/large/calibration.png){#fig-uci-large-calibration-2}
+:::
+
+#### Discriminative Scaling
+
+All models benefit from additional training data, but the magnitude and pattern of improvement differ across families.
+
+**Classical models.** XGBoost shows the strongest scaling response: ROC-AUC improves from 0.734 (small) to 0.779 (large), a gain of +0.045. This is characteristic of gradient-boosted ensembles' well-documented capacity to exploit large training sets through deeper tree structures and more refined split boundaries. Random forest improves more modestly (+0.023), and logistic regression shows the weakest response (+0.023), as a linear model that has already captured most of its achievable signal from the dominant repayment-status features at small scale.
+
+**GP models.** SVGP improves from 0.744 to 0.776 (+0.032), while DSVGP-2L shows a comparable trajectory from 0.741 to 0.778 (+0.037). Both GP variants converge toward XGBoost at large scale: at the medium tier, DSVGP-2L (0.768) and SVGP (0.766) already match or exceed random forest (0.760), and the gap to XGBoost (0.758) has closed to within 0.01.
+
+**DSVGP-3L failure at small scale.** The three-layer DGP achieves only ROC-AUC = 0.529 — effectively random — when trained on 425 observations. This is a clear instance of the pathological behaviour identified by @duvenaud_avoiding_2014, whereby deeper GP architectures suffer from vanishing kernel gradients and poor optimisation in the low-data regime. With only 425 training points and three layers of inducing-point variational parameters to optimise, the posterior collapses to a near-constant prediction. At medium scale (4,250 observations), DSVGP-3L recovers fully to 0.765, and at large scale it matches DSVGP-2L at 0.777. This demonstrates that the additional expressive capacity of deeper architectures requires sufficient data volume to be realised — a practical constraint that favours DSVGP-2L as the default configuration for credit-risk applications where training data may be limited.
+
+#### Calibration Scaling
+
+The calibration behaviour across tiers reveals a qualitatively different pattern from discrimination.
+
+**GP models maintain excellent calibration at all scales.** SVGP achieves ECE = 0.029 at small scale, improving to 0.011 at medium and settling at 0.015 at large. DSVGP-2L follows a similar trajectory (0.025 → 0.019 → 0.017). The key observation is that GP calibration quality is excellent from 425 training observations onward: an ECE of 0.025–0.029 represents average per-bin probability deviations of 2.5–2.9 percentage points, well within the tolerance of a supervisory PD calibration review [@eba_gl_2017_16].
+
+**Classical models are miscalibrated at all scales** and do not improve with more data. Logistic regression ECE is 0.205 at small scale and 0.225 at large — essentially constant. XGBoost ECE actually *worsens* from 0.164 (small) to 0.196 (large), as a more confidently fitted model produces more extreme probability estimates without a mechanism to pull them back toward calibration. Random forest is better calibrated than the other classicals (ECE $\approx 0.09$ at all scales) due to the averaging effect of bagging, but still represents 5–6$\times$ worse calibration than the GP family.
+
+This scaling pattern is a structural consequence of model architecture: GP models derive calibration from the Bayesian posterior's principled treatment of uncertainty, which operates regardless of sample size [@bernardo_bayesian_2000]. Classical models derive their probability estimates from point-estimate decision functions (logit, tree leaf frequencies, boosted scores) that lack an inherent uncertainty calibration mechanism [@niculescu_mizil_predicting_2005].
+
+### Computational Profile {#sec-uci-cost}
+
+![Training time versus ECE for the six models at large scale. GP-family models provide substantially better native calibration at training times two to three orders of magnitude greater.](/sections/4-modeling/assets/credit-card-default/large/runtime.png){#fig-uci-runtime width=70%}
+
+| Model | Time (s, small) | Time (s, medium) | Time (s, large) |
+|:------|:-------:|:-------:|:-------:|
+| Logistic Regression | 0.003 | 0.008 | 0.04 |
+| Random Forest | 0.44 | 1.18 | 5.53 |
+| XGBoost | 0.06 | 0.19 | 0.58 |
+| SVGP | 3.3 | 32.3 | 143.7 |
+| DSVGP-2L | 3.9 | 36.9 | 168.2 |
+| DSVGP-3L | 13.4 | 129.8 | 582.8 |
+
+: Training time scaling across tiers. GP models scale approximately linearly with $N$; DSVGP-3L is $\sim 3.5\times$ the cost of DSVGP-2L at all scales. {#tbl-uci-runtime}
+
+DSVGP-3L is the most expensive model at 582.8 seconds — nearly 3.5$\times$ the cost of the two-layer variant — yet yields no material improvement over DSVGP-2L on any metric at large scale (ROC-AUC: 0.777 vs 0.778; ECE: 0.016 vs 0.017). This is consistent with @duvenaud_avoiding_2014, who demonstrate that additional GP layers suppress rather than enhance flexibility on smooth finite datasets. DSVGP-2L is consequently the more defensible configuration: it achieves near-best discrimination, excellent calibration, and less than one-third the training cost of the three-layer variant.
+
+For deployment contexts, the GP training time penalty (168 s for DSVGP-2L vs 0.58 s for XGBoost at large scale — a $290\times$ factor) is a batch training cost incurred once per model refresh cycle. In credit-risk production environments where models are retrained monthly or quarterly, this is operationally negligible. Inference time for a single prediction is comparable across model families.
+
+### Discussion {#sec-uci-discussion}
+
+**Discriminative performance.** At full scale, GP and DGP classifiers are competitive with gradient-boosted trees on all threshold-independent metrics, with ROC-AUC gaps of $\Delta \leq 0.003$ separating the best GP (DSVGP-2L, 0.778) from XGBoost (0.779). Threshold-dependent comparisons must use model-appropriate optimal thresholds; failure to do so creates a systematic artefact that understates GP performance by up to 15.7% relative F1. The scaling study shows that GP models benefit from additional data at rates comparable to XGBoost, with both families showing approximately +0.035 ROC-AUC gain from small to large scale.
+
+**Probability calibration.** The structural advantage of GP and DGP models on this task is native probability calibration. At large scale, the GP family achieves ECE = 0.015–0.017 compared to 0.087–0.225 for classical baselines — a 5–13$\times$ improvement requiring no additional calibration step, calibration data holdout, or post-hoc model component. This advantage is maintained across all training set sizes: even at small scale (425 training observations), GP models achieve ECE = 0.025–0.029, far superior to any classical baseline. For regulatory PD applications requiring credible default probability estimates under Basel IRB [@eba_gl_2017_16] or IFRS 9 [@iasb_ifrs9_2014], this native calibration is a material operational advantage that eliminates both the calibration data tax and the additional validation surface imposed by post-hoc calibration methods [@platt_probabilistic_1999; @zadrozny_transforming_2002].
+
+**Architecture depth.** Adding a third GP layer (DSVGP-3L) offers no benefit over DSVGP-2L at medium or large scale on any metric, while incurring approximately $3.5\times$ the training cost. At small scale, the three-layer architecture fails catastrophically (ROC-AUC = 0.529), confirming the practical relevance of the pathological deep GP behaviours identified by @duvenaud_avoiding_2014. DSVGP-2L is the dominant configuration across all training regimes for this dataset.
+
+**GP vs DGP.** The marginal improvement from SVGP to DSVGP-2L is small but consistent: +0.002 ROC-AUC at large scale, +0.002 at medium scale. This gain is modest relative to the 17% increase in training time (168 s vs 144 s). On calibration, both architectures achieve comparable ECE ($\leq 0.02$). For this dataset, the single-layer SVGP provides approximately equivalent discriminative and calibration performance to the deep architecture at lower computational and optimisation risk. The additional compositional flexibility of DGPs [@damianou_deep_2013] does not yield materially different representations on this smooth, moderate-dimensional credit dataset.

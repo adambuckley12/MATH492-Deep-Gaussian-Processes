@@ -39,7 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-# ── Expected Calibration Error ────────────────────────────────────────────────
+# -- Expected Calibration Error ------------------------------------------------
 
 def expected_calibration_error(
     y_true: np.ndarray,
@@ -105,9 +105,9 @@ def evaluate_classifier(
     )
 
     if verbose:
-        print(f"\n{'─' * 45}")
+        print(f"\n{'-' * 45}")
         print(f"  {model_name}")
-        print(f"{'─' * 45}")
+        print(f"{'-' * 45}")
         print(f"  ROC-AUC          : {metrics['roc_auc']:.4f}")
         print(f"  Avg Precision    : {metrics['avg_prec']:.4f}")
         print(f"  F1  (class 1)    : {metrics['f1']:.4f}")
@@ -120,7 +120,7 @@ def evaluate_classifier(
         print(f"  Log Loss         : {metrics['log_loss']:.4f}")
         print(f"  ECE              : {metrics['ece']:.4f}")
         print(f"  Accuracy         : {metrics['accuracy']:.4f}")
-        print(f"{'─' * 45}")
+        print(f"{'-' * 45}")
         print(classification_report(y_true, y_pred,
                                     target_names=["No Default", "Default"]))
 

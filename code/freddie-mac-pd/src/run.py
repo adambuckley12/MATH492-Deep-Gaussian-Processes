@@ -28,7 +28,7 @@ import sys
 
 signal.signal(signal.SIGINT, lambda *_: (print("\n[interrupted]"), os._exit(1)))
 
-# ── Path setup ────────────────────────────────────────────────────────────────
+# -- Path setup ----------------------------------------------------------------
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SHARED = os.path.normpath(os.path.join(_HERE, "..", "..", "shared"))
 sys.path.insert(0, _SHARED)

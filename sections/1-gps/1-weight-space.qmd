@@ -94,7 +94,7 @@ $$ {#eq-kernel-def}
 
 which measures similarity between inputs in the feature space, weighted by the prior covariance $\Sigma_p$.
 
-With this definition, we can collect all pairwise kernel evaluations over the training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$. This allows for rewriting the predictive equation entirely in terms of the kernel. This can be done by reparametrizing the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
+With this definition, we can collect all pairwise kernel evaluations over the full training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$. This allows for rewriting the predictive equation entirely in terms of the kernel. This can be done by reparametrizing the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
 $$
 (A + UCV)^{-1} = A^{-1} - A^{-1}U\bigl(C^{-1} + VA^{-1}U\bigr)^{-1}VA^{-1},
 $$ {#eq-matrix-inversion-lemma}

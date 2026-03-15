@@ -1,0 +1,10 @@
+## DGP Data Modeling Conclusion
+
+TODO: THIS IS JUST A SUMMARY FOR NOW
+
+1. DGPs and GPs matched or outperformed classical ML baselines on both datasets, as long as was enough data.
+2. DGPs - especially 3 layers, failed to train if the dataset was too small, and too high inducing points. 
+3. DGPs and GPs had fairly similar ECE and calibration.
+4. DGPS did not outperform GPs in credit risk, but did in mortgage risk. Tho might not be statistically significant, and might be due to the fact that the mortgage dataset was larger and more complex, so the extra expressiveness of DGPs was more useful there, while in the credit risk dataset, the simpler GPs were sufficient to capture the patterns in the data.
+5. DGPs were more expensive to train, and more expensive to predict with, than GPs, but the difference was not huge.
+6. going form 2-3 layers, did not add any improvement in either dataset. And made training longer.

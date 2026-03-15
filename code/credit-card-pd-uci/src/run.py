@@ -29,7 +29,7 @@ import sys
 
 signal.signal(signal.SIGINT, lambda *_: (print("\n[interrupted]"), os._exit(1)))
 
-# ── Path setup: add shared package and local src to sys.path ──────────────────
+# -- Path setup: add shared package and local src to sys.path ------------------
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SHARED = os.path.normpath(os.path.join(_HERE, "..", "..", "shared"))
 sys.path.insert(0, _SHARED)
@@ -59,14 +59,14 @@ DATASET_CSV = os.path.join(ROOT, "dataset", "credit_risk.csv")
 def main() -> None:
     os.makedirs(EDA_DIR, exist_ok=True)
 
-    # ── 1. Load and clean ─────────────────────────────────────────────────────
+    # -- 1. Load and clean -----------------------------------------------------
     data_loader = DataLoader(data_path=DATASET_CSV)
     df = data_loader.load_data()
 
     data_cleaner = DataCleaner(df)
     X_raw, y_raw = data_cleaner.clean(apply_log_transforms=True)
 
-    # ── 2. EDA visualisations (dataset-specific) ──────────────────────────────
+    # -- 2. EDA visualisations (dataset-specific) ------------------------------
     if not NO_VIZ:
         viz = DataVisualisations(output_dir=EDA_DIR)
         viz.target_distribution(y_raw)
@@ -77,14 +77,14 @@ def main() -> None:
         viz.temporal_trends(X_raw, y_raw)
         viz.repayment_status_heatmap(X_raw, y_raw)
 
-    # ── 3. Preprocess (encode, scale, split) ──────────────────────────────────
+    # -- 3. Preprocess (encode, scale, split) ----------------------------------
     preprocessor = DataPreprocessor(
         test_size=0.2, calibration_size=0.2,
         validation_size=0.1, random_state=SEED,
     )
     splits = preprocessor.fit_transform_splits(X_raw, y_raw)
 
-    # ── 4. Run shared pipeline ────────────────────────────────────────────────
+    # -- 4. Run shared pipeline ------------------------------------------------
     cfg = PipelineConfig(
         seed=SEED, quick=QUICK, small=SMALL,
         results_only=RESULTS_ONLY,

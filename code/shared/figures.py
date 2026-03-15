@@ -67,7 +67,7 @@ def load_results(tables_dir: str, predictions_dir: str):
     return metrics, preds, thresh, fi, runtime
 
 
-# ── Plots ─────────────────────────────────────────────────────────────────────
+# -- Plots ---------------------------------------------------------------------
 
 def plot_roc_pr(preds: pd.DataFrame, fig_dir: str) -> None:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))

@@ -65,7 +65,7 @@ def _iter_batches(
         yield X[b], y[b]
 
 
-# ── Internal GPyTorch model ───────────────────────────────────────────────────
+# -- Internal GPyTorch model ---------------------------------------------------
 
 class _SVGPInternalModel(ApproximateGP):
     """GPyTorch model (not used directly — wrapped by SVGPModel)."""
@@ -101,7 +101,7 @@ class _SVGPInternalModel(ApproximateGP):
         )
 
 
-# ── Public wrapper ────────────────────────────────────────────────────────────
+# -- Public wrapper ------------------------------------------------------------
 
 class SVGPModel:
     """
@@ -154,7 +154,7 @@ class SVGPModel:
         self._model: _SVGPInternalModel | None = None
         self._likelihood: BernoulliLikelihood | None = None
 
-    # ── Fitting ───────────────────────────────────────────────────────────────
+    # -- Fitting ---------------------------------------------------------------
 
     def fit(
         self,
@@ -198,7 +198,7 @@ class SVGPModel:
 
         return self
 
-    # ── Prediction ────────────────────────────────────────────────────────────
+    # -- Prediction ------------------------------------------------------------
 
     @torch.no_grad()
     def predict_proba(self, X: pd.DataFrame | np.ndarray,
@@ -247,7 +247,7 @@ class SVGPModel:
             self.name, np.asarray(y_test), y_pred, y_prob, verbose=verbose
         )
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    # -- Helpers ---------------------------------------------------------------
 
     def _init_inducing(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -259,7 +259,7 @@ class SVGPModel:
         idx = torch.randperm(n)[: self.num_inducing]
         return X[idx].clone().to(self.device)
 
-    # ── Persistence ────────────────────────────────────────────────
+    # -- Persistence ------------------------------------------------
 
     def save(self, path: str) -> None:
         """

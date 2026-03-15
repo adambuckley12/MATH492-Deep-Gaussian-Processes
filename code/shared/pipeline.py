@@ -32,7 +32,7 @@ from dgp import DSVGPModel
 from gp import SVGPModel
 
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+# -- Configuration -------------------------------------------------------------
 
 @dataclass
 class PipelineConfig:
@@ -54,7 +54,7 @@ class PipelineConfig:
     xgb_estimators: int = 1000
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# -- Helpers -------------------------------------------------------------------
 
 def _seed_everything(seed: int) -> None:
     random.seed(seed)
@@ -95,7 +95,7 @@ def _fit_xgboost(X_train, y_train, X_val, y_val, n_est, seed):
     return final
 
 
-# ── Main pipeline ─────────────────────────────────────────────────────────────
+# -- Main pipeline -------------------------------------------------------------
 
 def run_pipeline(
     splits: dict[str, tuple[pd.DataFrame, pd.Series]],
@@ -143,7 +143,7 @@ def run_pipeline(
 
     pe = 5  # print_every for GP training logs
 
-    # ── Classical models ──────────────────────────────────────────────────────
+    # -- Classical models ------------------------------------------------------
     print(f"{'═' * 64}")
     print("  Classical Models")
     print(f"{'═' * 64}")
@@ -192,7 +192,7 @@ def run_pipeline(
     results.append({"model": xgb.name, "family": "classical",
                      "y_prob": xgb.predict_proba(X_test), "time": xgb_t})
 
-    # ── GP / DGP models ──────────────────────────────────────────────────────
+    # -- GP / DGP models ------------------------------------------------------
     print(f"\n{'═' * 64}")
     print("  GP / DGP Models")
     print(f"{'═' * 64}")
@@ -222,7 +222,7 @@ def run_pipeline(
         results.append({"model": dgp.name, "family": "dgp",
                          "y_prob": dgp.predict_proba(X_test), "time": dgp_t})
 
-    # ── Metrics & export ──────────────────────────────────────────────────────
+    # -- Metrics & export ------------------------------------------------------
     metric_rows = []
     prediction_rows = []
     threshold_rows = []
@@ -263,7 +263,7 @@ def run_pipeline(
         os.path.join(cfg.tables_dir, "runtime.csv"), index=False,
     )
 
-    # ── Print summary ─────────────────────────────────────────────────────────
+    # -- Print summary ---------------------------------------------------------
     print(f"\n{'═' * 64}")
     print("  Results")
     print(f"{'═' * 64}")

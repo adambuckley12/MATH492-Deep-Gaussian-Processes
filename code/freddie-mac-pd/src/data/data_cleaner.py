@@ -83,12 +83,12 @@ class DataCleaner:
         """
         df = self.data.copy()
 
-        # ── 1. Extract target ─────────────────────────────────────────────────
+        # -- 1. Extract target -------------------------------------------------
         assert "default" in df.columns, "Expected 'default' column"
         y = df["default"].astype(int).rename("default")
         df = df.drop(columns=["default"])
 
-        # ── 2. Ensure derived features exist ──────────────────────────────────
+        # -- 2. Ensure derived features exist ----------------------------------
         # These are normally computed by FreddieMacLoader._engineer_strata,
         # but guard against missing columns defensively.
         if "vintage_era" not in df.columns:
@@ -111,7 +111,7 @@ class DataCleaner:
                 errors="coerce",
             ).fillna(2015).astype(int)
 
-        # ── 3. Impute missing values ─────────────────────────────────────────
+        # -- 3. Impute missing values -----------------------------------------
         for col in self.NUMERIC_FEATURES:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -120,18 +120,18 @@ class DataCleaner:
             if col in df.columns:
                 df[col] = df[col].fillna(df[col].mode().iloc[0] if len(df[col].mode()) > 0 else "Unknown")
 
-        # ── 4. Log-transform skewed monetary columns ──────────────────────────
+        # -- 4. Log-transform skewed monetary columns --------------------------
         if apply_log_transforms:
             if "orig_upb" in df.columns:
                 df["orig_upb"] = np.log1p(df["orig_upb"].clip(lower=0))
 
-        # ── 5. Select feature columns ─────────────────────────────────────────
+        # -- 5. Select feature columns -----------------------------------------
         keep_cols = [c for c in self.NUMERIC_FEATURES + self.CATEGORICAL_FEATURES if c in df.columns]
         X = df[keep_cols].copy()
 
         return X, y.reset_index(drop=True)
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    # -- Helpers ---------------------------------------------------------------
 
     @staticmethod
     def _compute_vintage_era(df: pd.DataFrame) -> pd.Series:
@@ -159,7 +159,7 @@ class DataCleaner:
             return "out_of_the_money"
         return "at_the_money"
 
-    # ── Column-type helpers (for preprocessing) ───────────────────────────────
+    # -- Column-type helpers (for preprocessing) -------------------------------
 
     @staticmethod
     def categorical_cols(X: pd.DataFrame) -> list[str]:

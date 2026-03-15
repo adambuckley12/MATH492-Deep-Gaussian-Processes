@@ -1,0 +1,140 @@
+## Freddie Mac Mortgage Probability of Default {#sec-freddie-mac}
+
+The second empirical study applies the same model set to a structurally different credit problem: residential mortgage probability of default. The data are drawn from the Freddie Mac Single-Family Loan-Level Dataset, a publicly available supervisory-quality source covering origination characteristics and monthly loan performance for conforming mortgages purchased or guaranteed by Freddie Mac. This dataset is widely used in mortgage credit-risk research and regulatory stress-testing [@basel_committee_basel_2011] because it provides the granularity needed for loan-level PD modelling: origination credit score (FICO), combined loan-to-value (CLTV), debt-to-income ratio (DTI), original unpaid principal balance (UPB), coupon rate, loan purpose, property type, occupancy status, geographic region, and origination vintage.
+
+The mortgage setting differs from the credit-card benchmark of @sec-credit-card in three material respects. First, the default rate is far lower: approximately 1.7% versus 22.1%, making this a heavily imbalanced classification problem where the positive class is rare and most conventional threshold-dependent metrics (F1, precision, recall at $t = 0.5$) are uninformative. Second, the feature space includes structured domain covariates (FICO, LTV, DTI, vintage era, refinancing incentive) whose interactions are well-studied in the mortgage finance literature and carry direct economic interpretation. Third, the regulatory context is more demanding: mortgage PD models feed directly into Basel IRB capital calculations, IFRS 9 expected credit loss provisions, and CCAR/DFAST stress-testing submissions, where probability calibration is subject to direct supervisory scrutiny [@eba_gl_2017_16; @iasb_ifrs9_2014; @federal_reserve_sr11_7].
+
+### Data Preparation and Experimental Design {#sec-fm-data}
+
+Origination and monthly performance files were loaded for all available quarters, retaining only those with at least 24 months of seasoning — the standard observation window for through-the-cycle PD estimation under Basel III [@basel_committee_basel_2011]. A loan is labelled as defaulted if it reached 90+ days past due or experienced a credit-event liquidation (foreclosure, short sale, or related disposition) within 24 months of origination. This definition aligns with the Basel IRB default definition and is standard across the mortgage PD literature.
+
+From the pool of qualifying origination records, a stratified subsample of 30,000 loans was drawn using proportional allocation across three stratification variables: vintage era (pre-crisis, crisis, post-crisis, COVID), refinancing incentive bucket (in-the-money, at-the-money, out-of-the-money based on rate spread relative to cohort median), and US Census geographic region (Northeast, Midwest, South, West). This stratified sampling preserves the portfolio-level distributional structure that drives mortgage default heterogeneity while reducing the dataset to a computationally manageable size.
+
+Pre-processing followed the same conventions as @sec-credit-card. Categorical variables — loan purpose, property type, occupancy status, origination channel, first-time buyer flag, vintage era, refinancing bucket, LTV bucket, and geographic region — were one-hot encoded with `drop_first=True` to avoid the dummy-variable trap. Numeric covariates (credit score, original LTV, DTI, coupon rate, UPB, mortgage insurance percentage, rate spread, number of borrowers, number of units, original term, and origination year) were log-transformed where appropriate and standardised to zero mean and unit variance. The scaler was fit on training data only to prevent leakage.
+
+The 30,000-loan sample was split into a fixed held-out test set of 6,000 observations (20%), stratified by the target. The remaining 24,000 observations form the development pool. Three training-set size tiers were evaluated:
+
+- **Small** ($N_{\text{dev}} = 500$): 425 training, 75 validation observations.
+- **Medium** ($N_{\text{dev}} = 5{,}000$): 4,250 training, 750 validation observations.
+- **Large** ($N_{\text{dev}} = 24{,}000$): 20,400 training, 3,600 validation observations (full development set).
+
+The test set default rate is 1.73% across all tiers — approximately one-thirteenth the rate observed in the credit-card benchmark. This extreme class imbalance means that a naive majority-class classifier achieves 98.3% accuracy, rendering accuracy-based evaluation meaningless. The analysis therefore focuses on ROC-AUC for discrimination and ECE for calibration.
+
+### Model Set and Training Configuration {#sec-fm-models}
+
+The model set is identical to @sec-uci-models: logistic regression (`class_weight="balanced"`), random forest (500 trees, `class_weight="balanced_subsample"`), XGBoost (`scale_pos_weight`, early stopping on validation), SVGP (512 inducing points, 150 epochs), DSVGP-2L (128 inducing points per layer, hidden dimension 5), and DSVGP-3L.
+
+The low default rate creates a specific challenge for models that produce concentrated probability estimates. At 1.73% base rate, a well-calibrated model should output probabilities near 0.017 for the majority of observations. The sigmoid-linked GP posterior naturally produces such concentrated estimates, but this means the predicted probability mass lies far below the conventional $0.5$ threshold. Consequently, F1 at $t = 0.5$ is exactly zero for random forest, SVGP, DSVGP-2L, and DSVGP-3L across all tiers — these models correctly assign very low default probabilities to the overwhelmingly non-default majority, but the $0.5$ threshold classifies all observations as negative. Even at F1-optimal thresholds, the best achievable F1 on this dataset is approximately 0.14, reflecting the fundamental difficulty of achieving high precision and recall simultaneously at 1.73% prevalence. ROC-AUC, which evaluates the full ranking over all thresholds, is the appropriate primary metric for this setting.
+
+### Results at Full Scale (Large Tier) {#sec-fm-large}
+
+| Model | ROC-AUC | Avg Prec | F1 ($t = 0.5$) | ECE | Brier | Log Loss | Time (s) |
+|:------|:-------:|:--------:|:--------------:|:---:|:-----:|:--------:|:--------:|
+| Logistic Regression | 0.820 | 0.081 | 0.084 | 0.337 | 0.186 | 0.545 | 0.06 |
+| Random Forest | 0.774 | 0.062 | 0.000 | 0.055 | 0.023 | 0.114 | 2.36 |
+| XGBoost | 0.785 | 0.059 | 0.089 | 0.400 | 0.184 | 0.555 | 0.20 |
+| SVGP | 0.819 | 0.079 | 0.000 | 0.003 | **0.017** | **0.076** | 148.7 |
+| DSVGP-2L | 0.821 | **0.084** | 0.000 | **0.002** | **0.016** | **0.075** | 167.8 |
+| DSVGP-3L | **0.823** | 0.082 | 0.000 | 0.004 | **0.016** | **0.076** | 650.2 |
+
+: Principal six-model comparison at full scale ($N_{\text{train}} = 20{,}400$, $N_{\text{test}} = 6{,}000$). Bold entries indicate leading values. {#tbl-fm-large}
+
+::: {layout-ncol=2}
+![ROC and precision-recall curves at full scale. DGP models lead on ROC-AUC (0.821–0.823); logistic regression matches the single-layer SVGP at 0.819–0.820.](/sections/4-modeling/assets/freddie-mac/large/roc_pr.png){#fig-fm-large-roc-pr}
+
+![Reliability diagrams at full scale. GP-family models track the diagonal closely (ECE $\leq 0.004$); logistic regression (ECE = 0.337) and XGBoost (ECE = 0.400) show critical miscalibration.](/sections/4-modeling/assets/freddie-mac/large/calibration.png){#fig-fm-large-calibration}
+:::
+
+#### Discriminative Performance {#sec-fm-large-discrimination}
+
+On the mortgage dataset, the GP and DGP models achieve the best ranking quality. DSVGP-3L leads at ROC-AUC = 0.823, followed by DSVGP-2L = 0.821, logistic regression = 0.820, and SVGP = 0.819. XGBoost (0.785) and random forest (0.774) trail by a substantial margin — a reversal of the credit-card result where XGBoost led the field. This inversion is notable: on the credit-card dataset, the non-linear interaction-capturing capacity of gradient-boosted trees gave XGBoost a narrow edge; on the mortgage dataset, where the feature space is more structured and the predictive signal is concentrated in a few well-known risk drivers (FICO, LTV, DTI), the GP kernel's smooth non-parametric representation captures the relevant structure at least as effectively as tree-based splits.
+
+Logistic regression's strong showing (ROC-AUC = 0.820, tied second with DSVGP-2L to three decimal places) is consistent with long-standing findings in the mortgage credit-risk literature, where simple scorecard-like linear models often perform competitively due to the approximately monotonic relationships between the primary risk drivers and default [@thomas_survey_2000]. However, as the calibration analysis below demonstrates, logistic regression's discriminative adequacy masks severe probability estimation failures.
+
+Average precision — a metric that gives more weight to correctly ranking positive examples and is thus sensitive to model quality in the rare-event tail — tells a clearer story of GP advantage: DSVGP-2L = 0.084, DSVGP-3L = 0.082, logistic regression = 0.081, SVGP = 0.079, random forest = 0.062, XGBoost = 0.059. The GP family consistently concentrates its ranking quality in the critical positive-class region.
+
+#### Probability Calibration {#sec-fm-large-calibration}
+
+The calibration advantage of GP and DGP models is dramatically amplified on the mortgage dataset relative to the credit-card benchmark. At a 1.73% base rate, small absolute errors in predicted probabilities translate to large relative distortions: a model that predicts 5% default probability when the true rate is 1.7% is overestimating risk by nearly $3\times$, with direct capital cost implications under IRB.
+
+DSVGP-2L achieves ECE = 0.002, SVGP = 0.003, DSVGP-3L = 0.004 — all effectively perfect calibration given the estimation uncertainty at this sample size. Random forest (ECE = 0.055) occupies a middling position, while logistic regression (ECE = 0.337) and XGBoost (ECE = 0.400) are severely miscalibrated. XGBoost's ECE of 0.400 means that its predicted probabilities deviate from observed frequencies by an average of 40 percentage points per quantile bin — an order-of-magnitude failure that makes its raw probability outputs unusable for PD estimation without extensive post-hoc calibration.
+
+The GP family achieves ECE values approximately **100$\times$ lower** than XGBoost (0.003 vs 0.400) and **170$\times$ lower** than logistic regression (0.002 vs 0.337). These ratios are far larger than the 12–13$\times$ advantage seen on the credit-card dataset, demonstrating that the calibration benefit of the Bayesian posterior is proportionally greater when the true event rate is low. At a 1.73% base rate, the sigmoid-linked GP posterior correctly concentrates prediction mass near the base rate with appropriate uncertainty, while classical models' point-estimate decision functions produce scores that are poorly aligned with the rare-event target distribution.
+
+The Brier score and log loss reinforce this picture. GP models achieve Brier = 0.016–0.017 and log loss = 0.075–0.076, while classical baselines range from 0.023–0.186 (Brier) and 0.114–0.555 (log loss). The GP log loss is approximately $7\times$ lower than XGBoost's, reflecting the severe penalty that the logarithmic scoring rule imposes on confident but incorrect probability predictions [@bernardo_bayesian_2000].
+
+Under Basel IRB, PD estimates must track observed default rates within rating-grade buckets, and regulators increasingly validate calibration through ECE-like tests [@eba_gl_2017_16]. An ECE of 0.400 (XGBoost) or 0.337 (logistic regression) would fail any reasonable supervisory calibration standard. In contrast, GP models with ECE $\leq 0.004$ produce probability estimates that are directly usable for regulatory capital calculation, IFRS 9 provisions [@iasb_ifrs9_2014], and stress-testing submissions without requiring a post-hoc calibration stage, which itself introduces additional model risk under SR 11-7 [@federal_reserve_sr11_7].
+
+### Scaling Behaviour Across Training Set Sizes {#sec-fm-scaling}
+
+| Model | ROC-AUC (S) | ROC-AUC (M) | ROC-AUC (L) | ECE (S) | ECE (M) | ECE (L) |
+|:------|:----------:|:----------:|:----------:|:------:|:------:|:------:|
+| Logistic Regression | 0.720 | 0.779 | **0.820** | 0.118 | 0.328 | 0.337 |
+| Random Forest | 0.692 | 0.764 | 0.774 | 0.044 | 0.050 | 0.055 |
+| XGBoost | 0.700 | 0.763 | 0.785 | 0.319 | 0.180 | 0.400 |
+| SVGP | **0.764** | 0.812 | 0.819 | **0.008** | **0.001** | 0.003 |
+| DSVGP-2L | 0.692 | **0.815** | 0.821 | **0.006** | **0.002** | **0.002** |
+| DSVGP-3L | 0.510 | 0.813 | **0.823** | **0.006** | **0.003** | 0.004 |
+
+: Scaling of ROC-AUC and ECE across training tiers. S = small (425 train), M = medium (4,250 train), L = large (20,400 train). All evaluated on the same 6,000-observation test set. {#tbl-fm-scaling}
+
+::: {layout-ncol=3}
+![ROC/PR — small ($N = 425$).](/sections/4-modeling/assets/freddie-mac/small/roc_pr.png){#fig-fm-small-roc-pr}
+
+![ROC/PR — medium ($N = 4{,}250$).](/sections/4-modeling/assets/freddie-mac/medium/roc_pr.png){#fig-fm-medium-roc-pr}
+
+![ROC/PR — large ($N = 20{,}400$).](/sections/4-modeling/assets/freddie-mac/large/roc_pr.png){#fig-fm-large-roc-pr-2}
+:::
+
+::: {layout-ncol=3}
+![Calibration — small.](/sections/4-modeling/assets/freddie-mac/small/calibration.png){#fig-fm-small-calibration}
+
+![Calibration — medium.](/sections/4-modeling/assets/freddie-mac/medium/calibration.png){#fig-fm-medium-calibration}
+
+![Calibration — large.](/sections/4-modeling/assets/freddie-mac/large/calibration.png){#fig-fm-large-calibration-2}
+:::
+
+#### Discriminative Scaling
+
+The scaling patterns on the mortgage dataset are broadly consistent with the credit-card findings but with important differences driven by the low base rate.
+
+**SVGP dominates at small scale.** With only 425 training observations, SVGP achieves ROC-AUC = 0.764 — the highest of any model at any small-scale setting across both datasets. This is a 0.064 advantage over random forest and DSVGP-2L (both 0.692) and a 0.044 advantage over logistic regression (0.720). The single-layer GP's inductive bias through the kernel function and the variational framework's implicit regularisation provide a strong prior for the smooth risk surface of the mortgage domain, even with extremely limited training data.
+
+**DGP architectures are data-hungry.** DSVGP-2L achieves only 0.692 at small scale — the same as random forest — then surges to 0.815 at medium scale and 0.821 at large scale, a gain of +0.129. This is the largest absolute ROC-AUC improvement of any model across tiers on either dataset, confirming that the compositional flexibility of multi-layer GP architectures requires sufficient data to train the inter-layer mappings effectively. DSVGP-3L again collapses at small scale (0.510, near-random) and recovers to 0.813/0.823 at medium/large — the same pathological behaviour observed on the credit-card dataset and consistent with @duvenaud_avoiding_2014.
+
+**Classical scaling.** Logistic regression shows the strongest classical scaling response: ROC-AUC = 0.720 (small) to 0.820 (large), a gain of +0.100. This is larger than its credit-card gain (+0.023), suggesting that the mortgage feature space contains exploitable monotonic structure that benefits from more data. XGBoost improves by +0.085 (0.700 → 0.785), while random forest gains +0.082 (0.692 → 0.774). Both tree ensembles underperform the GP family at every scale on this dataset.
+
+#### Calibration Scaling
+
+**GP models achieve near-perfect calibration from 425 observations.** SVGP's ECE is 0.008 at small scale, 0.001 at medium, and 0.003 at large. DSVGP-2L follows a similar trajectory (0.006 → 0.002 → 0.002). The medium-tier ECE values of 0.001–0.002 represent calibration indistinguishable from perfect at this sample size. This is a remarkable finding: even with only 425 training examples drawn from a 1.73%-prevalence population (approximately 7–8 positive examples), the Bayesian posterior's uncertainty propagation produces well-calibrated probability estimates.
+
+**Classical calibration is unstable and non-monotonic.** Logistic regression's ECE *worsens* from 0.118 (small) to 0.328 (medium) to 0.337 (large). XGBoost exhibits even more erratic calibration (0.319 → 0.180 → 0.400). This non-monotonic behaviour arises because, as with the credit card dataset, additional training data allows classical models to fit more extreme score distributions without an intrinsic mechanism to constrain probabilities toward calibrated values [@niculescu_mizil_predicting_2005]. Random forest remains the best-calibrated classical model (ECE = 0.044–0.055 across tiers) due to the same bagging-induced smoothing effect described in @sec-uci-large-calibration, but it is still 10–25$\times$ worse than the GP family.
+
+### Computational Profile {#sec-fm-cost}
+
+![Training time versus ECE for the six models at large scale. GP-family models occupy the lower-right quadrant: higher training cost but dramatically better calibration.](/sections/4-modeling/assets/freddie-mac/large/runtime.png){#fig-fm-runtime width=70%}
+
+| Model | Time (s, small) | Time (s, medium) | Time (s, large) |
+|:------|:-------:|:-------:|:-------:|
+| Logistic Regression | 0.08 | 0.01 | 0.06 |
+| Random Forest | 0.45 | 0.81 | 2.36 |
+| XGBoost | 0.03 | 0.10 | 0.20 |
+| SVGP | 3.53 | 33.4 | 148.7 |
+| DSVGP-2L | 3.59 | 37.1 | 167.8 |
+| DSVGP-3L | 12.9 | 136.5 | 650.2 |
+
+: Training time scaling across tiers. Scaling patterns are consistent with the credit-card dataset; DSVGP-3L is approximately $3.9\times$ the cost of DSVGP-2L. {#tbl-fm-runtime}
+
+The computational profile mirrors the credit-card findings. DSVGP-3L at 650.2 s is the most expensive model, approximately $3.9\times$ the cost of DSVGP-2L (167.8 s), yet its ROC-AUC advantage over DSVGP-2L is only +0.002 (0.823 vs 0.821) and its ECE is slightly worse (0.004 vs 0.002). SVGP provides the best cost-effectiveness among GP models: at 148.7 s it delivers ROC-AUC = 0.819 and ECE = 0.003, within 0.004 ROC-AUC of the best model at less than one-quarter the training cost of DSVGP-3L.
+
+### Discussion {#sec-fm-discussion}
+
+**Discriminative performance.** The mortgage dataset produces a different competitive landscape from the credit-card benchmark. GP and DGP models lead the field on ROC-AUC rather than trailing XGBoost: DSVGP-3L (0.823) > DSVGP-2L (0.821) > LR (0.820) > SVGP (0.819) $\gg$ XGB (0.785) > RF (0.774). The GP family's advantage is clearer when the feature space is structured and the risk surface is smooth, consistent with the theoretical expectation that kernel-based models excel when the underlying function belongs to the reproducing kernel Hilbert space induced by the chosen kernel [@rasmussen_gaussian_2008]. The tree-based models' relative weakness on this dataset likely reflects their difficulty in modelling the smooth, approximately monotonic relationships between FICO/LTV/DTI and default probability — they approximate smooth functions through piecewise-constant partitions, introducing unnecessary granularity that reduces ranking quality relative to the GP's continuous representation.
+
+**Probability calibration.** The mortgage dataset provides the strongest evidence for the native calibration advantage of GP and DGP models. At a 1.73% base rate, GP models achieve ECE = 0.002–0.004 — essentially perfect calibration — while classical models produce ECE = 0.055–0.400. This 100$\times$ calibration advantage is directly transferable to regulatory capital adequacy: GP-produced PD estimates can be used without adjustment in Basel IRB capital formulae [@basel_committee_basel_2011], IFRS 9 expected credit loss calculations [@iasb_ifrs9_2014], and stress-testing models, whereas classical models require a post-hoc calibration stage. In practice, the calibration stage introduces both development cost and an additional validation burden under SR 11-7 model risk management requirements [@federal_reserve_sr11_7], making the GP's native calibration a material operational simplification.
+
+**Architecture depth.** On the mortgage dataset, the three-layer DGP achieves a modest ROC-AUC improvement over the two-layer variant (+0.002) for the first time across both datasets — a tentative signal that the richer risk driver interactions in mortgage data may benefit from deeper compositional structure. However, the improvement is small relative to the $3.9\times$ computational cost increase (650 s vs 168 s), and DSVGP-3L's ECE (0.004) is slightly worse than DSVGP-2L's (0.002). At small scale, DSVGP-3L again collapses (ROC-AUC = 0.510), reproducing the @duvenaud_avoiding_2014 pathology seen on the credit-card data. The evidence does not support using three-layer architectures for mortgage PD estimation.
+
+**GP vs DGP.** The single-layer SVGP provides an excellent cost-calibration trade-off on this dataset. At large scale, its ROC-AUC (0.819) is within 0.004 of the best DGP (DSVGP-3L), and its ECE (0.003) is near-indistinguishable from DSVGP-2L's (0.002). At small scale, SVGP dramatically outperforms both DGP architectures (0.764 vs 0.692/0.510). The additional compositional flexibility of the DGP primarily manifests at medium-to-large scale, where DSVGP-2L's +0.003 ROC-AUC advantage over SVGP at large scale, and +0.003 at medium scale, represent marginal gains. For mortgage PD applications where model simplicity and small-sample robustness are valued — as is typically the case for low-default portfolios — the single-layer SVGP is the more defensible choice.
+
+**Cross-dataset comparison.** Comparing the mortgage and credit-card results reveals a consistent pattern: GP models are competitive or superior on discrimination and dramatically superior on calibration in both settings, but the magnitude of the advantage is amplified on the low-default mortgage dataset. The calibration advantage grows from 12–13$\times$ (credit card, 22.1% default rate) to 100–170$\times$ (mortgage, 1.73% default rate), consistent with the Bayesian interpretation that the posterior's uncertainty quantification becomes more valuable as the prediction target moves further from 0.5 and classical models' implicit assumptions about score-to-probability mappings break down more severely [@niculescu_mizil_predicting_2005]. This finding carries a direct practical implication: the lower the default rate in a portfolio, the greater the relative advantage of GP models for producing regulatory-grade PD estimates.

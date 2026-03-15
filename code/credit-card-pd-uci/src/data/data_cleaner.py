@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-# ── Column name constants (ucimlrepo uses X1–X23) ────────────────────────────
+# -- Column name constants (ucimlrepo uses X1–X23) ----------------------------
 COL_LIMIT_BAL = "X1"   # Credit limit (NT dollar)
 COL_SEX       = "X2"   # Gender (1=male, 2=female)
 COL_EDUCATION = "X3"   # Education level (1=grad, 2=uni, 3=high school, 4=other)
@@ -61,7 +61,7 @@ class DataCleaner:
     def __init__(self, data: pd.DataFrame):
         self.data = data.copy()
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # -- Public API ------------------------------------------------------------
 
     def clean(self, apply_log_transforms: bool = False) -> tuple[pd.DataFrame, pd.Series]:
         """
@@ -113,7 +113,7 @@ class DataCleaner:
 
         return df, y
 
-    # ── Column-type helpers ───────────────────────────────────────────────────
+    # -- Column-type helpers ---------------------------------------------------
 
     @staticmethod
     def categorical_cols(X: pd.DataFrame) -> list[str]:
@@ -127,7 +127,7 @@ class DataCleaner:
         cat = DataCleaner.categorical_cols(X)
         return [c for c in X.columns if c not in cat]
 
-    # ── Private helpers ───────────────────────────────────────────────────────
+    # -- Private helpers -------------------------------------------------------
 
     @staticmethod
     def _drop_id_column(df: pd.DataFrame) -> pd.DataFrame:

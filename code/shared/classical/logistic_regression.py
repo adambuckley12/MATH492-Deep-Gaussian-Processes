@@ -53,7 +53,7 @@ class LogisticRegressionModel:
             random_state=random_state,
         )
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # -- Public API ------------------------------------------------------------
 
     def fit(self, X_train: pd.DataFrame | np.ndarray,
             y_train: pd.Series  | np.ndarray) -> "LogisticRegressionModel":
@@ -79,7 +79,7 @@ class LogisticRegressionModel:
         return evaluate_classifier(self.name, np.asarray(y_test),
                                    y_pred, y_prob, verbose=verbose)
 
-    # ── Feature importance ────────────────────────────────────────────────────
+    # -- Feature importance ----------------------------------------------------
 
     def feature_importance(
         self, feature_names: list[str] | None = None
@@ -93,7 +93,7 @@ class LogisticRegressionModel:
         df = pd.DataFrame({"feature": names, "abs_coef": coef})
         return df.sort_values("abs_coef", ascending=False).reset_index(drop=True)
 
-    # ── Persistence ────────────────────────────────────────────────
+    # -- Persistence ------------------------------------------------
 
     def save(self, path: str) -> None:
         """Serialise the fitted model to *path* using joblib."""

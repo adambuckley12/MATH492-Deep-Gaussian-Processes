@@ -8,10 +8,10 @@ Architecture
 Each layer is a sparse GP (with inducing points) whose output feeds the next.
 The final layer produces a scalar GP → Bernoulli likelihood.
 
-  Input  ──► GP Layer 1 (hidden_dim outputs)
-             ──► GP Layer 2 (hidden_dim outputs)   [3-layer only]
-                 ──► GP Layer N (scalar output)
-                     ──► BernoulliLikelihood ──► P(default)
+  Input  --► GP Layer 1 (hidden_dim outputs)
+             --► GP Layer 2 (hidden_dim outputs)   [3-layer only]
+                 --► GP Layer N (scalar output)
+                     --► BernoulliLikelihood --► P(default)
 
 Intermediate layers have ``output_dims=hidden_dim`` (a batch of
 ``hidden_dim`` independent GPs), so the latent representation has
@@ -72,9 +72,9 @@ def _iter_batches(
         yield X[b], y[b]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Single Deep GP layer
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 class _DeepGPLayer(DeepGPLayer):
     """
@@ -147,9 +147,9 @@ class _DeepGPLayer(DeepGPLayer):
         )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Internal Deep GP model (GPyTorch DeepGP subclass)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 class _DSVGPInternalModel(DeepGP):
     """
@@ -172,7 +172,7 @@ class _DSVGPInternalModel(DeepGP):
         super().__init__()
         assert n_layers >= 2, "Need at least 2 layers for a Deep GP."
 
-        # ── First-layer inducing points from real training data ────────────────
+        # -- First-layer inducing points from real training data ----------------
         # Sampling from actual data puts inducing points where the likelihood
         # signal is, preventing the first-layer kernel matrix from collapsing
         # to near-zero (which happens with torch.randn when data is standardised
@@ -216,9 +216,9 @@ class _DSVGPInternalModel(DeepGP):
         return preds
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Public wrapper
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 class DSVGPModel:
     """
@@ -279,7 +279,7 @@ class DSVGPModel:
     def name(self) -> str:
         return f"DSVGP-{self.n_layers}L"
 
-    # ── Fitting ───────────────────────────────────────────────────────────────
+    # -- Fitting ---------------------------------------------------------------
 
     def fit(
         self,
@@ -335,7 +335,7 @@ class DSVGPModel:
 
         return self
 
-    # ── Prediction ────────────────────────────────────────────────────────────
+    # -- Prediction ------------------------------------------------------------
 
     @torch.no_grad()
     def predict_proba(self, X: pd.DataFrame | np.ndarray,
@@ -383,7 +383,7 @@ class DSVGPModel:
             self.name, np.asarray(y_test), y_pred, y_prob, verbose=verbose
         )
 
-    # ── Persistence ────────────────────────────────────────────────
+    # -- Persistence ------------------------------------------------
 
     def save(self, path: str) -> None:
         """
@@ -449,7 +449,7 @@ class DSVGPModel:
             X_init       = None,
         ).to(obj.device)
 
-        # ── Migrate checkpoints saved before the inducing-point shape fix ──────
+        # -- Migrate checkpoints saved before the inducing-point shape fix ------
         # Old checkpoints stored hidden layer 0 inducing points with shape
         # [num_inducing, input_dims] instead of [hidden_dim, num_inducing, input_dims].
         # Detect and expand so load_state_dict succeeds on old weight files.

@@ -37,7 +37,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-# ── Column name constants (readable names after DataCleaner.clean()) ──────────
+# -- Column name constants (readable names after DataCleaner.clean()) ----------
 _SEX_COL       = "SEX"
 _EDU_COL       = "EDUCATION"
 _MAR_COL       = "MARRIAGE"
@@ -90,9 +90,9 @@ class DataPreprocessor:
         self.n_components_:   int            | None = None # PCA components used
         self.split_summary_:  dict[str, dict[str, float | int]] = {}
 
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
     # Public API
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     def fit_transform_split(
         self, X: pd.DataFrame, y: pd.Series
@@ -209,9 +209,9 @@ class DataPreprocessor:
             X_enc = self._apply_pca(X_enc)
         return X_enc
 
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
     # Encoding
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     @staticmethod
     def _encode_categoricals(X: pd.DataFrame) -> pd.DataFrame:
@@ -235,9 +235,9 @@ class DataPreprocessor:
 
         return X
 
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
     # Scaling
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     def _fit_scale(self, X: pd.DataFrame) -> pd.DataFrame:
         """Fit a StandardScaler on numeric columns and scale them."""
@@ -255,9 +255,9 @@ class DataPreprocessor:
         X[num_cols] = self._scaler.transform(X[num_cols].astype(float))
         return X
 
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
     # PCA  (optional — continuous columns only)
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     def _fit_pca(self, X: pd.DataFrame) -> pd.DataFrame:
         """
@@ -291,9 +291,9 @@ class DataPreprocessor:
         return pd.concat([X[non_pca_cols].reset_index(drop=True),
                           pc_df.reset_index(drop=True)], axis=1)
 
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
     # Helpers
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     def explained_variance_summary(self) -> pd.DataFrame:
         """
