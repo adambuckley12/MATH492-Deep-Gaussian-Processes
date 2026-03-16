@@ -2,10 +2,19 @@
 title: Deep Gaussian Processes
 authors:
   - name: Adam Buckley
-    affiliation: Lancaster University
+    affiliations:
+      - name: Lancaster University
+    email: a.buckley4@lancaster.ac.uk
     roles: writing
     corresponding: true
 bibliography: references.bib
+abstract-title: Abstract
+abstract: |
+  Gaussian processes (GPs) provide a non-parametric framework for Bayesian inference, offering predictions and calibrated uncertainty estimates. The expressiveness of a single GP is limited by its kernel, which encodes a fixed notion of smoothness across the entire input space. Deep Gaussian Processes (DGPs) address this limitation by composing multiple GP layers into a hierarchy, allowing the model to learn representations at multiple levels of abstraction while retaining Bayesian uncertainty quantification. This additional expressiveness comes at a cost of tractability as the composition breaks the Gaussian conjugacy that makes single-layer inference exact, leaving the marginal likelihood and posterior intractable.
+
+  This dissertation develops the theory of GPs and DGPs from first principles, derives the variational inference framework needed to make DGP training tractable at scale, and applies both model families to a real-world financial risk dataset. We begin from the weight-space view of Bayesian linear regression and build to the function-space perspective of GPs, then show how composing GP layers leads to a non-Gaussian joint distribution and motivates doubly stochastic variational inference.
+
+  TODO: FINISH THIS AS CHANGING DATASETS
 ---
 
 <!-- Introduction section -->
@@ -33,8 +42,11 @@ bibliography: references.bib
 
 <!-- Modeling -->
 {{< include sections/4-modeling/0-overview.qmd >}}
+{{< include sections/4-modeling/1-kin8nm.qmd >}}
+{{< include sections/4-modeling/1.5-finance-intro.qmd >}}
 {{< include sections/4-modeling/1-uci-credit-card-default.qmd >}}
 {{< include sections/4-modeling/2-freddie-mac.qmd >}}
+{{< include sections/4-modeling/3-conclusion.qmd >}}
 
 
 {{< include sections/99-appendix/0-gps-appendix.qmd >}}

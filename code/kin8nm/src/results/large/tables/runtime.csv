@@ -1,0 +1,7 @@
+model,family,train_time_sec
+Ridge Regression,classical,0.001
+Random Forest,classical,2.3
+XGBoost,classical,1.704
+SVGP,gp,40.4533
+DSVGP-2L,dgp,35.8658
+DSVGP-3L,dgp,147.4503

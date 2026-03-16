@@ -18,7 +18,7 @@ where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This property that ev
 
 ## Kernels and Covariance Functions {#sec-kernels}
 
-All of the structure of the prior is encoded in the kernel $k$. The kernel determines how function values co-vary across input space: inputs that are 'close', as measured by the kernel $k$, will have strongly correlated function values, while distant inputs are nearly independent. Kernel hyper-parameters directly control the interpretable properties such as the length-scale (how rapidly the function varies), the output scale (the typical amplitude), and whether the function is stationary or periodic. @fig-kernels illustrates this with two common choices: the squared exponential (SE) kernel, which produces infinitely differentiable functions whose roughness is controlled by a length-scale parameter $\ell$, and the periodic kernel, whose period parameter $p$ fixes the repetition frequency of the sampled functions. 
+All the structure of the prior is encoded in the kernel $k$. The kernel determines how function values co-vary across input space: inputs that are 'close', as measured by the kernel $k$, will have strongly correlated function values, while distant inputs are nearly independent. Kernel hyper-parameters directly control the interpretable properties such as the length-scale (how rapidly the function varies), the output scale (the typical amplitude), and if the function is stationary or periodic. @fig-kernels illustrates this with two common choices: the squared exponential (SE) kernel, which produces infinitely differentiable functions whose roughness is controlled by a length-scale parameter $\ell$, and the periodic kernel, whose period parameter $p$ fixes the repetition frequency of the sampled functions. 
 
 ```{python}
 #| label: fig-kernels
@@ -100,11 +100,11 @@ explicitly encodes a repeating structure with period $p$, making it suitable for
 
 Other common kernels include the Matérn family, which has an additional smoothness parameter that controls the differentiability of the sampled functions, and the rational quadratic kernel, which can be seen as a scale mixture of SE kernels and can capture varying length-scales [@rasmussen_gaussian_2008, Section 4.2-4.3].
 
-Kernels can also be combined — sums and products of valid kernels are themselves valid kernels — enabling the construction of structured priors that capture multiple scales or mixed behaviours [@scholkopf_learning_2002].
+Kernels can also be combined: both sums and products of valid kernels are themselves valid kernels. This enables the construction of structured priors that capture multiple scales or mixed behaviours [@scholkopf_learning_2002].
 
 ## Choosing Kernel Hyperparameters {#sec-kernel-hyperparams}
 
-The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, which is known as *type-II* or *level-II* maximum likelihood or sometimes as *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @deisenroth_practical_2010],
+The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and so must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, which is known as *type-II* or *level-II* maximum likelihood or sometimes as *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @deisenroth_practical_2010],
 
 <!--- underline each section in the LML expression and explain its interpretation --->
 $$
@@ -115,7 +115,8 @@ $$
 \end{aligned}
 $$ {#eq-log-marginal-likelihood}
 
-This LML has three interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$ [@rasmussen_gaussian_2008]. However, the LML is non-convex and can have multiple local optima, so it is common to perform multiple random restarts to increase the chances of finding a good solution. Additionally, since kernel hyperparameters are typically constrained to be positive, as a negative length-scale or noise variance would not make sense, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
+This LML has three interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$. However, the LML is non-convex in general, and in low-dimensional settings can exhibit multiple local optima; it is common to use multiple random restarts or a good initialisation strategy to mitigate this [@rasmussen_gaussian_2008].
+Additionally, since kernel hyperparameters are typically constrained to be positive, as a negative length-scale or noise variance would not make sense, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
 
 ## GP Regression {#sec-gp-regression}
 
@@ -153,9 +154,9 @@ k_{\text{post}}(\vx_*, \vx_*) &= k_{**} - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_
 \end{aligned}
 $$ {#eq-gp-posterior-moments}
 
-These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data. As more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Note that $\sigma_n^2$ enters both posterior expressions through $(K + \sigma_n^2\vI)^{-1}$: noisier observations are down-weighted, so the posterior retains more prior uncertainty. The full predictive distribution for a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds $+\sigma_n^2$ to the latent posterior variance, giving @eq-gp-predictive.
+These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data. As more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Specifically, $\vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_*$ is large when $\vx_*$ is strongly correlated with the training inputs, with $(K+\sigma_n^2\vI)^{-1}$ penalising duplicate, redundant or noisy observations. The full predictive distribution for a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds $+\sigma_n^2$ to the latent posterior variance, giving @eq-gp-predictive.
 
-@fig-gp-regression illustrates these properties : the left panel shows three samples from the GP prior, and the right panel shows the posterior after conditioning on observations, where uncertainty collapses near the data and the posterior mean tracks the observations.
+@fig-gp-regression illustrates these properties: the left panel shows three samples from the GP prior, and the right panel shows the posterior after conditioning on observations, where uncertainty collapses near the data and the posterior mean tracks the observations.
 
 ```{python}
 #| label: fig-gp-regression
@@ -279,13 +280,15 @@ $$\log p(\vy \mid \vX, \boldsymbol{\theta}) = -\frac{1}{2}\vy^\top(K + \sigma_n^
 The gradient of the LML with respect to a hyperparameter $\theta_j$ can be derived using the matrix derivative trace formula [@rasmussen_gaussian_2008, Equation 5.9], yielding:
 $$  \frac{\partial \log p(\vy \mid \vX, \boldsymbol{\theta})}{\partial \theta_j} = \frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j} (K + \sigma_n^2\vI)^{-1} \vy - \frac{1}{2}\text{tr}\!\left((K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j}\right). $$
 
-This expression consists of two terms: the first encourages the model to fit the data well by increasing the LML when the hyperparameter leads to a better fit, while the second penalises overly complex models by decreasing the LML when the hyperparameter increases model complexity. These gradients can be computed efficiently using automatic differentiation libraries, allowing for effective optimisation of the hyperparameters.
+Defining $K_\alpha = K + \sigma_n^2\vI$ and $\valpha = K_\alpha^{-1}\vy$, the gradient has two interpretable terms. The trace $\text{tr}(A)$ denotes the sum of the diagonal entries of a matrix $A$; it appears here via the identity $\frac{\partial \log|A|}{\partial\theta_j} = \text{tr}\!\left(A^{-1}\frac{\partial A}{\partial\theta_j}\right)$, so the second term is the negative gradient of the log-determinant $\log|K_\alpha|$. The first term, $\frac{1}{2}\valpha^\top \frac{\partial K_\alpha}{\partial \theta_j}\valpha$, is the data-fit gradient which is large when the change in kernel structure aligns with the pattern in the posterior weights $\valpha$. It therefore rewards the hyperparameters whose covariance better explains $\vy$. The second term, $-\frac{1}{2}\text{tr}(K_\alpha^{-1}\frac{\partial K_\alpha}{\partial \theta_j})$, penalises growth in the kernel's effective degrees of freedom regardless of the data. So the total result is a balance of these terms where hyperparameters increase only as much as the improvement in the data fit justifies the added complexity.
 
-In practice, the training loop iterates: (1) evaluate the negative LML via Cholesky factorisation of $K_\theta + \sigma_n^2\vI$; (2) backpropagate to obtain $\partial \mathcal{L}/\partial \theta_j$ for each hyperparameter; (3) apply an update step (e.g.\ Adam). Because the LML is non-convex, running multiple random restarts and keeping the solution with the lowest negative LML is common practice. Positive-constrained hyperparameters ($\ell$, $\sigma_f^2$, $\sigma_n^2$) are parameterised in log-space throughout to ensure positivity and improve the conditioning of the optimisation landscape. @fig-gp-training illustrates the effect of training: a GP with a poorly initialised length-scale produces an oversmoothed, miscalibrated fit, while the same model after 50 Adam steps accurately recovers the latent function.
+In practice, the training loop iterates: (1) evaluate the negative LML via Cholesky factorisation of $K_\theta + \sigma_n^2\vI$; (2) backpropagate to obtain $\partial \mathcal{L}/\partial \theta_j$ for each hyperparameter; (3) apply an update step (e.g.\ Adam). As discussed in @sec-kernel-hyperparams, we optimize the hyperparameters in log-space, and multiple restarts or a good initialisation strategy can help mitigate local optima in the LML landscape.
+
+@fig-gp-training illustrates the effect of training: a GP with a poorly initialised length-scale produces an oversmoothed, miscalibrated fit, while the same model after 50 Adam steps accurately recovers the latent function.
 
 ```{python}
 #| label: fig-gp-training
-#| fig-cap: "Effect of hyperparameter training on GP fit. Left: GP with a deliberately large initial length-scale and near-zero noise variance, producing a flat oversmoothed posterior. Centre: negative log marginal likelihood during 50 Adam iterations. Right: GP after training \u2014 the learnt hyperparameter values are shown in the subtitle."
+#| fig-cap: "Effect of hyperparameter training on GP fit. Left: GP with a intentionally large initial length-scale and a near-zero noise variance, giving a flat oversmoothed posterior. Centre: negative log marginal likelihood during 50 Adam training iterations. Right: GP after training. The learnt hyperparameter values are shown above the plots."
 #| echo: false
 
 import torch
@@ -373,16 +376,16 @@ plt.show()
 
 ## Prediction {#sec-gp-prediction} /TODO: CLEAN UP THIS SECTION
 
-With hyperparameters fixed at their optimised values $\hat{\boldsymbol{\theta}}$, prediction reduces to evaluating the posterior from @eq-gp-posterior-moments at any desired test location $\vx_*$. The main cost for a prediciton is forming the Cholesky factorisation $LL^\top = K_{\hat{\vtheta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ and performed once. Once cached, evaluating the predictive mean and variance at a new point requires only two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point. Therefore, making prediction at test time once training has been completed is efficient, and the main bottleneck is purely the training phase for large datasets.
+After learning, with hyperparameters now fixed at their optimised values $\hat{\boldsymbol{\theta}}$, the task of predicting a new observation $y_*$ at a test input $\vx_*$ reduces to evaluating the posterior from @eq-gp-posterior-moments at $\vx_*$. The main cost for a prediction the Cholesky factorisation $LL^\top = K_{\hat{\vtheta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ which is only performed once. Once cached, evaluating the predictive mean and variance at a new point only requires two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point. Therefore, making prediction at test time once training has been completed is efficient, and the main bottleneck is purely the training phase for large datasets.
 
-The predictive variance at a test point $\vx_*$ decomposes naturally into two parts:
+The predictive variance at a test point $\vx_*$ can be split into two parts:
 $$
 \Var[y_* \mid \vx_*, \vX, \vy, \hat{\vtheta}]
 = \underbrace{k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_*}_{\text{epistemic (reducible)}}
 + \underbrace{\sigma_n^2}_{\text{aleatoric (irreducible)}},
 $$ {#eq-variance-decomposition}
 
-where the first term is the *epistemic* uncertainty — reflecting ignorance about the latent function $f$ — and the second is the *aleatoric* noise variance [@kendall_what_2017]. The epistemic component shrinks as training observations accumulate near $\vx_*$, and recovers the full prior variance $k(\vx_*, \vx_*)$ only in regions with no data. The aleatoric term $\sigma_n^2$ is present whenever a noisy observation $y_* = f(\vx_*) + \epsilon_*$ is requested, but absent from the latent predictive distribution over $f(\vx_*)$ itself. This separation is a distinctive strength of the GP framework: the two sources of uncertainty are quantified separately and automatically, without requiring any post-hoc calibration [@rasmussen_gaussian_2008; @kendall_what_2017].
+where the first term is the *epistemic* uncertainty which is the model's ignorance about $f$. The second is the *aleatoric* noise [@kendall_what_2017]. The epistemic term decreases as training data accumulates near $\vx_*$, and equals the full prior variance $k(\vx_*, \vx_*)$ where no data has been observed. The $\sigma_n^2$ term is always present is always present when predicting a noisy observation $y_*$, but absent when predicting the latent $f(\vx_*)$ directly. It is an irreducible a hard floor on prediction uncertainty that no amount of data can eliminate.
 
 This is visible in @fig-gp-regression: uncertainty collapses near the training observations (low epistemic uncertainty) and inflates in the gaps and at the extrapolation boundaries (high epistemic uncertainty), while the posterior mean threads through the data.
 

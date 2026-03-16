@@ -67,7 +67,7 @@ $$
 p(\vw \mid \vX, \vy) = \N(\vw \mid \bar{\vw}, \Sigma_w).
 $$ {#eq-posterior-weights}
 
-See [Appendix @sec-posterior-derivation] for the full derivation of the posterior mean and covariance.
+See [Appendix @sec-completing-the-square] for the full derivation of the posterior mean and covariance.
 
 ## Predictive Distribution
 
@@ -87,7 +87,7 @@ $$ {#eq-predictive-mean-var}
 
 ## From Weight Space to Function Space {#sec-weight-to-function-space}
 
-The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. However, we can see $\vphi$ appears only through inner products with the posterior covariance $\Sigma_w$, of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. We can define this *kernel function* (interchangeably called a *covariance function*) as an inner product in the feature space: [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
+The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. However, we can see $\vphi$ appears only through inner products with the posterior covariance $\Sigma_w$, of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. We can define a *kernel function* (interchangeably called a *covariance function*) as an inner product in the feature space: [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
 $$
 k(\vx, \vx') = \vphi(\vx)^\top \Sigma_p \vphi(\vx'),
 $$ {#eq-kernel-def}
@@ -136,6 +136,6 @@ $$
 p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-predictive-kernel-full}
 
-The most important observation here is that $\vphi$ has vanished entirely. The predictions clearly now depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. In particular, if we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.
+The most important observation here is that $\vphi$ has vanished entirely. The predictions clearly now depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. If we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.
 
-This is the so called *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.
+This is the so-called *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.

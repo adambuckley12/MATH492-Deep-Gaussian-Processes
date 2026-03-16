@@ -6,7 +6,7 @@ manuscript:
   notebooks: []
 
 number-sections: true
-toc: true
+toc: false
 toc-depth: 2
 reference-section-title: "References"
 link-citations: true
@@ -19,7 +19,15 @@ format:
   # (other formats)
   pdf:
     pdf-engine: pdflatex
-    include-in-header: _macros.tex
+    include-in-header:
+      - _macros.tex
+      - text: |
+          \renewcommand{\abstractname}{Abstract}
+          \makeatletter
+          \AtBeginDocument{%
+            \g@addto@macro\@author{\\[4pt]\small Lancaster University\\[2pt]\small \href{mailto:a.buckley4@lancaster.ac.uk}{\texttt{a.buckley4@lancaster.ac.uk}}}%
+          }
+          \makeatother
     notebook-links: false
     geometry:
       - a4paper

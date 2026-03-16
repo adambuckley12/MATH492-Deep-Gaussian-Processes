@@ -29,3 +29,6 @@ code/freddie-mac-pd/src/results/large/weights/**
 
 code/**/__pycache__/**
 _freeze/
+code/kin8nm/src/results/**/weights/
+
+

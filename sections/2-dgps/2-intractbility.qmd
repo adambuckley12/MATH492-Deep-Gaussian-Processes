@@ -22,7 +22,7 @@ $$
 \int \mathcal{N}(\vF^{(2)} \mid \vzero, K^{(2)}(\vF^{(1)})) \mathcal{N}(\vF^{(1)} \mid \vzero, K^{(1)}) \, d\vF^{(1)}
 $$
 
-is a mixture of Gaussians with continuously varying covariance. Intuitively, for every possible realisation of $\vF^{(1)}$ there is a different Gaussian over $\vF^{(2)}$; marginalising out $\vF^{(1)}$ means averaging together infinitely many Gaussians with different shapes, producing a result that is heavier-tailed and more complex than any individual Gaussian component. No closed form exists for these integrals.
+is a mixture of Gaussians with continuously varying covariance. Intuitively, for every possible realisation of $\vF^{(1)}$ there is a different Gaussian over $\vF^{(2)}$; marginalising out $\vF^{(1)}$ means averaging together infinitely many Gaussians with different shapes, producing a result that is heavier-tailed and more complex than any individual Gaussian component. These do not have a closed-form expression, and the resulting distribution over $\vF^{(2)}$ is non-Gaussian.
 
 As well as the intractability of the marginal likelihood, the resulting distribution over outputs is non-Gaussian. Consider a two-layer DGP with first-layer outputs $h_1 = f^{(1)}(x_1)$, $h_2 = f^{(1)}(x_2)$. From the GP prior:
 
@@ -43,8 +43,6 @@ p(y_1, y_2) = \int p(y_1, y_2 \mid h_1, h_2) \, p(h_1, h_2) \, dh_1 \, dh_2
 $$ {#eq-marginal_y}
 
 is a continuous mixture of Gaussians with varying covariance matrices. Since $k^{(2)}(h_1, h_2)$ is a nonlinear function of $(h_1, h_2)$, this mixture is not Gaussian.
-
-This can be verified by noting that a Gaussian mixture with continuously varying covariance matrices produces a distribution whose higher moments (e.g., kurtosis) differ from those of any single Gaussian. In particular, the marginal density of $y_1$ under such a mixture is generally heavier-tailed than any individual Gaussian component [@gelman_bayesian_2025].
 
 The posterior over all latent functions is:
 

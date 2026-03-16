@@ -1,0 +1,25 @@
+feature,abs_coef,model,importance,gain
+theta1,0.04118224022985852,Ridge Regression,,
+theta2,0.024070439080721043,Ridge Regression,,
+theta3,0.13349549442999087,Ridge Regression,,
+theta4,0.025263158402981566,Ridge Regression,,
+theta5,0.06697020306690171,Ridge Regression,,
+theta6,0.03126010598192625,Ridge Regression,,
+theta7,0.03412263240060148,Ridge Regression,,
+theta8,0.012143409922264243,Ridge Regression,,
+theta1,,Random Forest,0.07691236156735208,
+theta2,,Random Forest,0.07107141883474968,
+theta3,,Random Forest,0.32736449606246304,
+theta4,,Random Forest,0.09049388933949017,
+theta5,,Random Forest,0.1359731683333119,
+theta6,,Random Forest,0.11522244804990874,
+theta7,,Random Forest,0.10753413337490993,
+theta8,,Random Forest,0.07542808443781451,
+theta1,,XGBoost,,0.024954400956630707
+theta2,,XGBoost,,0.031044116243720055
+theta3,,XGBoost,,0.13388901948928833
+theta4,,XGBoost,,0.048085812479257584
+theta5,,XGBoost,,0.0618680901825428
+theta6,,XGBoost,,0.0582994781434536
+theta7,,XGBoost,,0.05294274538755417
+theta8,,XGBoost,,0.043574340641498566
