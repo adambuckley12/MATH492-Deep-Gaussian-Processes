@@ -72,9 +72,9 @@ def _iter_batches(
         yield X[b], y[b]
 
 
-# -----------------------------------------------------------------------------
+# --
 # Single Deep GP layer
-# -----------------------------------------------------------------------------
+# --
 
 class _DeepGPLayer(DeepGPLayer):
     """
@@ -147,9 +147,9 @@ class _DeepGPLayer(DeepGPLayer):
         )
 
 
-# -----------------------------------------------------------------------------
+# --
 # Internal Deep GP model (GPyTorch DeepGP subclass)
-# -----------------------------------------------------------------------------
+# --
 
 class _DSVGPInternalModel(DeepGP):
     """
@@ -216,9 +216,9 @@ class _DSVGPInternalModel(DeepGP):
         return preds
 
 
-# -----------------------------------------------------------------------------
+# --
 # Public wrapper
-# -----------------------------------------------------------------------------
+# --
 
 class DSVGPModel:
     """
@@ -279,7 +279,7 @@ class DSVGPModel:
     def name(self) -> str:
         return f"DSVGP-{self.n_layers}L"
 
-    # -- Fitting ---------------------------------------------------------------
+    # -- Fitting
 
     def fit(
         self,
@@ -335,7 +335,7 @@ class DSVGPModel:
 
         return self
 
-    # -- Prediction ------------------------------------------------------------
+    # Prediction
 
     @torch.no_grad()
     def predict_proba(self, X: pd.DataFrame | np.ndarray,
@@ -383,7 +383,7 @@ class DSVGPModel:
             self.name, np.asarray(y_test), y_pred, y_prob, verbose=verbose
         )
 
-    # -- Persistence ------------------------------------------------
+    # Persistence
 
     def save(self, path: str) -> None:
         """

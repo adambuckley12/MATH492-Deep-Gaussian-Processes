@@ -389,14 +389,14 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 | Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
 |:------|:-----:|:----------:|:---------:|:------:|
-| Logistic Regression | 0.577 | 0.519 | 0.501 | 0.537 |
-| Random Forest | 0.490 | 0.541 | 0.550 | 0.533 |
-| XGBoost | 0.474 | 0.558 | 0.562 | 0.554 |
-| SVGP | 0.319 | 0.492 | 0.431 | 0.572 |
-| DSVGP-2L | 0.300 | 0.541 | 0.532 | 0.551 |
-| DSVGP-3L | 0.291 | 0.527 | 0.533 | 0.521 |
+| Logistic Regression | 0.55 | 0.513 | 0.474 | 0.559 |
+| Random Forest | 0.40 | 0.538 | 0.506 | 0.573 |
+| XGBoost | 0.55 | 0.543 | 0.523 | 0.565 |
+| SVGP | 0.30 | 0.546 | 0.541 | 0.550 |
+| DSVGP-2L | 0.30 | 0.541 | 0.534 | 0.549 |
+| DSVGP-3L | 0.30 | 0.541 | 0.515 | 0.569 |
 
-: F1-optimal operating thresholds for all six models on the UCI credit-card dataset (large tier). GP models require thresholds approximately 0.17–0.28 below $0.5$, while classical models cluster near $0.5$. {#tbl-app-uci-threshold-optima}
+: F1-optimal operating thresholds for all six models on the UCI credit-card dataset (large tier). GP models operate at $t^* = 0.30$, approximately 0.20 below the conventional threshold, while classical models range from 0.40–0.55. {#tbl-app-uci-threshold-optima}
 
 ### Bootstrap Confidence Intervals {#sec-appendix-uci-ci}
 
@@ -405,11 +405,11 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 | Logistic Regression | 0.739 | [0.723, 0.755] | 0.225 | [0.215, 0.235] |
 | Random Forest | 0.769 | [0.754, 0.783] | 0.087 | [0.078, 0.096] |
 | XGBoost | 0.779 | [0.765, 0.794] | 0.196 | [0.187, 0.205] |
-| SVGP | 0.776 | [0.760, 0.790] | 0.017 | [0.012, 0.027] |
-| DSVGP-2L | 0.779 | [0.764, 0.793] | 0.012 | [0.009, 0.024] |
-| DSVGP-3L | 0.777 | [0.762, 0.792] | 0.014 | [0.010, 0.025] |
+| SVGP | 0.776 | [0.760, 0.790] | 0.015 | [0.010, 0.023] |
+| DSVGP-2L | 0.778 | [0.764, 0.793] | 0.017 | [0.012, 0.026] |
+| DSVGP-3L | 0.777 | [0.762, 0.792] | 0.016 | [0.011, 0.025] |
 
-: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.027$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
+: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.026$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
 
 ## Kin8nm: Supplementary Tables {#sec-kin8nm-supp-tables}
 
@@ -427,11 +427,11 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 | Model | Time (s, small) | Time (s, medium) | Time (s, large) |
 |:------|:---------------:|:----------------:|:---------------:|
-| Ridge Regression | 0.005 | 0.001 | 0.001 |
-| Random Forest | 0.25 | 1.15 | 2.30 |
-| XGBoost | 0.23 | 0.95 | 1.70 |
-| SVGP | 4.9 | 19.0 | 40.5 |
-| DSVGP-2L | 3.0 | 18.2 | 35.9 |
-| DSVGP-3L | 12.9 | 75.7 | 147.5 |
+| Ridge Regression | 0.001 | 0.001 | 0.001 |
+| Random Forest | 0.23 | 0.45 | 0.72 |
+| XGBoost | 0.31 | 1.04 | 1.68 |
+| SVGP | 3.9 | 19.0 | 36.6 |
+| DSVGP-2L | 3.4 | 16.6 | 36.2 |
+| DSVGP-3L | 13.6 | 71.4 | 152.4 |
 
 : Training time scaling across Kin8nm tiers. DSVGP-3L is approximately $4\times$ the cost of DSVGP-2L at all scales. {#tbl-app-kin8nm-runtime}

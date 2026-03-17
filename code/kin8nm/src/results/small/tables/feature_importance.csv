@@ -1,25 +1,25 @@
 feature,abs_coef,model,importance,gain
-theta1,0.04427449294888536,Ridge Regression,,
-theta2,0.00979677117583307,Ridge Regression,,
 theta3,0.13818945759151505,Ridge Regression,,
-theta4,0.013170741169991304,Ridge Regression,,
 theta5,0.07724815788491052,Ridge Regression,,
-theta6,0.03294895946463237,Ridge Regression,,
 theta7,0.04840261887252,Ridge Regression,,
+theta1,0.04427449294888536,Ridge Regression,,
+theta6,0.03294895946463237,Ridge Regression,,
+theta4,0.013170741169991304,Ridge Regression,,
 theta8,0.013075214253400323,Ridge Regression,,
-theta1,,Random Forest,0.07274722888553543,
-theta2,,Random Forest,0.06555198354326883,
-theta3,,Random Forest,0.3751525106336449,
-theta4,,Random Forest,0.07164889514516222,
-theta5,,Random Forest,0.15996626423199448,
-theta6,,Random Forest,0.08763771240998115,
-theta7,,Random Forest,0.1034293290192715,
-theta8,,Random Forest,0.06386607613114137,
-theta1,,XGBoost,,0.020091896876692772
-theta2,,XGBoost,,0.021656028926372528
+theta2,0.00979677117583307,Ridge Regression,,
+theta3,,Random Forest,0.30959628485646257,
+theta5,,Random Forest,0.14398722825557575,
+theta7,,Random Forest,0.11526637294263942,
+theta6,,Random Forest,0.09513882379160453,
+theta1,,Random Forest,0.09077133167217825,
+theta4,,Random Forest,0.08444606092202682,
+theta8,,Random Forest,0.08242192670340143,
+theta2,,Random Forest,0.07837197085611133,
 theta3,,XGBoost,,0.09883998334407806
-theta4,,XGBoost,,0.03202671557664871
 theta5,,XGBoost,,0.052160248160362244
-theta6,,XGBoost,,0.03654354065656662
 theta7,,XGBoost,,0.04306800663471222
+theta6,,XGBoost,,0.03654354065656662
+theta4,,XGBoost,,0.03202671557664871
 theta8,,XGBoost,,0.031511593610048294
+theta2,,XGBoost,,0.021656028926372528
+theta1,,XGBoost,,0.020091896876692772

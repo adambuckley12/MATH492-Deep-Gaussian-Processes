@@ -35,7 +35,8 @@ from sklearn.model_selection import train_test_split
 
 from data.data_loader import load_kin8nm
 from data.data_preprocessor import DataPreprocessor
-from regression_pipeline import RegressionPipelineConfig, run_regression_pipeline
+from base import PipelineConfig
+from regression_pipeline import run_regression_pipeline
 from regression_figures import generate_all_regression_figures
 
 SEED = 42
@@ -90,7 +91,7 @@ def run_tier(
     }
 
     dirs = _dirs(label)
-    cfg = RegressionPipelineConfig(
+    cfg = PipelineConfig(
         seed=SEED,
         tables_dir=dirs["tables"],
         predictions_dir=dirs["predictions"],

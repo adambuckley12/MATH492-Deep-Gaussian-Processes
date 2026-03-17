@@ -39,7 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-# -- Expected Calibration Error ------------------------------------------------
+# Expected Calibration Error
 
 def expected_calibration_error(
     y_true: np.ndarray,

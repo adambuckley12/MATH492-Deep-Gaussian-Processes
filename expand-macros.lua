@@ -9,9 +9,7 @@
 -- Macros are listed LONGEST-FIRST where names share a common prefix, so
 -- that e.g. \vSigma is replaced before \vs is even considered.
 
--- ---------------------------------------------------------------------------
 -- Zero-argument macros: { "name", "latex_replacement" }
--- ---------------------------------------------------------------------------
 local zero_arg = {
   -- Greek bold matrices (longer names must come before shorter prefixes)
   { "vSigma",   "\\boldsymbol{\\Sigma}" },
@@ -83,19 +81,17 @@ local zero_arg = {
   { "R", "\\mathbb{R}" },
 }
 
--- ---------------------------------------------------------------------------
+-- 
 -- Two-argument macros: \name{arg1}{arg2}
 -- (Uses a simple [^{}]* capture – sufficient for non-nested arguments.)
--- ---------------------------------------------------------------------------
+-- 
 local two_arg = {
   { "dd",  "\\frac{d\\,%1}{d\\,%2}" },
   { "pd",  "\\frac{\\partial\\,%1}{\\partial\\,%2}" },
   { "pdd", "\\frac{\\partial^{2}\\,%1}{\\partial\\,%2^{2}}" },
 }
 
--- ---------------------------------------------------------------------------
 -- Helper: replace \name when NOT followed by a letter (word-boundary safety)
--- ---------------------------------------------------------------------------
 local function expand_zero(text, name, repl)
   -- Case 1: \name followed by a non-letter character
   text = text:gsub("\\" .. name .. "([^%a])", repl .. "%1")
@@ -110,9 +106,7 @@ local function expand_two(text, name, repl)
   return text
 end
 
--- ---------------------------------------------------------------------------
 -- Pandoc Math filter
--- ---------------------------------------------------------------------------
 function Math(el)
   local t = el.text
 

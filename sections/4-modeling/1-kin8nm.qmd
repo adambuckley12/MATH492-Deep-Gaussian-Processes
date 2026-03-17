@@ -19,19 +19,19 @@ All features were standardised to zero mean and unit variance, fit on training d
 | Model | RMSE | MAE | R² | NLPD | Time (s) |
 |:------|:----:|:---:|:--:|:----:|:--------:|
 | Ridge Regression | 0.2023 | 0.1626 | 0.408 | — | 0.001 |
-| Random Forest | 0.1435 | 0.1131 | 0.702 | — | 2.30 |
-| XGBoost | 0.1190 | 0.0902 | 0.795 | — | 1.70 |
-| SVGP | 0.0783 | 0.0601 | 0.911 | $-1.116$ | 40.5 |
-| **DSVGP-2L** | **0.0699** | **0.0541** | **0.929** | $\mathbf{-1.241}$ | 35.9 |
-| DSVGP-3L | 0.0759 | 0.0583 | 0.917 | $-1.158$ | 147.5 |
+| Random Forest | 0.1482 | 0.1187 | 0.683 | — | 0.72 |
+| XGBoost | 0.1190 | 0.0902 | 0.795 | — | 1.68 |
+| SVGP | 0.0783 | 0.0601 | 0.911 | $-1.116$ | 36.6 |
+| **DSVGP-2L** | **0.0699** | **0.0541** | **0.929** | $\mathbf{-1.241}$ | 36.2 |
+| DSVGP-3L | 0.0759 | 0.0583 | 0.917 | $-1.158$ | 152.4 |
 
 : Regression results on Kin8nm at full scale ($N_{\text{train}} = 5{,}570$, $N_{\text{test}} = 1{,}639$). Bold entries indicate best values. Lower RMSE, MAE, and NLPD are better; higher R² is better. {#tbl-kin8nm-large}
 
 ![Predicted vs actual values at full scale. DSVGP-2L shows the tightest clustering around the diagonal, with RMSE = 0.0699 vs SVGP's 0.0783.](/sections/4-modeling/assets/kin8nm/large/predicted_vs_actual.png){#fig-kin8nm-pred-actual}
 
-The Kin8nm results show a clear advantage for the deeper architecture. DSVGP-2L achieves RMSE = 0.0699 versus SVGP's 0.0783, which is a a 10.7% reduction, with R² = 0.929 versus 0.911. The NLPD improvement ($-1.241$ vs $-1.116$) shows that the DGP not only predicts more accurately but also provides better-calibrated predictive uncertainty. Here, additional GP depth translates into consistent performance increases.
+The Kin8nm results show a clear advantage for the deeper architecture. DSVGP-2L achieves RMSE = 0.0699 versus SVGP's 0.0783, a 10.7% reduction, with R² = 0.929 versus 0.911. The NLPD improvement ($-1.241$ vs $-1.116$) shows that the DGP not only predicts more accurately but also provides better-calibrated predictive uncertainty. Here, additional GP depth translates into consistent performance increases.
 
-The improvement aligns with theoretical expectations. Kin8nm's target is a composition of trigonometric functions of the joint angles, creating a non-stationary surface where the function's behaviour changes across the input space. The DGP's hidden layer learns an intermediate representation that effectively warps the input space, making the final-layer mapping smoother [@damianou_deep_2013]. A single RBF kernel with fixed a lengthscale is not able to adapt to the varying smoothness across different joint-angles, which likely limits the single-layer SVGP's accuracy.
+The improvement aligns with theoretical expectations. Kin8nm's target is a composition of trigonometric functions of the joint angles, creating a non-stationary surface where the function's behaviour changes across the input space. The DGP's hidden layer learns an intermediate representation that effectively warps the input space, making the final-layer mapping smoother [@damianou_deep_2013]. A single RBF kernel with a fixed lengthscale is not able to adapt to the varying smoothness across different joint-angles, which likely limits the single-layer SVGP's accuracy.
 
 DSVGP-3L (RMSE = 0.0759) performs worse than DSVGP-2L. The third layer adds optimisation difficulty but not enough additional expressiveness to justify it in this case.
 
@@ -39,8 +39,8 @@ DSVGP-3L (RMSE = 0.0759) performs worse than DSVGP-2L. The third layer adds opti
 
 | Model | RMSE (S) | RMSE (M) | RMSE (L) | R² (S) | R² (M) | R² (L) |
 |:------|:-------:|:-------:|:-------:|:------:|:------:|:------:|
-| Ridge Regression | 0.2040 | 0.2025 | 0.2023 | 0.398 | 0.408 | 0.408 |
-| Random Forest | 0.1884 | 0.1607 | 0.1435 | 0.487 | 0.627 | 0.702 |
+| Ridge Regression | 0.2040 | 0.2024 | 0.2023 | 0.398 | 0.408 | 0.408 |
+| Random Forest | 0.1892 | 0.1629 | 0.1482 | 0.483 | 0.617 | 0.683 |
 | XGBoost | 0.1826 | 0.1389 | 0.1190 | 0.518 | 0.721 | 0.795 |
 | SVGP | 0.1742 | 0.0844 | 0.0783 | 0.562 | 0.897 | 0.911 |
 | DSVGP-2L | 0.2011 | 0.0885 | **0.0699** | 0.416 | 0.887 | **0.929** |
@@ -48,6 +48,6 @@ DSVGP-3L (RMSE = 0.0759) performs worse than DSVGP-2L. The third layer adds opti
 
 : RMSE and R² scaling across training tiers. S = small (425 train), M = medium (2,550 train), L = large (5,570 train). {#tbl-kin8nm-scaling}
 
-With small training sets, SVGP leads (RMSE = 0.1742) while DSVGP-2L (0.2011) and DSVGP-3L (0.2628) lag behind. The deeper architectures are not able to learn useful intermediate representations from just 425 observations. DSVGP-3L's R² = 0.002 at small scale demonstrates a pathological and near-constant prediction failure. An issue that that overly deep architectures commonly suffer with when datasets are small [@duvenaud_avoiding_2014].
+With small training sets, SVGP leads (RMSE = 0.1742) while DSVGP-2L (0.2011) and DSVGP-3L (0.2628) lag behind. The deeper architectures are not able to learn useful intermediate representations from just 425 observations. DSVGP-3L's R² = 0.002 at small scale demonstrates a pathological and near-constant prediction failure. This is an issue overly deep architectures commonly suffer from when datasets are small [@duvenaud_avoiding_2014].
 
 At medium scale, the gap closes: SVGP = 0.0844, DSVGP-2L = 0.0885, DSVGP-3L = 0.0887. At full scale, DSVGP-2L overtakes SVGP significantly. This shows that DGPs underperform with limited data but outperform when there's sufficient scale. The key finding is that depth helps when there is both sufficient data and a non-stationary, compositional structure in the target function.

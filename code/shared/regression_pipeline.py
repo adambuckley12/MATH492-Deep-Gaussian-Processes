@@ -9,60 +9,23 @@ feature importances.
 from __future__ import annotations
 
 import os
-import random
-import time
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import torch
-from sklearn.linear_model import Ridge
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from gp.svgp_regression import SVGPRegressionModel
+from base import PipelineConfig
+from classical.ridge import RidgeRegressionModel
+from classical.random_forest_reg import RandomForestRegressionModel
+from classical.xgboost_reg import XGBoostRegressionModel
 from dgp.dsvgp_regression import DSVGPRegressionModel
+from gp.svgp_regression import SVGPRegressionModel
+from utils import ensure_dirs, seed_everything, timed
 
 
-@dataclass
-class RegressionPipelineConfig:
-    seed: int = 42
-    tables_dir: str = ""
-    predictions_dir: str = ""
-    weights_dir: str = ""
-    figures_dir: str = ""
-    # GP / DGP
-    svgp_inducing: int = 512
-    svgp_epochs: int = 150
-    svgp_batch_size: int = 512
-    dgp_hidden_dim: int = 5
-    dgp_inducing: int = 128
-    dgp_epochs: int = 150
-    dgp_batch_size: int = 512
-    dgp_num_samples: int = 30
-    # Classical
-    rf_estimators: int = 500
-
-
-def _seed_everything(seed: int) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-
-def _ensure_dirs(cfg: RegressionPipelineConfig) -> None:
-    for d in (cfg.tables_dir, cfg.predictions_dir, cfg.weights_dir, cfg.figures_dir):
-        if d:
-            os.makedirs(d, exist_ok=True)
-
-
-def _timed(fn):
-    t0 = time.perf_counter()
-    result = fn()
-    return result, time.perf_counter() - t0
-
+# 
+# Metrics
+# 
 
 def nlpd(y_true: np.ndarray, y_mean: np.ndarray, y_var: np.ndarray) -> float:
     """Negative log predictive density under a Gaussian predictive distribution."""
@@ -71,157 +34,109 @@ def nlpd(y_true: np.ndarray, y_mean: np.ndarray, y_var: np.ndarray) -> float:
     return float(np.mean(nll))
 
 
-def evaluate_regression(y_true: np.ndarray, y_mean: np.ndarray,
-                        y_var: np.ndarray | None = None) -> dict:
-    """Compute regression metrics."""
-    rmse = float(np.sqrt(mean_squared_error(y_true, y_mean)))
-    mae = float(mean_absolute_error(y_true, y_mean))
-    r2 = float(r2_score(y_true, y_mean))
-    metrics = {"rmse": rmse, "mae": mae, "r2": r2}
+def evaluate_regression(
+    y_true: np.ndarray,
+    y_mean: np.ndarray,
+    y_var: np.ndarray | None = None,
+) -> dict:
+    """Return a dict of RMSE, MAE, R², and optionally NLPD."""
+    metrics = {
+        "rmse": float(np.sqrt(mean_squared_error(y_true, y_mean))),
+        "mae":  float(mean_absolute_error(y_true, y_mean)),
+        "r2":   float(r2_score(y_true, y_mean)),
+    }
     if y_var is not None:
         metrics["nlpd"] = nlpd(y_true, y_mean, y_var)
     return metrics
 
 
-def _fit_xgb_regressor(X_train, y_train, X_val, y_val, seed):
-    """Fit XGBoost regressor with early stopping, then refit on full data."""
-    import xgboost as xgb
-
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dval = xgb.DMatrix(X_val, label=y_val)
-
-    params = {
-        "objective": "reg:squarederror",
-        "learning_rate": 0.05,
-        "max_depth": 6,
-        "subsample": 0.8,
-        "colsample_bytree": 0.8,
-        "seed": seed,
-    }
-    model = xgb.train(
-        params, dtrain, num_boost_round=1000,
-        evals=[(dval, "val")], early_stopping_rounds=20,
-        verbose_eval=False,
-    )
-    best_rounds = model.best_iteration + 1
-
-    X_full = pd.concat([X_train, X_val]).reset_index(drop=True)
-    y_full = pd.concat([y_train, y_val]).reset_index(drop=True)
-    dfull = xgb.DMatrix(X_full, label=y_full)
-    final = xgb.train(params, dfull, num_boost_round=max(best_rounds, 10),
-                       verbose_eval=False)
-    return final
-
+# Pipeline
 
 def run_regression_pipeline(
     splits: dict[str, tuple[pd.DataFrame, pd.Series]],
-    cfg: RegressionPipelineConfig,
+    cfg: PipelineConfig,
     dataset_name: str = "Dataset",
     size_label: str = "medium",
 ) -> pd.DataFrame:
-    """Train all models and export results."""
-    import xgboost as xgb
+    """
+    Train all models and export results.
 
-    _seed_everything(cfg.seed)
-    _ensure_dirs(cfg)
+    Parameters
+    ----------
+    splits : dict with keys ``"train"``, ``"validation"``, ``"test"``
+    cfg    : PipelineConfig — hyperparameters and output directories
+    """
+    seed_everything(cfg.seed)
+    ensure_dirs(cfg.tables_dir, cfg.predictions_dir, cfg.weights_dir, cfg.figures_dir)
 
     X_train, y_train = splits["train"]
-    X_val, y_val = splits["validation"]
-    X_test, y_test = splits["test"]
+    X_val,   y_val   = splits["validation"]
+    X_test,  y_test  = splits["test"]
     X_full = pd.concat([X_train, X_val]).reset_index(drop=True)
     y_full = pd.concat([y_train, y_val]).reset_index(drop=True)
     y_test_np = np.asarray(y_test, dtype=float)
-    features = list(X_train.columns)
+    features  = list(X_train.columns)
 
     print(f"\n{'═' * 64}")
     print(f"  {dataset_name} — {size_label}")
     print(f"{'═' * 64}\n")
-
-    for name, (X, y) in splits.items():
-        print(f"  {name:>10}: {len(y):>6,} rows, mean={np.mean(y):.4f}, std={np.std(y):.4f}")
+    for name, (_, y) in splits.items():
+        print(f"  {name:>10}: {len(y):>6,} rows  mean={np.mean(y):.4f}  std={np.std(y):.4f}")
     print()
 
-    # Save split summary
-    rows = []
-    for name, (X, y) in splits.items():
-        rows.append({"split": name, "rows": len(y),
-                      "y_mean": float(np.mean(y)), "y_std": float(np.std(y)),
-                      "size": size_label})
-    pd.DataFrame(rows).to_csv(
-        os.path.join(cfg.tables_dir, "split_summary.csv"), index=False,
-    )
+    pd.DataFrame([
+        {"split": name, "rows": len(y), "y_mean": float(np.mean(y)),
+         "y_std": float(np.std(y)), "size": size_label}
+        for name, (_, y) in splits.items()
+    ]).to_csv(os.path.join(cfg.tables_dir, "split_summary.csv"), index=False)
 
-    results = []
-    feature_frames = []
-
-    pe = 5  # print_every for GP
-
-    # -- Classical models --
+    # Classical models 
     print(f"{'═' * 64}")
     print("  Classical Models")
     print(f"{'═' * 64}")
 
-    # Ridge Regression
-    ridge, ridge_t = _timed(
-        lambda: Ridge(alpha=1.0).fit(X_full, y_full)
-    )
-    ridge_pred = ridge.predict(X_test)
-    fi_ridge = pd.DataFrame({
-        "feature": features,
-        "abs_coef": np.abs(ridge.coef_),
-        "model": "Ridge Regression",
-    })
-    feature_frames.append(fi_ridge)
-    results.append({
-        "model": "Ridge Regression", "family": "classical",
-        "y_mean": ridge_pred, "y_var": None, "time": ridge_t,
-    })
+    classical_models = [
+        RidgeRegressionModel(alpha=1.0),
+        RandomForestRegressionModel(n_estimators=cfg.rf_estimators, random_state=cfg.seed),
+        XGBoostRegressionModel(random_state=cfg.seed),
+    ]
 
-    # Random Forest
-    rf, rf_t = _timed(
-        lambda: RandomForestRegressor(
-            n_estimators=cfg.rf_estimators, random_state=cfg.seed, n_jobs=-1,
-        ).fit(X_full, y_full)
-    )
-    rf_pred = rf.predict(X_test)
-    fi_rf = pd.DataFrame({
-        "feature": features,
-        "importance": rf.feature_importances_,
-        "model": "Random Forest",
-    })
-    feature_frames.append(fi_rf)
-    results.append({
-        "model": "Random Forest", "family": "classical",
-        "y_mean": rf_pred, "y_var": None, "time": rf_t,
-    })
+    results = []
+    feature_frames = []
 
-    # XGBoost
-    xgb_model, xgb_t = _timed(
-        lambda: _fit_xgb_regressor(X_train, y_train, X_val, y_val, cfg.seed)
-    )
-    dtest = xgb.DMatrix(X_test)
-    xgb_pred = xgb_model.predict(dtest)
-    importance = xgb_model.get_score(importance_type="gain")
-    fi_xgb = pd.DataFrame({
-        "feature": features,
-        "gain": [importance.get(f, 0.0) for f in features],
-        "model": "XGBoost",
-    })
-    feature_frames.append(fi_xgb)
-    results.append({
-        "model": "XGBoost", "family": "classical",
-        "y_mean": xgb_pred, "y_var": None, "time": xgb_t,
-    })
+    for model in classical_models:
+        if isinstance(model, XGBoostRegressionModel):
+            fitted, elapsed = timed(
+                lambda m=model: m.fit(X_train, y_train, X_val, y_val)
+            )
+        else:
+            fitted, elapsed = timed(lambda m=model: m.fit(X_full, y_full))
 
-    # -- GP / DGP models --
+        y_pred = fitted.predict(X_test)
+        fitted.save(os.path.join(cfg.weights_dir, f"{fitted.name.lower().replace(' ', '_')}.joblib"))
+
+        fi = fitted.feature_importance(features)
+        fi["model"] = fitted.name
+        feature_frames.append(fi)
+
+        results.append({
+            "model": fitted.name, "family": "classical",
+            "y_mean": y_pred, "y_var": None, "time": elapsed,
+        })
+
+    # GP / DGP models 
     print(f"\n{'═' * 64}")
     print("  GP / DGP Models")
     print(f"{'═' * 64}")
 
-    svgp, svgp_t = _timed(
+    pe = 5  # print_every for training logs
+
+    svgp, svgp_t = timed(
         lambda: SVGPRegressionModel(
-            num_inducing=cfg.svgp_inducing, n_epochs=cfg.svgp_epochs,
-            batch_size=cfg.svgp_batch_size, print_every=pe,
+            num_inducing=cfg.svgp_inducing,
+            n_epochs=cfg.svgp_epochs,
+            batch_size=cfg.svgp_batch_size,
+            print_every=pe,
         ).fit(X_full, y_full)
     )
     svgp_mean, svgp_var = svgp.predict(X_test)
@@ -231,29 +146,32 @@ def run_regression_pipeline(
         "y_mean": svgp_mean, "y_var": svgp_var, "time": svgp_t,
     })
 
-    for nl in (2, 3):
-        dgp, dgp_t = _timed(
-            lambda nl=nl: DSVGPRegressionModel(
-                n_layers=nl, hidden_dim=cfg.dgp_hidden_dim,
-                num_inducing=cfg.dgp_inducing, n_epochs=cfg.dgp_epochs,
+    for n_layers in (2, 3):
+        dgp, dgp_t = timed(
+            lambda nl=n_layers: DSVGPRegressionModel(
+                n_layers=nl,
+                hidden_dim=cfg.dgp_hidden_dim,
+                num_inducing=cfg.dgp_inducing,
+                n_epochs=cfg.dgp_epochs,
                 batch_size=cfg.dgp_batch_size,
-                num_samples=cfg.dgp_num_samples, print_every=pe,
+                num_samples=cfg.dgp_num_samples,
+                print_every=pe,
             ).fit(X_full, y_full)
         )
         dgp_mean, dgp_var = dgp.predict(X_test)
-        dgp.save(os.path.join(cfg.weights_dir, f"dsvgp_{nl}l.pt"))
+        dgp.save(os.path.join(cfg.weights_dir, f"dsvgp_{n_layers}l.pt"))
         results.append({
             "model": dgp.name, "family": "dgp",
             "y_mean": dgp_mean, "y_var": dgp_var, "time": dgp_t,
         })
 
-    # -- Metrics & export --
+    # Metrics & export
     metric_rows = []
     prediction_rows = []
 
     for r in results:
         y_mean = np.asarray(r["y_mean"], dtype=float)
-        y_var = np.asarray(r["y_var"], dtype=float) if r["y_var"] is not None else None
+        y_var  = np.asarray(r["y_var"],  dtype=float) if r["y_var"] is not None else None
         m = evaluate_regression(y_test_np, y_mean, y_var)
         m["model"] = r["model"]
         m["family"] = r["family"]
@@ -269,9 +187,9 @@ def run_regression_pipeline(
                 row["y_var"] = float(y_var[i - 1])
             prediction_rows.append(row)
 
-    metrics_df = pd.DataFrame(metric_rows)
+    metrics_df     = pd.DataFrame(metric_rows)
     predictions_df = pd.DataFrame(prediction_rows)
-    feature_df = pd.concat(feature_frames, ignore_index=True)
+    feature_df     = pd.concat(feature_frames, ignore_index=True)
 
     metrics_df.to_csv(os.path.join(cfg.tables_dir, "metrics.csv"), index=False)
     predictions_df.to_csv(os.path.join(cfg.predictions_dir, "predictions.csv"), index=False)
@@ -280,7 +198,7 @@ def run_regression_pipeline(
         os.path.join(cfg.tables_dir, "runtime.csv"), index=False,
     )
 
-    # -- Print summary --
+    # Print summary
     print(f"\n{'═' * 64}")
     print("  Results")
     print(f"{'═' * 64}")

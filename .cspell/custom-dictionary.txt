@@ -16,6 +16,8 @@ miscalibration
 ncol
 overfitting
 stochasticity
+NLPD
+RMSE
 SVGP
 unbiasedness
 unpenalised
