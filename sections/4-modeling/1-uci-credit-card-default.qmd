@@ -1,34 +1,23 @@
 ### Credit Card Probability of Default {#sec-credit-card}
 
-The first empirical study addresses 2  question: can GP and DGP classifiers serve as credible probability-of-default (PD) models under realistic credit-risk conditions, and does the additional expressiveness of DGPs translate into superior performance relative to single-layer GPs and classical machine learning baselines for this data?
+For the second study, we aim to see if GP and DGP classifiers are able to be credible probability-of-default (PD) models under realistic credit-risk conditions, and does the additional expressiveness of DGPs translate into any increases performance compared to single-layer GPs.
 
- The benchmark used is the UCI default of credit card clients dataset [@yeh_comparisons_2009], comprising 30,000 observations and 23 predictor variables: credit limit, demographics, six months of repayment-status history, and corresponding billing and repayment amounts from April–September 2005. The target indicates default on the October 2005 payment. This benchmark is well-established in the credit-risk literature [@thomas_survey_2000; @huang_using_2011; @mahajan_gaussian_2022] and presents two simultaneous evaluation criteria: ranking quality discrimination ability  (does the model correctly order clients by default risk?) and probability calibration (are the predicted default probabilities credible estimates of the observed default frequencies?). Under the Basel IRB Advanced Approach, both criteria carry legal and capital weight [@basel_committee_basel_2011; @eba_gl_2017_16].
+The benchmark used is the UCI default of credit card clients dataset [@yeh_comparisons_2009], comprising 30,000 observations and 23 predictor variables: credit limit, demographics, six months of repayment-status history, and corresponding billing and repayment amounts from April–September 2005. The target indicates default on the October 2005 payment. This benchmark is commonly used in existing credit-risk literature [@thomas_survey_2000; @huang_using_2011; @mahajan_gaussian_2022] and presents two simultaneous evaluation criteria: ranking quality discrimination ability  (does the model correctly order clients by default risk?) and probability calibration (are the predicted default probabilities credible estimates of the observed default frequencies?). Due to regulatory requirements such as Basel IRB [@basel_committee_basel_2011], PD models must demonstrate both good discrimination and good calibration [@eba_gl_2017_16; @iasb_ifrs9_2014], which makes the natural uncertainty quantification of GPs and DGPs particularly useful.
 
 #### Data Preparation and Experimental Design
 
-Undocumented education and marriage codes were collapsed into an "other" category; skewed monetary variables (bill amounts and repayment amounts) were log-transformed to reduce leverage from extreme values; categorical variables were one-hot encoded with `drop_first=True`; and all continuous predictors were standardised to zero mean and unit variance fit on the training split only to prevent leakage (see @sec-credit-risk-preprocessing-snippet for the implementation). The full 30,000-observation dataset was first split into a fixed held-out test set of 6,000 observations (20%), due to large class imbalance this was stratified by the target variable to ensure equal default rates across train and test.
-The remaining 24,000 observations are used for training and validation subsets. This ensures all models across sizes are evaluated on the same test set, giving a fair comparison across training dataset sizes.
+Undocumented education and marriage codes were collapsed into an "other" category, skewed monetary variables (bill amounts and repayment amounts) were log-transformed to reduce leverage from extreme values, categorical variables were one-hot encoded with `drop_first=True`, and all continuous predictors were standardised to zero mean and unit variance fit (on the training split only to prevent leakage. See @sec-credit-risk-preprocessing-snippet for the implementation). The full 30,000-observation dataset was first split into a fixed held-out test set of 6,000 observations (20%), due to large class imbalance this was stratified by the target variable to ensure equal default rates across train and test.
+The remaining 24,000 observations are used for training and validation subsets. This ensures all models across sizes are evaluated on the same test set, giving a fair comparison across the different training set sizes.
 
-We evaluated three size tiers to study the effect of data quantity on performance:
-
-- **Small**: ($N_{\text{dev}} = 500$): 425 training, 75 validation observations.
-- **Medium**: ($N_{\text{dev}} = 5{,}000$): 4,250 training, 750 validation observations.
-- **Large**: ($N_{\text{dev}} = 24{,}000$): 20,400 training, 3,600 validation observations (full development set).
+- Small: ($N_{\text{dev}} = 500$): 425 training, 75 validation observations.
+- Medium: ($N_{\text{dev}} = 5{,}000$): 4,250 training, 750 validation observations.
+- Large: ($N_{\text{dev}} = 24{,}000$): 20,400 training, 3,600 validation observations (full development set).
 
 The validation split (15% of dev) is used only for XGBoost early stopping and all other models train on the full train+validation set after hyperparameter selection following the convention for small-data GP experiments in @hensman_gaussian_2013. The test set default rate is 22.1% across all tiers.
 
 #### Model Set and Training Configuration {#sec-uci-models}
 
-The model set comprises three classical tabular baselines and three GP-family models:
-
-- **Logistic Regression** with `class_weight="balanced"` — the standard imbalance-aware linear baseline.
-- **Random Forest** with 500 trees and `class_weight="balanced_subsample"` — a non-linear ensemble baseline with built-in imbalance handling.
-- **XGBoost** with `scale_pos_weight` — a gradient-boosted tree ensemble with early stopping tuned on the validation set, then refitted on train+validation at the best iteration count.
-- **SVGP** — sparse variational GP with 512 inducing points, 150 training epochs, and variational ELBO [@hensman_gaussian_2013].
-- **DSVGP-2L** — two-layer deep sparse variational GP with doubly stochastic inference [@salimbeni_doubly_2017], 128 inducing points per layer, hidden dimension 5.
-- **DSVGP-3L** — three-layer variant of the above.
-
-GP and DGP classifiers route probability mass away from the tails, so a fixed $0.5$ threshold systematically penalises them relative to classical baselines [@niculescu_mizil_predicting_2005]. All threshold-dependent metrics below are reported at each model's **F1-optimal threshold** ($t^*$). Threshold-independent metrics (ROC-AUC, average precision, Brier score, log loss, ECE) are unaffected by this choice. Statistical uncertainty is quantified via 2,000-resample bootstrap confidence intervals (percentile method, seed 42); see @sec-appendix-uci-ci.
+The model set and training protocol are consistent with @sec-kin8nm, adapted for binary classification with a Bernoulli likelihood. Three classical baselines are used: logistic regression (replacing Ridge regression from Kin8nm for the classification setting), random forest, and XGBoost. The same three GP-family models are used: SVGP, DSVGP-2L, and DSVGP-3L. All models are trained at each of the three training set sizes (small, medium, large) to characterise scaling behaviour.
 
 #### Results at Full Scale (Large Tier) {#sec-uci-large}
 

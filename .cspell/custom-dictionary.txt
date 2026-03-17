@@ -7,6 +7,8 @@ elbo
 ELBO's
 Gaussians
 IFRS
+lengthscale
+lengthscales
 minibatch
 Minibatches
 miscalibrated

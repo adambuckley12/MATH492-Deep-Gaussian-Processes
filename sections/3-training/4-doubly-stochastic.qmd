@@ -1,14 +1,8 @@
 ## Doubly Stochastic Variational Inference
 
-@salimbeni_doubly_2017 introduced a more elegant approach to DGP inference that avoids the mean-field approximation over layer outputs. The key insight is to use Monte Carlo estimation of the nested expectations while maintaining the exact conditional structure through the GP prior.
+@salimbeni_doubly_2017 introduced an approach to DGP inference that avoids the mean-field approximation over layer outputs, and its limitations. By using Monte Carlo estimation of the nested expectations, it is possible to maintain the exact conditional structure through the GP prior.
 
-The variational distribution retains the form from @eq-dgp_variational_factorization:
-
-$$
-q(\{\vF^{(\ell)}, \vU^{(\ell)}\}) = \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) q(\vU^{(\ell)}),
-$$ {#eq-dsvi_variational}
-
-but rather than introducing additional variational parameters for $\vF^{(\ell)}$, the method propagates samples through the layers. This respects the hierarchical structure: $\vF^{(\ell)}$ is generated from $\vF^{(\ell-1)}$ via the GP conditional, with uncertainty injected only through the inducing variables $\vU^{(\ell)}$.
+The variational distribution keeps the form from @eq-dgp_variational_factorization but instead of introducing additional variational parameters for $\vF^{(\ell)}$, the method passes samples through each of the layers. $\vF^{(\ell)}$ is generated from $\vF^{(\ell-1)}$ via the GP conditional, and uncertainty is passed through the layers by Monte Carlo sampling from the per-layer marginals $q(\vF^{(\ell)} \mid \vF^{(\ell-1)})$.
 
 The ELBO decomposes over data points:
 
@@ -16,15 +10,13 @@ $$
 \mathcal{L} = \sum_{i=1}^{n} \mathbb{E}_{q(f_i^{(L)})}[\log p(y_i \mid f_i^{(L)})] - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})).
 $$ {#eq-dsvi_elbo}
 
-The factorisation follows from $p(\vy \mid \vF^{(L)}) = \prod_i p(y_i \mid f_i^{(L)})$. The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian (the standard Gaussian KL). The challenge lies in computing $\mathbb{E}_{q(f_i^{(L)})}[\log p(y_i \mid f_i^{(L)})]$, which requires marginalising over all intermediate layers. The distribution $q(f_i^{(L)})$ is obtained by integrating:
+The factorisation follows from $p(\vy \mid \vF^{(L)}) = \prod_i p(y_i \mid f_i^{(L)})$. The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian (the standard Gaussian KL). However, $\mathbb{E}_{q(f_i^{(L)})}[\log p(y_i \mid f_i^{(L)})]$, requires marginalising over all intermediate layers and so cannot be evaluated in closed form. The distribution $q(f_i^{(L)})$ is obtained by integrating out all the layers:
 
 $$
 q(f_i^{(L)}) = \int \cdots \int p(f_i^{(L)} \mid \vU^{(L)}, f_i^{(L-1)}) q(\vU^{(L)}) \cdots p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)} \cdots d\vU^{(L)}.
 $$ {#eq-marginal_q_output}
 
-This nested integral is analytically intractable due to the nonlinear dependence of kernel matrices on previous layer outputs.
-
-The doubly stochastic approach estimates this expectation via Monte Carlo. For data point $\vx_i$, we construct a sample path through all layers. Starting at layer 1, the marginal distribution over $f_i^{(1)}$ given $\vx_i$ is:
+This integral is analytically intractable due to the nonlinear dependencies across layers. The doubly stochastic approach estimates this expectation via Monte Carlo. For a data point $\vx_i$, we construct a sample path through all layers. Starting at layer 1, the marginal distribution over $f_i^{(1)}$ given $\vx_i$ is:
 
 $$
 q(f_i^{(1)} \mid \vx_i) = \int p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)}.
@@ -39,9 +31,9 @@ $$
 \end{aligned}
 $$ {#eq-layer1_moments}
 
-where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$. The mean $\mu_i^{(1)}$ is the posterior GP mean at $\vx_i$: a weighted sum of inducing values $\vM^{(1)}$, weighted by how correlated $\vx_i$ is with each inducing point. The variance $\sigma_i^{(1)2}$ is the prior variance $k_{ii}^{(1)}$ minus the information contributed by the inducing points, plus additional uncertainty from $\vS^{(1)}$ reflecting that our beliefs about $\vU^{(1)}$ are not perfectly sharp.
+where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$. The mean $\mu_i^{(1)}$ is the posterior GP mean at $\vx_i$, which is a weighted sum of inducing values $\vM^{(1)}$, weighted by how correlated $\vx_i$ is with each inducing point. The variance $\sigma_i^{(1)2}$ is the prior variance $k_{ii}^{(1)}$ minus the information contributed by the inducing points, plus additional uncertainty from $\vS^{(1)}$ which reflects that our beliefs that the inducing outputs are uncertain.
 
-Sampling $f_i^{(1)} \sim \mathcal{N}(\mu_i^{(1)}, \sigma_i^{(1)2})$ gives a realisation of the first layer output. For subsequent layers $\ell = 2, \ldots, L$, we condition on the sampled value from the previous layer. The distribution at layer $\ell$ given sampled $f_i^{(\ell-1)}$ is:
+Sampling $f_i^{(1)} \sim \mathcal{N}(\mu_i^{(1)}, \sigma_i^{(1)2})$ gives a realisation of the first layer's output. For subsequent layers $\ell = 2, \ldots, L$, we condition instead on the sampled value from the layer before. The distribution at layer $\ell$ given sampled $f_i^{(\ell-1)}$ is:
 
 $$
 q(f_i^{(\ell)} \mid f_i^{(\ell-1)}) = \int p(f_i^{(\ell)} \mid \vU^{(\ell)}, f_i^{(\ell-1)}) q(\vU^{(\ell)}) \, d\vU^{(\ell)},
@@ -56,9 +48,7 @@ $$
 \end{aligned}
 $$ {#eq-layer_ell_moments}
 
-The same formula applies as at layer 1, except that the input is now the *sampled* value $f_i^{(\ell-1)}$ from the previous layer rather than the fixed training input $\vx_i$. This is how uncertainty propagates: each layer outputs a Gaussian whose mean and variance depend on a random draw from the layer below, so uncertainty compounds as samples pass through the hierarchy.
-
-The kernel evaluations now depend on the random variable $f_i^{(\ell-1)}$ from the previous layer, creating the propagation of uncertainty.
+The same formula applies as at layer 1, except now that the input is instead the sampled value $f_i^{(\ell-1)}$ from the previous layer rather than the fixed training input $\vx_i$. This allows uncertainty to propagate as each layer outputs a Gaussian whose mean and variance depend on a random draw from the layer below, so uncertainty compounds as samples pass through each layer of the DGP.
 
 After sampling through all $L$ layers, we obtain $f_i^{(L)}$ and evaluate $\log p(y_i \mid f_i^{(L)})$. With $S$ independent sample paths, the Monte Carlo estimate of the ELBO is:
 
@@ -66,10 +56,10 @@ $$
 \hat{\mathcal{L}} = \frac{n}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \frac{1}{S} \sum_{s=1}^{S} \log p(y_i \mid f_i^{(L,s)}) - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})),
 $$ {#eq-dsvi_mc_elbo}
 
-where $\mathcal{B} \subset \{1, \ldots, n\}$ is a minibatch and $f_i^{(L,s)}$ denotes the $s$-th sample at the final layer for point $i$. The factor $n/|\mathcal{B}|$ corrects for minibatch subsampling, ensuring the estimate remains unbiased.
+where $\mathcal{B} \subset \{1, \ldots, n\}$ is a minibatch and $f_i^{(L,s)}$ is the $s$-th sample at the final layer for point $i$. The factor $n/|\mathcal{B}|$ corrects for minibatch subsampling.
 
-The term "doubly stochastic" refers to two sources of randomness: minibatch subsampling (stochasticity over data) and Monte Carlo sampling through layers (stochasticity over latent functions). Both maintain unbiasedness of gradient estimates, which is crucial for stochastic optimisation convergence. In practice the two sources of noise act independently: increasing the minibatch size $|\mathcal{B}|$ reduces noise from data sampling, while increasing the sample count $S$ reduces noise from layer propagation.
+The term "doubly stochastic" refers to two different sources of randomness. We have both minibatch subsampling (stochasticity over data) and Monte Carlo sampling through layers (stochasticity over latent functions). Both maintain unbiasedness of gradient estimates, which is needed for stochastic optimisation to converge. In practice the two sources of noise act independently as increasing the minibatch size $|\mathcal{B}|$ reduces noise from data sampling, and increasing the sample count $S$ reduces noise from layer propagations.
 
-Gradient computation requires differentiating through the sampling operations. The reparametrisation trick [@kingma_auto-encoding_2014] makes this tractable: instead of sampling $f \sim \mathcal{N}(\mu, \sigma^2)$ directly, we write $f = \mu + \sigma\epsilon$ with $\epsilon \sim \mathcal{N}(0,1)$, so that gradients with respect to $\mu$ and $\sigma$ flow through the deterministic transformation while the stochastic node $\epsilon$ carries no parameters. In effect, the randomness is "pushed outside" the computation graph, so automatic differentiation can treat $\mu$ and $\sigma$ as ordinary differentiable variables.
+Gradient computation requires differentiating through the sampling operations. A reparametrisation trick [@kingma_auto-encoding_2014] makes this tractable as instead of sampling $f \sim \mathcal{N}(\mu, \sigma^2)$ directly, we write $f = \mu + \sigma\epsilon$ with $\epsilon \sim \mathcal{N}(0,1)$, so that gradients with respect to $\mu$ and $\sigma$ flow through the deterministic transformation while the stochastic node $\epsilon$ carries no parameters. By doing this, the randomness is "pushed outside" the computation, so we can treat $\mu$ and $\sigma$ as ordinary differentiable variables.
 
-Computational cost per iteration is $O(|\mathcal{B}| m^2 L S)$ for forward propagation of $S$ samples through $L$ layers, plus $O(m^3 L)$ for the KL terms. Crucially, this is independent of $n$, enabling scalability to large datasets. Empirically, a single sample ($S=1$) often suffices when $|\mathcal{B}|$ is large, as averaging over many data points provides natural variance reduction.
+Computational cost per iteration is $O(|\mathcal{B}| m^2 L S)$ for forward propagation of $S$ samples through $L$ layers, plus $O(m^3 L)$ for the KL terms. This is fully independent of $n$, enabling scalability to large datasets. Empirically, a single sample ($S=1$) often suffices when $|\mathcal{B}|$ is large, as averaging over many data points provides natural variance reduction.

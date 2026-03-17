@@ -45,9 +45,7 @@ $$
 q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vM^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}\right).
 $$ {#eq-marginal_q_layer_explicit}
 
-Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this variational marginal has a non-zero mean (coming from $\vM^{(\ell)}$) and reduced variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ subtracts the uncertainty explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). Despite being Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend non-linearly on the random $\vF^{(\ell-1)}$.
-
-The nested structure of @eq-dgp_nested_expectation presents the core challenge: even though each layer's conditional is Gaussian, the covariance matrices $K^{(\ell)}$ depend non-linearly on $\vF^{(\ell-1)}$, precluding closed-form evaluation.
+Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this has a non-zero mean (coming from $\vM^{(\ell)}$) and lower variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ takes off the uncertainty that is explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). While Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend non-linearly on the random $\vF^{(\ell-1)}$.
 
 @damianou_deep_2013 addressed this by further approximating the variational distribution. They introduce variational distributions over the intermediate layer outputs:
 
@@ -63,4 +61,4 @@ $$
 \mathcal{L}_{\text{MF}} = \mathbb{E}_{q(\vF^{(L)})}[\log p(\vy \mid \vF^{(L)})] - \sum_{\ell=1}^{L} \mathbb{E}_{q(\vF^{(\ell-1)})}\left[\KL(q(\vF^{(\ell)}) \| p(\vF^{(\ell)} \mid \vF^{(\ell-1)}))\right].
 $$ {#eq-damianou_elbo}
 
-This approach enabled the original DGP work but suffers from scalability issues (variational parameters grow with $n$) and may produce poor approximations due to the mean-field assumption of independence across layers.
+This approach enabled the original DGP work but suffers from scalability issues (variational parameters grow with $n$) and may produce poor approximations due to the mean-field assumption of independence between each layer's outputs which ignores the hierarchical structure of the model. 

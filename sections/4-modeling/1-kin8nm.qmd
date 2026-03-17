@@ -1,8 +1,8 @@
 ## Regression Benchmark: Kin8nm {#sec-kin8nm}
 
-The two financial risk classification experiments in @sec-credit-risk (presented next) show that DGPs do not meaningfully outperform single-layer GPs on credit-default surfaces, which are approximately smooth and monotonic. A natural question is whether the additional compositional flexibility of DGPs can yield measurable gains on data with genuinely non-stationary, hierarchical structure. To test this, we first evaluate the same GP and DGP architectures on the Kin8nm dataset — a standard regression benchmark from the UCI repository that has been widely used in the DGP literature [@salimbeni_doubly_2017; @damianou_deep_2013].
+For the first experiment, we evaluate the same GP and DGP architectures on the Kin8nm dataset, a standard regression benchmark from the UCI repository that has been widely used in the DGP literature [@salimbeni_doubly_2017; @damianou_deep_2013].
 
-Kin8nm contains 8,192 observations of the forward kinematics of an 8-link robot arm. The eight input features are joint angles, and the target is the distance of the end-effector from a desired position. The mapping from joint angles to end-effector position is a composition of trigonometric transformations — precisely the kind of hierarchical non-linearity where intermediate representations should help. This makes Kin8nm an ideal test case for whether the DGP architecture adds value when the data structure warrants it.
+Kin8nm contains 8,192 observations of the forward kinematics of an 8-link robot arm. There are eight input features which are joint angles, and the task is to predict the end-effector position. The mapping from joint angles to end-effector position is a composition of many trigonometric transformations, which should be the kind of hierarchical non-linearity where the intermediate representations we have in the DGP layers should help.
 
 ### Experimental Design
 
@@ -12,7 +12,7 @@ The 8,192 observations were split into a fixed test set of 1,639 observations (2
 - **Medium** ($N_{\text{dev}} = 3{,}000$): 2,550 training, 450 validation.
 - **Large** ($N_{\text{dev}} = 6{,}553$): 5,570 training, 983 validation (full development set).
 
-All features were standardised to zero mean and unit variance, fit on training data only. The model set mirrors the classification experiments: Ridge Regression, Random Forest (500 trees), XGBoost (with early stopping), SVGP (512 inducing points, 150 epochs), DSVGP-2L (128 inducing points per layer, hidden dimension 5), and DSVGP-3L. GP and DGP models use a Gaussian likelihood for regression. Classical models do not provide predictive variances, so NLPD (negative log predictive density) is reported only for the GP family.
+All features were standardised to zero mean and unit variance, fit on training data only. We train: Ridge Regression, Random Forest (500 trees), XGBoost (with early stopping), SVGP (512 inducing points, 150 epochs), DSVGP-2L (128 inducing points per layer, hidden dimension 5), and DSVGP-3L. GP and DGP models use a Gaussian likelihood for regression. Classical models do not provide predictive variances, so NLPD (negative log predictive density) is reported only for the GP family.
 
 ### Results at Full Scale {#sec-kin8nm-large}
 
@@ -29,11 +29,11 @@ All features were standardised to zero mean and unit variance, fit on training d
 
 ![Predicted vs actual values at full scale. DSVGP-2L shows the tightest clustering around the diagonal, with RMSE = 0.0699 vs SVGP's 0.0783.](/sections/4-modeling/assets/kin8nm/large/predicted_vs_actual.png){#fig-kin8nm-pred-actual}
 
-The Kin8nm results present a qualitatively different picture from the financial datasets. DSVGP-2L achieves RMSE = 0.0699 versus SVGP's 0.0783 — a **10.7% reduction** — and R² = 0.929 versus 0.911. The NLPD improvement ($-1.241$ vs $-1.116$) indicates that the DGP not only predicts more accurately but also provides better-calibrated predictive uncertainty. This is the first dataset across our experiments where additional GP depth translates into a clear and consistent performance gain.
+The Kin8nm results show a clear advantage for the deeper architecture. DSVGP-2L achieves RMSE = 0.0699 versus SVGP's 0.0783, which is a a 10.7% reduction, with R² = 0.929 versus 0.911. The NLPD improvement ($-1.241$ vs $-1.116$) shows that the DGP not only predicts more accurately but also provides better-calibrated predictive uncertainty. Here, additional GP depth translates into consistent performance increases.
 
-The improvement aligns with the theoretical expectation: Kin8nm's target is a composition of trigonometric functions of the joint angles, creating a non-stationary surface where the function's local behaviour changes across the input space. The DGP's hidden layer learns an intermediate representation — effectively a warping of the input space — that makes the final-layer mapping smoother and easier to model [@damianou_deep_2013]. A single RBF kernel with fixed lengthscales cannot adapt to the varying smoothness across different joint-angle configurations, limiting the single-layer SVGP's accuracy.
+The improvement aligns with theoretical expectations. Kin8nm's target is a composition of trigonometric functions of the joint angles, creating a non-stationary surface where the function's behaviour changes across the input space. The DGP's hidden layer learns an intermediate representation that effectively warps the input space, making the final-layer mapping smoother [@damianou_deep_2013]. A single RBF kernel with fixed a lengthscale is not able to adapt to the varying smoothness across different joint-angles, which likely limits the single-layer SVGP's accuracy.
 
-DSVGP-3L (RMSE = 0.0759) is worse than DSVGP-2L, consistent with the pattern across all three datasets that a third layer adds optimisation difficulty without commensurate expressiveness gains.
+DSVGP-3L (RMSE = 0.0759) performs worse than DSVGP-2L. The third layer adds optimisation difficulty but not enough additional expressiveness to justify it in this case.
 
 ### Scaling Behaviour {#sec-kin8nm-scaling}
 
@@ -48,6 +48,6 @@ DSVGP-3L (RMSE = 0.0759) is worse than DSVGP-2L, consistent with the pattern acr
 
 : RMSE and R² scaling across training tiers. S = small (425 train), M = medium (2,550 train), L = large (5,570 train). {#tbl-kin8nm-scaling}
 
-The scaling behaviour confirms the data-efficiency pattern observed on the financial datasets. At small scale, SVGP leads (RMSE = 0.1742) while DSVGP-2L (0.2011) and DSVGP-3L (0.2628) lag behind — the deeper architectures cannot learn useful intermediate representations from 425 observations. DSVGP-3L's R² = 0.002 at small scale again demonstrates the pathological near-constant prediction failure of overly deep architectures in the low-data regime [@duvenaud_avoiding_2014].
+With small training sets, SVGP leads (RMSE = 0.1742) while DSVGP-2L (0.2011) and DSVGP-3L (0.2628) lag behind. The deeper architectures are not able to learn useful intermediate representations from just 425 observations. DSVGP-3L's R² = 0.002 at small scale demonstrates a pathological and near-constant prediction failure. An issue that that overly deep architectures commonly suffer with when datasets are small [@duvenaud_avoiding_2014].
 
-At medium scale, the gap closes: SVGP = 0.0844, DSVGP-2L = 0.0885, DSVGP-3L = 0.0887. At full scale, DSVGP-2L overtakes SVGP decisively. This crossover — DGPs underperforming with limited data but outperforming at sufficient scale — is the key empirical finding: **depth helps when there is both sufficient data and genuinely compositional structure in the target function**.
+At medium scale, the gap closes: SVGP = 0.0844, DSVGP-2L = 0.0885, DSVGP-3L = 0.0887. At full scale, DSVGP-2L overtakes SVGP significantly. This shows that DGPs underperform with limited data but outperform when there's sufficient scale. The key finding is that depth helps when there is both sufficient data and a non-stationary, compositional structure in the target function.
