@@ -28,7 +28,7 @@ The model set comprises three classical tabular baselines and three GP-family mo
 - **DSVGP-2L** — two-layer deep sparse variational GP with doubly stochastic inference [@salimbeni_doubly_2017], 128 inducing points per layer, hidden dimension 5.
 - **DSVGP-3L** — three-layer variant of the above.
 
-GP and DGP classifiers route probability mass away from the tails, so a fixed $0.5$ threshold systematically penalises them relative to classical baselines [@niculescu_mizil_predicting_2005]. All threshold-dependent metrics below are reported at each model's **F1-optimal threshold** ($t^*$). Threshold-independent metrics (ROC-AUC, average precision, Brier score, log loss, ECE) are unaffected by this choice. Statistical uncertainty is quantified via 2,000-resample bootstrap confidence intervals (percentile method, seed 42); see @sec-appendix-ci.
+GP and DGP classifiers route probability mass away from the tails, so a fixed $0.5$ threshold systematically penalises them relative to classical baselines [@niculescu_mizil_predicting_2005]. All threshold-dependent metrics below are reported at each model's **F1-optimal threshold** ($t^*$). Threshold-independent metrics (ROC-AUC, average precision, Brier score, log loss, ECE) are unaffected by this choice. Statistical uncertainty is quantified via 2,000-resample bootstrap confidence intervals (percentile method, seed 42); see @sec-appendix-uci-ci.
 
 #### Results at Full Scale (Large Tier) {#sec-uci-large}
 
@@ -47,7 +47,7 @@ GP and DGP classifiers route probability mass away from the tails, so a fixed $0
 
 ![Reliability diagrams at full scale. GP-family models track the diagonal closely (ECE $\leq 0.017$); logistic regression and XGBoost show substantial miscalibration (ECE $> 0.19$).](/sections/4-modeling/assets/credit-card-default/large/calibration.png){#fig-uci-large-calibration}
 
-XGBoost leads on ROC-AUC (0.779) and average precision (0.553), with the GP family following at 0.776–0.778 — a gap within the $\pm 0.015$ bootstrap CI, making the top four models statistically indistinguishable on discrimination (@sec-appendix-ci). At F1-optimal thresholds, performance converges: SVGP = 0.547 ($t^* = 0.30$), XGBoost = 0.544 ($t^* = 0.55$). GP models' lower optimal thresholds (0.29–0.32 vs 0.47–0.58 for classical models) reflect narrower posterior score distributions — a consequence of principled uncertainty quantification rather than a deficiency.
+XGBoost leads on ROC-AUC (0.779) and average precision (0.553), with the GP family following at 0.776–0.778 — a gap within the $\pm 0.015$ bootstrap CI, making the top four models statistically indistinguishable on discrimination (@sec-appendix-uci-ci). At F1-optimal thresholds, performance converges: SVGP = 0.547 ($t^* = 0.30$), XGBoost = 0.544 ($t^* = 0.55$). GP models' lower optimal thresholds (0.29–0.32 vs 0.47–0.58 for classical models) reflect narrower posterior score distributions — a consequence of principled uncertainty quantification rather than a deficiency.
 
 The standout result is **probability calibration**: GP models achieve ECE = 0.015–0.017 versus 0.087–0.225 for classical baselines — a 5–13$\times$ improvement requiring no post-hoc calibration [@niculescu_mizil_predicting_2005]. Under Basel IRB, PD estimates must track observed default rates across rating grades [@eba_gl_2017_16]; XGBoost's ECE of 0.196 would fail supervisory review, whereas GP models satisfy this standard natively, avoiding the additional validation burden of Platt scaling [@platt_probabilistic_1999] or isotonic regression under SR 11-7 [@federal_reserve_sr11_7].
 
@@ -82,8 +82,6 @@ All models improve with more data, but the patterns differ by family. XGBoost sh
 On calibration, GP models maintain ECE $\leq 0.029$ from 425 training observations onward, while classical models are miscalibrated at all scales. XGBoost ECE actually *worsens* from 0.164 (small) to 0.196 (large) as more confident fits produce more extreme scores without an intrinsic calibration mechanism [@niculescu_mizil_predicting_2005].
 
 #### Computational Profile {#sec-uci-cost}
-
-![Training time versus ECE for the six models at large scale. GP-family models provide substantially better native calibration at training times two to three orders of magnitude greater.](/sections/4-modeling/assets/credit-card-default/large/runtime.png){#fig-uci-runtime width=70%}
 
 | Model | Time (s, small) | Time (s, medium) | Time (s, large) |
 |:------|:-------:|:-------:|:-------:|

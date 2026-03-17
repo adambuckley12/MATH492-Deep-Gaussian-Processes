@@ -1,0 +1,106 @@
+## Thin and Deep Gaussian Processes {#sec-tdgp}
+
+Standard deep GPs compose layers that warp the input space, so that the output of layer $\ell$ becomes the input to layer $\ell+1$. While this enables learning complex mappings, it has two practical drawbacks. First, the warped inputs lose any connection to the original features, making kernel hyperparameters such as lengthscales difficult to interpret. Second, @duvenaud_avoiding_2014 showed that composing many stationary kernels tends to produce pathological priors: the effective mapping either collapses toward a constant or becomes so convoluted that the GP prior concentrates on highly irregular functions. Both problems worsen with depth.
+
+An alternative approach, explored by @heinonen_nonstationary_2016, is to parameterise the *lengthscale* of a kernel as a function of the input, treated as a GP itself. This retains interpretability — the lengthscale still controls local smoothness — but sacrifices the ability to learn low-dimensional embeddings of the input data. @souza_thin_2023 proposed *Thin and Deep Gaussian Processes* (TDGPs) as a synthesis of both ideas, combining the embedding-learning capacity of standard deep GPs with the interpretability of lengthscale-based models.
+
+### The TDGP Layer
+
+In a standard DGP, layer $\ell$ receives the outputs $\vF^{(\ell-1)} \in \mathbb{R}^{n \times d_{\ell-1}}$ from the previous layer and applies a GP mapping:
+$$
+f^{(\ell)}(\cdot) \sim \mathcal{GP}\bigl(0,\, k^{(\ell)}(\cdot, \cdot)\bigr), \qquad \vF^{(\ell)} = f^{(\ell)}\!\bigl(\vF^{(\ell-1)}\bigr).
+$$
+The key observation of @souza_thin_2023 is that each layer can instead define a *locally linear* transformation of the **original** inputs $\vX$. Specifically, a TDGP layer maps
+$$
+\vH^{(\ell)} = \vX \, \text{diag}\!\bigl(g^{(\ell)}(\vX)\bigr),
+$$ {#eq-tdgp-layer}
+where $g^{(\ell)}: \mathbb{R}^d \to \mathbb{R}^d$ is a vector-valued GP that produces input-dependent scaling factors. The layer output $\vH^{(\ell)}$ lives in the same space as the original data, but each input dimension is rescaled by a smooth, spatially varying factor learned from the data.
+
+By composing $L$ such layers, the model produces a sequence of transformations
+$$
+\vH^{(1)} \to \vH^{(2)} \to \cdots \to \vH^{(L)},
+$$ {#eq-tdgp-composition}
+where each $\vH^{(\ell)}$ is a locally linear distortion of $\vX$. The final layer feeds into a standard GP:
+$$
+y_i = f^{(L+1)}\!\bigl(\vh_i^{(L)}\bigr) + \epsilon_i, \qquad f^{(L+1)} \sim \mathcal{GP}(0, k^{(L+1)}).
+$$
+
+### Avoiding Pathologies
+
+The locally linear structure of @eq-tdgp-layer is what prevents the pathologies of standard deep GPs. Because each layer multiplies the original inputs by a smooth function rather than replacing them with an arbitrary warp, the composed transformation remains a smooth deformation of the input space. @souza_thin_2023 show that this guarantees the induced manifold is non-degenerate: it cannot collapse to a lower-dimensional subspace the way standard DGP warps can.
+
+More precisely, let $\phi^{(\ell)}(\vx) = \vx \odot g^{(\ell)}(\vx)$ denote the mapping at layer $\ell$. The Jacobian of the composition $\phi^{(L)} \circ \cdots \circ \phi^{(1)}$ is a product of diagonal-plus-rank-one matrices, which remains full rank whenever the $g^{(\ell)}$ are bounded away from zero. In contrast, standard DGP warps can have Jacobians with eigenvalues that shrink exponentially with depth, leading to the pathological collapse described by @duvenaud_avoiding_2014.
+
+### Dimensionality Reduction
+
+A further advantage of TDGPs is that they naturally support dimensionality reduction. If the scaling functions $g^{(\ell)}$ drive some input dimensions toward zero, those dimensions are effectively removed from the representation. This acts as automatic relevance determination (ARD) at each layer, but in an input-dependent way: a dimension might be relevant in one region of input space and irrelevant in another.
+
+@souza_thin_2023 formalise this by showing that the effective dimension of the embedding $\vH^{(L)}$ can be lower than the ambient dimension $d$, and that the model preferentially discovers low-dimensional structure when it exists in the data. This contrasts with standard DGPs, where the intermediate representations have no such interpretable structure.
+
+### Inference
+
+Inference in TDGPs follows the doubly stochastic variational framework of @salimbeni_doubly_2017. Each GP layer $g^{(\ell)}$ is equipped with its own set of inducing points, and samples are propagated through the layers using the reparameterisation trick. The ELBO takes the same form as @eq-dsvi_elbo, with KL terms for each layer's inducing variables:
+$$
+\mathcal{L}_{\text{TDGP}} = \sum_{i=1}^{n} \mathbb{E}_{q(f_i^{(L+1)})}\!\bigl[\log p(y_i \mid f_i^{(L+1)})\bigr] - \sum_{\ell=1}^{L+1} \text{KL}\!\bigl(q(\vU^{(\ell)}) \,\|\, p(\vU^{(\ell)})\bigr).
+$$ {#eq-tdgp-elbo}
+
+The locally linear structure means that the kernel evaluations at intermediate layers remain functions of the original inputs $\vX$, scaled by the sampled $g^{(\ell)}$ values. This makes the computational cost per iteration comparable to standard doubly stochastic DGPs.
+
+```{python}
+#| label: fig-tdgp-vs-dgp
+#| fig-cap: "Illustration of standard DGP versus TDGP layer structure. The standard DGP (left) warps the input space arbitrarily, losing interpretability. The TDGP (right) applies a locally linear rescaling of the original inputs, preserving the connection to the original features."
+#| echo: false
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(42)
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+# Original grid
+x = np.linspace(-2, 2, 12)
+y = np.linspace(-2, 2, 12)
+X, Y = np.meshgrid(x, y)
+
+# --- Left: Standard DGP warp (nonlinear) ---
+ax = axes[0]
+# A nonlinear warp that distorts the grid
+Xw = X + 0.4 * np.sin(1.5 * Y) + 0.2 * np.cos(2 * X)
+Yw = Y + 0.3 * np.cos(1.5 * X) + 0.3 * np.sin(2 * Y)
+
+for i in range(len(x)):
+    ax.plot(Xw[:, i], Yw[:, i], color='#1f77b4', linewidth=0.7, alpha=0.7)
+for j in range(len(y)):
+    ax.plot(Xw[j, :], Yw[j, :], color='#1f77b4', linewidth=0.7, alpha=0.7)
+ax.set_title('Standard DGP warp', fontsize=11)
+ax.set_xlabel('$x_1$')
+ax.set_ylabel('$x_2$')
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
+ax.set_aspect('equal')
+
+# --- Right: TDGP locally linear rescaling ---
+ax = axes[1]
+# Locally linear: multiply each coordinate by a smooth, positive function
+g1 = 0.5 + 0.5 * np.exp(-0.3 * X**2)  # smooth scaling for dim 1
+g2 = 0.8 + 0.3 * np.exp(-0.5 * Y**2)  # smooth scaling for dim 2
+Xt = X * g1
+Yt = Y * g2
+
+for i in range(len(x)):
+    ax.plot(Xt[:, i], Yt[:, i], color='#ff7f0e', linewidth=0.7, alpha=0.7)
+for j in range(len(y)):
+    ax.plot(Xt[j, :], Yt[j, :], color='#ff7f0e', linewidth=0.7, alpha=0.7)
+ax.set_title('TDGP locally linear rescaling', fontsize=11)
+ax.set_xlabel('$x_1$')
+ax.set_ylabel('$x_2$')
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
+ax.set_aspect('equal')
+
+fig.tight_layout()
+plt.show()
+```
+
+@fig-tdgp-vs-dgp illustrates the difference between a standard DGP warp and a TDGP transformation. The standard DGP produces an arbitrary nonlinear distortion of the grid, making it difficult to interpret what each coordinate represents. The TDGP, by contrast, applies a smooth, locally varying rescaling: the grid lines remain roughly aligned with the original axes, but their spacing varies across space. This preserves the interpretability of lengthscales while still allowing the model to adapt its representation to the data.

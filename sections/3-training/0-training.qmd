@@ -2,4 +2,4 @@
 
 The previous section showed that DGPs offer richer modelling capacity than standard GPs, but at the cost of tractable inference. This section develops the framework for learning in both settings.
 
-We briefly revisit hyperparameter learning in standard GPs — focusing on how the marginal likelihood arises by integrating out function values — to identify the structural property that is lost in DGPs. We then introduce variational inference for approximating intractable posteriors, build to sparse variational methods that reduce computation from $O(n^3)$ to $O(nm^2)$, and finally extend these ideas to DGPs through doubly stochastic variational inference.
+We briefly revisit hyperparameter learning in standard GPs, focusing on how the marginal likelihood arises by integrating out function values, to identify the structural property that is lost in DGPs. We then discuss variational inference for approximating intractable posteriors, and build to sparse variational methods that reduce computation from $O(n^3)$ to $O(nm^2)$, and finally extend these ideas to DGPs by using doubly stochastic variational inference [@salimbeni_doubly_2017] to train DGPs at scale.

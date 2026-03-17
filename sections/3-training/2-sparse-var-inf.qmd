@@ -1,16 +1,16 @@
 ## Sparse Variational GPs
 
-The $O(n^3)$ cost of standard GP inference becomes prohibitive for large datasets. Sparse methods address this by using $m \ll n$ *inducing points* that summarise the data, reducing complexity to $O(nm^2)$ [@quinonero-candela_unifying_2005; @titsias_variational_2009].
+The $O(n^3)$ cost of standard GP inference becomes prohibitive for large datasets. We can reduce this by using $m \ll n$ *inducing points* that summarise the data, reducing complexity to $O(nm^2)$ [@quinonero-candela_unifying_2005; @titsias_variational_2009].
 
-Consider inducing inputs $\vZ = \{\vz_j\}_{j=1}^m$ with function values $\vu = f(\vZ) \in \mathbb{R}^m$. From the prior, the joint distribution of function values $\vf$ at training inputs and inducing values $\vu$ is:
+If we consider inducing inputs $\vZ = \{\vz_j\}_{j=1}^m$ with function values $\vu = f(\vZ) \in \mathbb{R}^m$. From the prior, the joint distribution of function values $\vf$ at training inputs and inducing values $\vu$ is:
 
 $$
 \begin{bmatrix} \vf \\ \vu \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} K_{ff} & K_{fu} \\ K_{uf} & K_{uu} \end{bmatrix}\right),
 $$ {#eq-joint_f_u}
 
-where $K_{ff} = K(\vX, \vX)$, $K_{fu} = K(\vX, \vZ)$, and $K_{uu} = K(\vZ, \vZ)$. The cross-covariance $K_{fu}$ encodes how strongly each training point correlates with each inducing point: if inducing points are placed where the data concentrates, $K_{fu}$ will be large and the $m$ inducing values will carry most of the information about the $n$ function values.
+where $K_{ff} = K(\vX, \vX)$, $K_{fu} = K(\vX, \vZ)$, and $K_{uu} = K(\vZ, \vZ)$. $K_{fu}$ is the cross-covariance between training and inducing points, it encodes how closely each training point correlates with each inducing point. If inducing points are placed where the data concentrates, $K_{fu}$ will be large and the $m$ inducing values will carry most of the information about the $n$ function values.
 
-@titsias_variational_2009 introduced a variational framework that treats $\vZ$ as variational parameters rather than fixed pseudo-inputs. The key idea is to use the conditional $p(\vf \mid \vu)$ from the prior and place a variational distribution on $\vu$:
+@titsias_variational_2009 showed that we can treat $\vZ$ as variational parameters rather than fixed pseudo-inputs. The key idea is to use the conditional $p(\vf \mid \vu)$ from the prior and place a variational distribution on $\vu$:
 
 $$
 q(\vf, \vu) = p(\vf \mid \vu) q(\vu),
@@ -22,7 +22,7 @@ $$
 p(\vf \mid \vu) = \mathcal{N}(\vf \mid K_{fu} K_{uu}^{-1} \vu, \, K_{ff} - K_{fu} K_{uu}^{-1} K_{uf}).
 $$ {#eq-conditional_f_given_u}
 
-This is the standard GP predictive formula: the conditional mean $K_{fu}K_{uu}^{-1}\vu$ is a weighted combination of inducing values, with weights proportional to how correlated each training point is with each inducing point. The conditional variance $K_{ff} - K_{fu}K_{uu}^{-1}K_{uf}$ is the prior variance reduced by the information the inducing points provide — it vanishes at the inducing locations themselves.
+This is the standard GP predictive formula we saw in @sec-gp-prediction, but now applied to the inducing points rather than test points. The conditional mean $K_{fu}K_{uu}^{-1}\vu$ is a weighted result of inducing values The conditional variance $K_{ff} - K_{fu}K_{uu}^{-1}K_{uf}$ is the prior variance reduced by the information the inducing points provide and so it vanishes at the inducing locations themselves.
 
 Marginalising out $\vu$, the variational distribution over $\vf$ is:
 
@@ -30,7 +30,7 @@ $$
 q(\vf) = \int p(\vf \mid \vu) q(\vu) \, d\vu = \mathcal{N}(\vf \mid K_{fu} K_{uu}^{-1} \vm, \, K_{ff} - K_{fu} K_{uu}^{-1} K_{uf} + K_{fu} K_{uu}^{-1} S K_{uu}^{-1} K_{uf}).
 $$ {#eq-marginal_q_f}
 
-Compared to the conditional $p(\vf \mid \vu = \vm)$, the variational posterior $q(\vf)$ adds the term $K_{fu}K_{uu}^{-1}SK_{uu}^{-1}K_{uf}$ to the variance; this restores the uncertainty lost by treating $\vu$ as fixed at $\vm$, so $q(\vf)$ correctly reflects that our beliefs about $\vu$ are not perfectly sharp.
+Compared to the conditional $p(\vf \mid \vu = \vm)$, the variational posterior $q(\vf)$ adds the term $K_{fu}K_{uu}^{-1}SK_{uu}^{-1}K_{uf}$ to the variance which restores the uncertainty lost by treating $\vu$ as fixed at $\vm$, so $q(\vf)$ correctly reflects our prior uncertainty about $\vu$.
 
 The ELBO for this sparse model is [@titsias_variational_2009]:
 
@@ -44,7 +44,7 @@ $$
 \KL(q(\vu) \| p(\vu)) = \frac{1}{2}\left[\tr(K_{uu}^{-1}S) + \vm^\top K_{uu}^{-1} \vm - m + \log|K_{uu}| - \log|S|\right].
 $$ {#eq-kl_inducing}
 
-For Gaussian likelihoods $p(\vy \mid \vf) = \mathcal{N}(\vy \mid \vf, \sigma_n^2 \vI)$, the expected log-likelihood can be computed in closed form, yielding a fully analytical ELBO. Optimal parameters satisfy:
+For Gaussian likelihoods $p(\vy \mid \vf) = \mathcal{N}(\vy \mid \vf, \sigma_n^2 \vI)$, the expected log-likelihood can be computed in closed form, which leads to a fully analytical ELBO that can be optimised against $\vm$, $S$, $\vZ$ and $\vtheta$. The optimal variational parameters are:
 
 $$
 \begin{aligned}
@@ -62,18 +62,21 @@ $$
 \end{aligned}
 $$ {#eq-sparse_predictions}
 
-The computational scaling is $O(m^3)$ for inverting $K_{uu}$, $O(nm^2)$ for matrix products involving $K_{fu}$, and $O(m^2)$ storage for variational parameters. Inducing locations $\vZ$ can be jointly optimised with hyperparameters $\vtheta$ and variational parameters $(\vm, S)$ by gradient ascent on the ELBO.
+We now are left with $O(m^3)$ for inverting $K_{uu}$, $O(nm^2)$ for matrix products involving $K_{fu}$, and $O(m^2)$ storage for variational parameters. Inducing locations $\vZ$ can be jointly optimised with hyperparameters $\vtheta$ and variational parameters $(\vm, S)$ by gradient ascent on the ELBO.
 
 ### Stochastic Optimisation via Minibatches
 
-Even at $O(nm^2)$ per gradient step, iterating over the full dataset each step becomes expensive for large $n$. For Gaussian likelihoods the expected log-likelihood in @eq-sparse_elbo decomposes over individual data points:
+Even at $O(nm^2)$ per gradient step, iterating over the full dataset each step becomes expensive for large $n$. For Gaussian likelihoods the expected log-likelihood in @eq-sparse_elbo breaks apart over individual data points into
 $$
 \mathbb{E}_{q(\vf)}[\log p(\vy \mid \vf)] = \sum_{i=1}^n \mathbb{E}_{q(f_i)}[\log p(y_i \mid f_i)],
 $$ {#eq-ell_decomposition}
-since $p(\vy \mid \vf) = \prod_i p(y_i \mid f_i)$ and the marginals $q(f_i) = \mathcal{N}(f_i \mid [K_{fu}K_{uu}^{-1}\vm]_i,\, [K_{ff} - K_{fu}K_{uu}^{-1}(K_{uu}-S)K_{uu}^{-1}K_{uf}]_{ii})$ are available in closed form. The KL term does not depend on the data and can be evaluated once per step. This per-point structure means the ELBO can be estimated unbiasedly from a random minibatch $\mathcal{B} \subset \{1,\ldots,n\}$ [@hensman_gaussian_2013]:
+
+since $p(\vy \mid \vf) = \prod_i p(y_i \mid f_i)$ and the marginals $q(f_i) = \mathcal{N}(f_i \mid [K_{fu}K_{uu}^{-1}\vm]_i,\, [K_{ff} - K_{fu}K_{uu}^{-1}(K_{uu}-S)K_{uu}^{-1}K_{uf}]_{ii})$ are available in closed form. The KL term does not depend on the data and can be evaluated once per step rather than per data point for efficiency. This per-point structure means the ELBO can be estimated unbiasedly from a random minibatch $\mathcal{B} \subset \{1,\ldots,n\}$ [@hensman_gaussian_2013]:
+
 $$
 \hat{\mathcal{L}} = \frac{n}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \mathbb{E}_{q(f_i)}[\log p(y_i \mid f_i)] - \KL(q(\vu) \| p(\vu)).
 $$ {#eq-sparse_minibatch_elbo}
-The factor $n/|\mathcal{B}|$ re-scales the minibatch sum so that it is an unbiased estimate of the full sum over all $n$ points: a minibatch of 100 data points still gives a correctly-scaled estimate for a dataset of 100,000. Each step now costs $O(|\mathcal{B}|m^2 + m^3)$, making gradient-based optimisation tractable even for very large datasets. This minibatch decomposition carries directly into the doubly stochastic DGP estimator @eq-dsvi_mc_elbo, which applies the same per-point factorisation across all layers.
+
+$n/|\mathcal{B}|$ re-scales the minibatch sum so that it turns into an unbiased estimate of the full sum over all $n$ points. Therefore, a minibatch of 100 data points still gives a correctly-scaled estimate for a dataset of 100,000. Each step now costs $O(|\mathcal{B}|m^2 + m^3)$, making gradient-based optimisation feasible even for very large datasets.
 
 This sparse variational framework forms the foundation for scalable DGP inference, with each layer maintaining its own set of inducing points.

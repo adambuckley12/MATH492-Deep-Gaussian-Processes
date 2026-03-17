@@ -29,8 +29,6 @@ All features were standardised to zero mean and unit variance, fit on training d
 
 ![Predicted vs actual values at full scale. DSVGP-2L shows the tightest clustering around the diagonal, with RMSE = 0.0699 vs SVGP's 0.0783.](/sections/4-modeling/assets/kin8nm/large/predicted_vs_actual.png){#fig-kin8nm-pred-actual}
 
-![RMSE, R², and NLPD comparison. The DSVGP-2L leads on all three metrics; the GP family substantially outperforms classical baselines.](/sections/4-modeling/assets/kin8nm/large/metrics_bar.png){#fig-kin8nm-metrics-bar}
-
 The Kin8nm results present a qualitatively different picture from the financial datasets. DSVGP-2L achieves RMSE = 0.0699 versus SVGP's 0.0783 — a **10.7% reduction** — and R² = 0.929 versus 0.911. The NLPD improvement ($-1.241$ vs $-1.116$) indicates that the DGP not only predicts more accurately but also provides better-calibrated predictive uncertainty. This is the first dataset across our experiments where additional GP depth translates into a clear and consistent performance gain.
 
 The improvement aligns with the theoretical expectation: Kin8nm's target is a composition of trigonometric functions of the joint angles, creating a non-stationary surface where the function's local behaviour changes across the input space. The DGP's hidden layer learns an intermediate representation — effectively a warping of the input space — that makes the final-layer mapping smoother and easier to model [@damianou_deep_2013]. A single RBF kernel with fixed lengthscales cannot adapt to the varying smoothness across different joint-angle configurations, limiting the single-layer SVGP's accuracy.

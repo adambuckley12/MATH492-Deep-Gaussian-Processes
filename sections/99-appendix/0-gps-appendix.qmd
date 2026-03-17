@@ -107,7 +107,7 @@ $$
 
 ## Credit-Risk Pipeline Snippets {#sec-credit-risk-pipeline-snippets}
 
-The main text refers to three implementation details of the credit-risk experiments: the multi-tier split protocol, the SVGP training loop, and the deep GP training loop. The excerpts below are included so that the empirical claims in @sec-credit-card and @sec-freddie-mac can be tied directly to the code used to generate the results.
+The main text refers to implementation details of the empirical experiments. The excerpts below are included so that the claims in @sec-kin8nm and @sec-credit-card can be tied directly to the code used to generate the results.
 
 ### Multi-Tier Split Protocol {#sec-credit-risk-splits-snippet}
 
@@ -171,7 +171,7 @@ def transform(self, X: pd.DataFrame) -> pd.DataFrame:
     return X_enc
 ```
 
-The `_NUMERIC` constant covers `LIMIT_BAL`, `AGE`, the six `PAY_*` ordinal repayment-status codes, six `BILL_*` amounts, and six `PAY_AMT_*` repayment amounts. The same `DataPreprocessor` interface is used for Freddie Mac, extended with additional feature columns.
+The `_NUMERIC` constant covers `LIMIT_BAL`, `AGE`, the six `PAY_*` ordinal repayment-status codes, six `BILL_*` amounts, and six `PAY_AMT_*` repayment amounts.
 
 ### Post-Hoc Calibration Utility {#sec-credit-risk-calibration-snippet}
 
@@ -248,6 +248,69 @@ for epoch in range(1, self.n_epochs + 1):
 
 This is the doubly stochastic variational setup used for the deep GP models. The first source of stochasticity is mini-batch optimisation; the second is Monte Carlo sampling through the layered latent structure via `num_likelihood_samples`. The deep GP experiments in this dissertation use the DSVI-style training approach of @salimbeni_doubly_2017.
 
+### Regression-Specific Extensions {#sec-regression-pipeline-snippets}
+
+The Kin8nm regression benchmark uses the same GP architectures but with a Gaussian likelihood instead of Bernoulli. The key difference is that regression models return both predictive mean and variance, enabling the negative log predictive density (NLPD) metric.
+
+**NLPD Metric:**
+
+```python
+def nlpd(y_true: np.ndarray, y_mean: np.ndarray, y_var: np.ndarray) -> float:
+    """Negative log predictive density under a Gaussian predictive distribution."""
+    y_var = np.maximum(y_var, 1e-6)  # numerical floor
+    nll = 0.5 * np.log(2 * np.pi * y_var) + 0.5 * (y_true - y_mean) ** 2 / y_var
+    return float(np.mean(nll))
+```
+
+NLPD measures how well the model's predictive uncertainty captures the true residual distribution — lower is better. Classical models (Ridge, Random Forest, XGBoost) do not provide predictive variances, so NLPD is reported only for GP-family models.
+
+**SVGP Regression Prediction:**
+
+The regression SVGP uses `GaussianLikelihood` instead of `BernoulliLikelihood`, returning both mean and variance:
+
+```python
+@torch.no_grad()
+def predict(self, X: pd.DataFrame | np.ndarray,
+            chunk_size: int = 512) -> tuple[np.ndarray, np.ndarray]:
+    """Return (mean, variance) predictions."""
+    self._model.eval()
+    self._likelihood.eval()
+    X_arr = np.asarray(X, dtype=np.float32)
+    all_means, all_vars = [], []
+    for start in range(0, len(X_arr), chunk_size):
+        X_chunk = torch.tensor(X_arr[start:start + chunk_size]).to(self.device)
+        f_dist = self._model(X_chunk)
+        y_dist = self._likelihood(f_dist)  # GaussianLikelihood
+        all_means.append(y_dist.mean.cpu().numpy())
+        all_vars.append(y_dist.variance.cpu().numpy())
+    return np.concatenate(all_means), np.concatenate(all_vars)
+```
+
+**DSVGP Regression Prediction:**
+
+The deep GP regression model aggregates Monte Carlo samples through the layers:
+
+```python
+@torch.no_grad()
+def predict(self, X: pd.DataFrame | np.ndarray,
+            chunk_size: int = 256) -> tuple[np.ndarray, np.ndarray]:
+    """Return (mean, variance) predictions."""
+    self._model.eval()
+    X_arr = np.asarray(X, dtype=np.float32)
+    all_means, all_vars = [], []
+    for start in range(0, len(X_arr), chunk_size):
+        X_chunk = torch.tensor(X_arr[start:start + chunk_size]).to(self.device)
+        with gpytorch.settings.num_likelihood_samples(self.num_samples):
+            preds = self._model.likelihood(self._model(X_chunk))
+            mean = preds.mean.mean(dim=0).cpu().numpy()  # average over MC samples
+            var = preds.variance.mean(dim=0).cpu().numpy()
+        all_means.append(mean)
+        all_vars.append(var)
+    return np.concatenate(all_means), np.concatenate(all_vars)
+```
+
+The `num_samples` parameter (default 30 for prediction, 10 for training) controls the Monte Carlo approximation quality; more samples improve accuracy at increased cost.
+
 ### Optimal Threshold Re-computation {#sec-credit-risk-regen-snippet}
 
 After training, metrics are re-computed at each model's F1-optimal threshold rather than the conventional $t = 0.5$. The threshold search scans $[0.01, 0.99]$ at granularity $\Delta t = 0.001$:
@@ -266,7 +329,7 @@ def find_optimal_threshold(y_true, y_prob, metric="f1", lo=0.01, hi=0.99,
     return best_t, best_v
 ```
 
-This is particularly important for the Freddie Mac dataset (1.73% default rate), where GP models produce well-calibrated probabilities concentrated near the base rate, requiring $t^* \approx 0.07$–$0.09$, while classical models require $t^* \approx 0.24$–$0.81$.
+This is particularly important for imbalanced credit-risk datasets, where calibrated probabilities can sit close to the base rate and therefore require substantially lower operating thresholds than $t = 0.5$.
 
 ## UCI Credit Card: Supplementary Scaling Figures {#sec-appendix-uci-scaling}
 
@@ -292,29 +355,33 @@ The figures below show ROC/precision-recall curves, reliability diagrams, confus
 
 ![Threshold–F1 tradeoff curves — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/threshold.png){#fig-app-uci-medium-threshold}
 
-## Freddie Mac: Supplementary Scaling Figures {#sec-appendix-fm-scaling}
+### Large Tier — Runtime vs Calibration {#sec-appendix-uci-runtime}
 
-The figures below show ROC/precision-recall curves, reliability diagrams, confusion matrices, and threshold tradeoff plots for the Freddie Mac mortgage dataset at the **small** ($N_\text{dev} = 500$) and **medium** ($N_\text{dev} = 5{,}000$) tiers. These supplement the large-tier figures presented in @sec-fm-large.
+![Training time versus ECE for the six models at large scale. GP-family models provide substantially better native calibration at training times two to three orders of magnitude greater than classical models.](/sections/4-modeling/assets/credit-card-default/large/runtime.png){#fig-app-uci-runtime width=70%}
 
-### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-fm-small}
+## Kin8nm: Supplementary Scaling Figures {#sec-appendix-kin8nm-scaling}
 
-![ROC and precision-recall curves — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/roc_pr.png){#fig-app-fm-small-roc-pr}
+The figures below show predicted-vs-actual plots, residual distributions, and runtime comparisons for the Kin8nm dataset at the **small** ($N_\text{dev} = 500$) and **medium** ($N_\text{dev} = 3{,}000$) tiers. These supplement the large-tier figures presented in @sec-kin8nm-large.
 
-![Reliability diagrams — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/calibration.png){#fig-app-fm-small-calibration}
+### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-kin8nm-small}
 
-![Confusion matrices at optimal threshold — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/confusion.png){#fig-app-fm-small-confusion}
+![Predicted vs actual values — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/predicted_vs_actual.png){#fig-app-kin8nm-small-pred}
 
-![Threshold–F1 tradeoff curves — Freddie Mac, small tier.](/sections/4-modeling/assets/freddie-mac/small/threshold.png){#fig-app-fm-small-threshold}
+![Residual distributions — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/residuals.png){#fig-app-kin8nm-small-residuals}
 
-### Medium Tier ($N_\text{dev} = 5{,}000$) {#sec-appendix-fm-medium}
+![Metrics comparison (RMSE, R², NLPD) — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/metrics_bar.png){#fig-app-kin8nm-small-metrics}
 
-![ROC and precision-recall curves — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/roc_pr.png){#fig-app-fm-medium-roc-pr}
+![Training runtime — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/runtime.png){#fig-app-kin8nm-small-runtime}
 
-![Reliability diagrams — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/calibration.png){#fig-app-fm-medium-calibration}
+### Medium Tier ($N_\text{dev} = 3{,}000$) {#sec-appendix-kin8nm-medium}
 
-![Confusion matrices at optimal threshold — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/confusion.png){#fig-app-fm-medium-confusion}
+![Predicted vs actual values — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/predicted_vs_actual.png){#fig-app-kin8nm-medium-pred}
 
-![Threshold–F1 tradeoff curves — Freddie Mac, medium tier.](/sections/4-modeling/assets/freddie-mac/medium/threshold.png){#fig-app-fm-medium-threshold}
+![Residual distributions — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/residuals.png){#fig-app-kin8nm-medium-residuals}
+
+![Metrics comparison (RMSE, R², NLPD) — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/metrics_bar.png){#fig-app-kin8nm-medium-metrics}
+
+![Training runtime — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/runtime.png){#fig-app-kin8nm-medium-runtime}
 
 ## UCI Credit Card: Supplementary Tables {#sec-uci-supp-tables}
 
@@ -331,24 +398,7 @@ The figures below show ROC/precision-recall curves, reliability diagrams, confus
 
 : F1-optimal operating thresholds for all six models on the UCI credit-card dataset (large tier). GP models require thresholds approximately 0.17–0.28 below $0.5$, while classical models cluster near $0.5$. {#tbl-app-uci-threshold-optima}
 
-### Freddie Mac: F1-Optimal Threshold Summary — All Models {#sec-app-fm-threshold-optima}
-
-| Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
-|:------|:-----:|:----------:|:---------:|:------:|
-| Logistic Regression | 0.805 | 0.153 | 0.097 | 0.366 |
-| Random Forest | 0.243 | 0.143 | 0.108 | 0.211 |
-| XGBoost | 0.591 | 0.128 | 0.081 | 0.308 |
-| SVGP | 0.067 | 0.141 | 0.078 | 0.721 |
-| DSVGP-2L | 0.091 | 0.137 | 0.080 | 0.481 |
-| DSVGP-3L | 0.071 | 0.137 | 0.076 | 0.692 |
-
-: F1-optimal operating thresholds for all six models on the Freddie Mac dataset (large tier). The 50$\times$ variation in $t^*$ (0.067 to 0.805) reflects the extreme difference between well-calibrated GP posteriors and miscalibrated classical score functions at a 1.73% base rate. {#tbl-app-fm-threshold-optima}
-
-## Bootstrap Confidence Intervals {#sec-appendix-ci}
-
-All bootstrap CIs use 2,000 resamples drawn with replacement from the held-out test set (seed 42), with 95% percentile intervals. Results are reported for the large tier only; smaller tiers have wider CIs due to reduced test-set size.
-
-### UCI Credit Card — Large Tier (n = 6,000) {#sec-appendix-uci-ci}
+### Bootstrap Confidence Intervals {#sec-appendix-uci-ci}
 
 | Model | ROC-AUC | 95% CI | ECE | 95% CI |
 |:------|:-------:|:------:|:---:|:------:|
@@ -361,15 +411,27 @@ All bootstrap CIs use 2,000 resamples drawn with replacement from the held-out t
 
 : Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.027$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
 
-### Freddie Mac — Large Tier (n = 6,000, approx 104 positives) {#sec-appendix-fm-ci}
+## Kin8nm: Supplementary Tables {#sec-kin8nm-supp-tables}
 
-| Model | ROC-AUC | 95% CI | ECE | 95% CI |
-|:------|:-------:|:------:|:---:|:------:|
-| Logistic Regression | 0.820 | [0.781, 0.855] | 0.337 | [0.330, 0.344] |
-| Random Forest | 0.774 | [0.729, 0.818] | 0.055 | [0.051, 0.058] |
-| XGBoost | 0.785 | [0.740, 0.826] | 0.400 | [0.396, 0.404] |
-| SVGP | 0.819 | [0.779, 0.857] | 0.003 | [0.001, 0.006] |
-| DSVGP-2L | 0.821 | [0.782, 0.858] | 0.002 | [0.000, 0.005] |
-| DSVGP-3L | 0.823 | [0.787, 0.859] | 0.004 | [0.001, 0.007] |
+### NLPD Summary — GP Models {#sec-app-kin8nm-nlpd}
 
-: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the Freddie Mac large test set (6,000 observations, 1.73% default rate, $\approx 104$ positives). The wide ROC-AUC CIs ($\approx \pm 0.04$) reflect the low prevalence and limited positive-class information; all six models' intervals overlap substantially, and no pairwise ROC-AUC comparison is statistically significant. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.007$) and all classical models (lower bounds $\geq 0.051$), a highly significant advantage. {#tbl-app-fm-ci}
+| Model | NLPD (Small) | NLPD (Medium) | NLPD (Large) |
+|:------|:-----------:|:-------------:|:------------:|
+| SVGP | $+0.243$ | $-1.048$ | $-1.116$ |
+| DSVGP-2L | $+0.259$ | $-1.000$ | $\mathbf{-1.241}$ |
+| DSVGP-3L | $+0.333$ | $-1.003$ | $-1.158$ |
+
+: Negative log predictive density (NLPD) across training tiers. Lower is better. The positive NLPD at small scale for all GP models indicates poorly calibrated predictive uncertainty in the low-data regime — the models' variance estimates are too narrow for their inaccurate means. At sufficient scale, DSVGP-2L achieves the best NLPD. {#tbl-app-kin8nm-nlpd}
+
+### Runtime Summary — All Models {#sec-app-kin8nm-runtime}
+
+| Model | Time (s, small) | Time (s, medium) | Time (s, large) |
+|:------|:---------------:|:----------------:|:---------------:|
+| Ridge Regression | 0.005 | 0.001 | 0.001 |
+| Random Forest | 0.25 | 1.15 | 2.30 |
+| XGBoost | 0.23 | 0.95 | 1.70 |
+| SVGP | 4.9 | 19.0 | 40.5 |
+| DSVGP-2L | 3.0 | 18.2 | 35.9 |
+| DSVGP-3L | 12.9 | 75.7 | 147.5 |
+
+: Training time scaling across Kin8nm tiers. DSVGP-3L is approximately $4\times$ the cost of DSVGP-2L at all scales. {#tbl-app-kin8nm-runtime}

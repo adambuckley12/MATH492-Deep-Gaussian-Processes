@@ -1,14 +1,15 @@
-## Variational Inference for DGPs
+## Variational Inference for DGPs {#sec-dgp-variational}
 
-Given the intractability of computing the exact posterior in DGPs, variational inference provides the primary framework for DGP learning [@damianou_deep_2013]. The approach extends the sparse variational GP framework by introducing inducing points at each layer.
+In @sec-gp-variational we saw how standard GP inference is tractable due to the Gaussian conjugacy between the GP prior and the likelihood, which allows us to compute the marginal likelihood and posterior in closed form. This breaks in DGPs because the intermediate layer outputs $\vF^{(\ell-1)}$ become inputs to the next layer's kernel function $k^{(\ell)}(\vF^{(\ell-1)}, \vF^{(\ell-1)'})$, meaning the covariance matrices $K^{(\ell)}$ depend non-linearly on the random variables $\vF^{(\ell-1)}$. When we attempt to marginalise over intermediate layers, we face integrals of the form $\int \mathcal{N}(\vF^{(\ell)} \mid \vzero, K^{(\ell)}(\vF^{(\ell-1)})) p(\vF^{(\ell-1)}) \, d\vF^{(\ell-1)}$ where the covariance itself is a random function of the integration variable which breaks the Gaussian conjugacy that makes single-layer GPs tractable, as the resulting marginal is no longer Gaussian. To train DGPs, we need to use the variational approximations showed for single-layer GPs.
 
-For an $L$-layer DGP, let $\vZ^{(\ell)} \in \mathbb{R}^{m_\ell \times d_{\ell-1}}$ denote inducing inputs at layer $\ell$, with corresponding inducing outputs $\vU^{(\ell)} = f^{(\ell)}(\vZ^{(\ell)}) \in \mathbb{R}^{m_\ell \times d_\ell}$. Following @damianou_deep_2013, the variational distribution factorises across layers:
+
+For an $L$-layer DGP, let $\vZ^{(\ell)} \in \mathbb{R}^{m_\ell \times d_{\ell-1}}$ denote inducing inputs at layer $\ell$, with corresponding inducing outputs $\vU^{(\ell)} = f^{(\ell)}(\vZ^{(\ell)}) \in \mathbb{R}^{m_\ell \times d_\ell}$. Following from work by @damianou_deep_2013, the variational distribution is able to factorise across layers:
 
 $$
 q(\{\vF^{(\ell)}, \vU^{(\ell)}\}_{\ell=1}^L) = \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) q(\vU^{(\ell)}),
 $$ {#eq-dgp_variational_factorization}
 
-where $q(\vU^{(\ell)}) = \mathcal{N}(\vU^{(\ell)} \mid \vM^{(\ell)}, \vS^{(\ell)})$ with variational parameters $\vM^{(\ell)} \in \mathbb{R}^{m_\ell \times d_\ell}$ and covariances $\vS^{(\ell)}$. The factorisation is a key design choice: rather than placing a variational distribution over each layer's full $n \times d_\ell$ output matrix, we only learn distributions over the much smaller $m_\ell \times d_\ell$ inducing outputs at each layer; the per-layer GP conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ then propagates information from inducing values to all training points.
+where $q(\vU^{(\ell)}) = \mathcal{N}(\vU^{(\ell)} \mid \vM^{(\ell)}, \vS^{(\ell)})$ with variational parameters $\vM^{(\ell)} \in \mathbb{R}^{m_\ell \times d_\ell}$ and covariances $\vS^{(\ell)}$. Rather than placing a variational distribution over each layer's full $n \times d_\ell$ output matrix, we only learn distributions over the much smaller $m_\ell \times d_\ell$ inducing outputs at each layer. The per-layer GP conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ then moves information from inducing values to all training points.
 
 The conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ uses the GP prior structure. For layer $\ell$ with inputs from the previous layer $\vF^{(\ell-1)}$ and inducing inputs $\vZ^{(\ell)}$:
 
@@ -16,7 +17,7 @@ $$
 p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vU^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)} K^{(\ell)}_{uu} A^{(\ell)\top}\right),
 $$ {#eq-dgp_layer_conditional}
 
-where $A^{(\ell)} = K^{(\ell)}_{fu} (K^{(\ell)}_{uu})^{-1}$. Crucially, the covariance matrices $K^{(\ell)}_{ff}$, $K^{(\ell)}_{fu}$, and $K^{(\ell)}_{uu}$ depend on the random inputs $\vF^{(\ell-1)}$, creating dependencies across layers.
+where $A^{(\ell)} = K^{(\ell)}_{fu} (K^{(\ell)}_{uu})^{-1}$. The covariance matrices $K^{(\ell)}_{ff}$, $K^{(\ell)}_{fu}$, and $K^{(\ell)}_{uu}$ depend on the random inputs $\vF^{(\ell-1)}$, creating dependencies across layers.
 
 The ELBO for DGPs is:
 
@@ -24,7 +25,7 @@ $$
 \mathcal{L} = \mathbb{E}_{q(\vF^{(1:L)})}[\log p(\vy \mid \vF^{(L)})] - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})).
 $$ {#eq-dgp_elbo}
 
-The structure is intuitive: there is one data-fit term (the expected log-likelihood at the final layer) and one KL "regulariser" per layer, penalising each layer's variational posterior for deviating from its GP prior. The KL terms have closed form since both $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are Gaussian. However, the expected log-likelihood requires integration over all layer outputs $\vF^{(1:L)}$, which is intractable due to the nested structure.
+There is one data-fit term (the expected log-likelihood at the final layer) and one KL regularisation term per layer, which penalises each layer's variational posterior for deviating from its GP prior, just as there is in the standard GP case. The KL terms have closed form since $q(\vU^{(\ell)})$ and $p(\vU^{(\ell)})$ are both Gaussian. However, the expected log-likelihood requires integrating over all the layers outputs $\vF^{(1:L)}$ which has non-Gaussian dependencies across layers and so cannot be easily evaluated.
 
 The expectation in @eq-dgp_elbo involves:
 
@@ -44,9 +45,9 @@ $$
 q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vM^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}\right).
 $$ {#eq-marginal_q_layer_explicit}
 
-Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this variational marginal has a non-zero mean (coming from $\vM^{(\ell)}$) and reduced variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ subtracts the uncertainty explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). Despite being Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend nonlinearly on the random $\vF^{(\ell-1)}$.
+Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this variational marginal has a non-zero mean (coming from $\vM^{(\ell)}$) and reduced variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ subtracts the uncertainty explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). Despite being Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend non-linearly on the random $\vF^{(\ell-1)}$.
 
-The nested structure of @eq-dgp_nested_expectation presents the core challenge: even though each layer's conditional is Gaussian, the covariance matrices $K^{(\ell)}$ depend nonlinearly on $\vF^{(\ell-1)}$, precluding closed-form evaluation.
+The nested structure of @eq-dgp_nested_expectation presents the core challenge: even though each layer's conditional is Gaussian, the covariance matrices $K^{(\ell)}$ depend non-linearly on $\vF^{(\ell-1)}$, precluding closed-form evaluation.
 
 @damianou_deep_2013 addressed this by further approximating the variational distribution. They introduce variational distributions over the intermediate layer outputs:
 

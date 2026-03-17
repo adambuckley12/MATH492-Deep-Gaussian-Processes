@@ -1,0 +1,7 @@
+# Advanced Deep GP Architectures {#sec-advanced}
+
+The standard DGP architecture, stacking GPs that successively warp the input space, suffers from well-documented pathologies. As the number of layers increases, standard DGPs can collapse to near-identity mappings or produce overly convoluted input warps that lose interpretability [@duvenaud_avoiding_2014].
+
+This section surveys two recent advances that address these shortcomings from complementary directions. Thin and Deep GPs [@souza_thin_2023] redesign the layer structure so that each layer applies a *locally linear* transformation of the original inputs, preserving interpretability while enabling dimensionality reduction. Deeply Non-Stationary GPs [@salimbeni_deep_2019] take a different approach: rather than warping inputs, they use the DGP hierarchy to let kernel hyperparameters, particularly lengthscales, vary across input space, producing non-stationary covariance structure in a principled way.
+
+Both methods retain the variational inference machinery developed in the previous section, and both demonstrate that thoughtful architectural choices can resolve pathologies while improving performance on real data. While we do not evaluate these advanced architectures on the financial datasets in this dissertation, they represent promising directions for future work.

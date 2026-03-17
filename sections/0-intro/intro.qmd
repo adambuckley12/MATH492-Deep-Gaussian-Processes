@@ -9,7 +9,7 @@ DGPs stack multiple GP layers so that each layer's output becomes the next layer
 
 This dissertation provides an exploration of Gaussian Processes and Deep Gaussian Processes. We begin by deriving standard GP regression from first principles, show how composing these GPs into deep layered hierarchies leads to greater expressiveness at the cost of tractability, and then develop the variational inference needed to train these models at scale. 
 
-Finally, we apply DGPs and GPs to real-world datasets within finance, both credit-card default prediction and mortgage default prediction. We discuss advantages, limitations and tradeoffs between DGP structures, and
+Finally, we apply DGPs and GPs to real-world datasets within finance, focusing on credit-card default prediction. We discuss advantages, limitations and tradeoffs between DGP structures, and
 demonstrate their ability to capture complex patterns and provide calibrated uncertainty estimates that are crucial for risk-based decision making. We compare GP based models to classical machine learning (ML) models, and show that GP based models lead to better calibrated uncertainty estimates.
 
 We begin by deriving the theory of standard GPs.

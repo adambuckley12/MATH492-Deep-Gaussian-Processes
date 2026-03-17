@@ -1,0 +1,119 @@
+## Deeply Non-Stationary Gaussian Processes {#sec-deeply-nonstationary}
+
+A stationary kernel $k(\vx, \vx') = k(\vx - \vx')$ assumes that the function's smoothness and variability are uniform across input space. For many real-world problems — where a function might be smooth in one region and rapidly varying in another — this assumption is too restrictive. @paciorek_nonstationary_2004 introduced non-stationary kernels by allowing the lengthscale to vary with input location, but specifying how the lengthscale should change requires domain knowledge that may not be available.
+
+@salimbeni_deep_2019 showed that DGPs provide a natural mechanism for learning non-stationary structure: the composition of GP layers induces input-dependent covariance even when each layer uses a stationary kernel. Building on this, the *deeply non-stationary GP* framework makes this connection explicit and uses it to construct DGP architectures specifically designed for non-stationarity.
+
+### Non-Stationarity through Composition
+
+Recall from @eq-composed_covariance that for a two-layer DGP $g = f^{(2)} \circ f^{(1)}$, the effective covariance is
+$$
+\text{Cov}[g(\vx), g(\vx')] = \mathbb{E}_{f^{(1)}}\!\left[k^{(2)}\!\bigl(f^{(1)}(\vx),\, f^{(1)}(\vx')\bigr)\right].
+$$
+Even when $k^{(2)}$ is the squared exponential (stationary), this covariance depends on $\vx$ and $\vx'$ individually — not just on their difference — because $f^{(1)}$ maps different regions of input space to different parts of the latent space. Where $f^{(1)}$ compresses the input (small gradient), the effective lengthscale of $g$ increases; where $f^{(1)}$ stretches the input, the effective lengthscale decreases.
+
+To make this precise, consider a one-dimensional input and a first-layer function $h = f^{(1)}(x)$. For nearby inputs $x$ and $x + \delta$, we have $h(x + \delta) \approx h(x) + h'(x)\delta$. Substituting into a squared exponential second-layer kernel with lengthscale $\ell$:
+$$
+k^{(2)}\!\bigl(h(x),\, h(x+\delta)\bigr) \approx \sigma_f^2 \exp\!\left(-\frac{h'(x)^2 \delta^2}{2\ell^2}\right).
+$$ {#eq-effective-lengthscale}
+This is a squared exponential in $\delta$ with *effective* lengthscale $\ell_{\text{eff}}(x) = \ell / |h'(x)|$. The local derivative of $f^{(1)}$ thus controls the local smoothness of the composed process.
+
+### The Deeply Non-Stationary Architecture
+
+The deeply non-stationary GP framework [@salimbeni_deep_2019] takes this observation and builds architectures that explicitly encourage the intermediate layers to learn meaningful non-stationary structure. The key design choices are:
+
+1. **Input-connected layers.** Rather than passing only the output of the previous layer, each layer also receives the original inputs $\vX$. This ensures that the non-stationarity is anchored to the input space and prevents information loss through deep compositions. The layer mapping becomes:
+$$
+\vF^{(\ell)} = f^{(\ell)}\!\bigl([\vX,\, \vF^{(\ell-1)}]\bigr),
+$$ {#eq-input-connected}
+where $[\cdot, \cdot]$ denotes concatenation.
+
+2. **Lengthscale parameterisation.** Instead of warping inputs into an abstract latent space, the intermediate GPs can be interpreted as learning input-dependent lengthscale functions. This is achieved by ensuring the intermediate layers have the same output dimension as the input, so that the kernel at the next layer effectively sees a warped copy of the original inputs.
+
+3. **Linear mean functions.** Each layer uses a linear mean function $m^{(\ell)}(\vx) = \vW^{(\ell)} \vx + \vb^{(\ell)}$ rather than a zero mean. This provides a "skip connection" that prevents the pathological collapse to constant functions described by @duvenaud_avoiding_2014, since even if the GP component contributes little, the linear mean ensures a non-degenerate transformation.
+
+```{python}
+#| label: fig-nonstationarity
+#| fig-cap: "Non-stationarity induced by a DGP. Left: the first-layer warp function $h(x)$, which compresses the input in some regions and stretches it in others. Right: samples from the resulting composed process $g = f^{(2)} \\circ f^{(1)}$, showing varying smoothness across input space."
+#| echo: false
+
+import torch
+import gpytorch
+import numpy as np
+import matplotlib.pyplot as plt
+
+torch.manual_seed(7)
+
+n_grid = 500
+x_np = np.linspace(-3, 3, n_grid)
+
+# First layer warp: compresses in the middle, stretches at edges
+h_np = x_np + 0.8 * np.tanh(2 * x_np)
+
+# Effective lengthscale: ℓ / |h'(x)|
+h_prime = 1 + 0.8 * 2 / np.cosh(2 * x_np)**2
+ell_base = 0.5
+ell_eff = ell_base / h_prime
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
+
+# Left: warp and effective lengthscale
+ax = axes[0]
+ax.plot(x_np, h_np, color='#1f77b4', linewidth=1.5, label='$h(x) = f^{(1)}(x)$')
+ax.plot(x_np, x_np, color='grey', linewidth=0.8, linestyle='--', alpha=0.6, label='Identity')
+ax.set_xlabel('$x$')
+ax.set_ylabel('$h(x)$')
+ax.set_title('First-layer warp')
+ax.legend(fontsize=9, framealpha=0.9)
+
+ax2 = ax.twinx()
+ax2.plot(x_np, ell_eff, color='#2ca02c', linewidth=1.2, linestyle=':', label=r'$\ell_{\rm eff}(x)$')
+ax2.set_ylabel(r'Effective lengthscale $\ell_{\rm eff}$', color='#2ca02c')
+ax2.tick_params(axis='y', labelcolor='#2ca02c')
+ax2.legend(loc='lower right', fontsize=9, framealpha=0.9)
+
+# Right: samples from composed process using GPyTorch
+ax = axes[1]
+h_t = torch.tensor(h_np, dtype=torch.float64)
+kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel()).double()
+kernel.base_kernel.lengthscale = ell_base
+kernel.outputscale = 1.0
+prior = gpytorch.distributions.MultivariateNormal(
+    torch.zeros(n_grid, dtype=torch.float64),
+    kernel(h_t).evaluate() + 1e-6 * torch.eye(n_grid, dtype=torch.float64)
+)
+samples = prior.sample(torch.Size([4])).numpy()
+
+for i in range(4):
+    ax.plot(x_np, samples[i], linewidth=0.9, alpha=0.8)
+
+ax.set_xlabel('$x$')
+ax.set_ylabel('$g(x) = f^{(2)}(f^{(1)}(x))$')
+ax.set_title('Samples from composed process')
+ax.axhline(0, color='grey', linewidth=0.5, linestyle='--')
+
+fig.tight_layout()
+plt.show()
+```
+
+@fig-nonstationarity demonstrates how a first-layer warp induces non-stationary behaviour in the composed process. Near $x = 0$, where the warp compresses the input (small derivative), the composed function varies slowly. Near the edges, where the warp stretches the input, the function varies rapidly. The effective lengthscale (green dotted line, left panel) quantifies this: it is large where the warp compresses and small where it stretches.
+
+### Connection to Non-Stationary Kernels
+
+The Gibbs kernel [@paciorek_nonstationary_2004] is a classical non-stationary kernel that directly parameterises input-dependent lengthscales:
+$$
+k_{\text{Gibbs}}(\vx, \vx') = \prod_{d=1}^{D} \left(\frac{2\ell_d(\vx)\ell_d(\vx')}{\ell_d(\vx)^2 + \ell_d(\vx')^2}\right)^{1/2} \exp\left(-\sum_{d=1}^{D} \frac{(x_d - x_d')^2}{\ell_d(\vx)^2 + \ell_d(\vx')^2}\right),
+$$ {#eq-gibbs-kernel}
+where $\ell_d(\vx)$ is the lengthscale along dimension $d$ at location $\vx$. When $\ell_d(\vx) = \ell_d$ is constant, this reduces to the standard squared exponential kernel.
+
+@salimbeni_deep_2019 showed that a DGP with appropriate architecture can express a similar class of non-stationary covariance structures, but without requiring the user to specify the functional form of $\ell_d(\vx)$. Instead, the intermediate GP layers learn the lengthscale functions from data. This is advantageous because:
+
+- The depth allows for hierarchical structure: coarse-scale non-stationarity can be captured by early layers, with finer adjustments made by later layers.
+- The variational inference framework provides uncertainty estimates over the lengthscale functions themselves, not just the output predictions.
+- The model can discover non-stationarity patterns that would be difficult to specify manually.
+
+### Practical Considerations
+
+Training deeply non-stationary GPs follows the same doubly stochastic framework as standard DGPs, with a few additional considerations. First, the input concatenation in @eq-input-connected doubles the input dimension at each layer, which increases the number of kernel hyperparameters. In practice, using ARD (separate lengthscales per dimension) at each layer allows the model to learn which inputs — original or latent — are most relevant. Second, the linear mean functions introduce additional parameters $\vW^{(\ell)}, \vb^{(\ell)}$ at each layer, though these are typically few compared to the variational parameters and are optimised jointly with the ELBO.
+
+Empirically, @salimbeni_deep_2019 found that deeply non-stationary GPs with 2–5 layers consistently outperform single-layer GPs on regression benchmarks with heterogeneous smoothness, while the skip connections prevent the degradation in performance that standard DGPs can suffer as depth increases.
