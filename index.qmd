@@ -40,10 +40,10 @@ abstract: |
 <!-- {{< include sections/3-training/5-hilbert.qmd >}}
 {{< include sections/3-training/6-comparison.qmd >}} -->
 
-<!-- Advanced architectures section -->
+<!-- Advanced architectures section 
 {{< include sections/4-advanced/0-advanced-intro.qmd >}}
 {{< include sections/4-advanced/1-thin-deep.qmd >}}
-{{< include sections/4-advanced/2-deeply-non-stationary.qmd >}}
+{{< include sections/4-advanced/2-deeply-non-stationary.qmd >}}-->
 
 <!-- Modeling -->
 {{< include sections/4-modeling/0-overview.qmd >}}
