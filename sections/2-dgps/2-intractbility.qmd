@@ -8,7 +8,7 @@ $$
 p(\vy \mid \vX) = \int p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) \, d\vF^{(1)} \cdots d\vF^{(L)},
 $$ {#eq-dgp_marginal_likelihood}
 
-where $\vF^{(0)} = \vX$. This integral has no closed-form solution for $L \geq 2$ with non-degenerate kernels. The fundamental obstacle is that the covariance matrix $K^{(\ell)}$ at each layer is a nonlinear function of $\vF^{(\ell-1)}$ — the very variables being integrated over — so the integral cannot be reorganised into the product-of-Gaussians form that makes single-layer GP inference tractable.
+where $\vF^{(0)} = \vX$. This integral has no closed-form solution for $L \geq 2$ (unless the kernels are degenerate). The fundamental obstacle is that the covariance matrix $K^{(\ell)}$ at each layer is a nonlinear function of $\vF^{(\ell-1)}$. This is the very variables being integrated over and so the integral cannot be reorganised into the product-of-Gaussians form that makes single-layer GP inference tractable.
 
 To see why, consider a two-layer DGP. The covariance matrix $K^{(2)}$ depends on $\vF^{(1)}$ through $[K^{(2)}]_{ij} = k^{(2)}(f_i^{(1)}, f_j^{(1)})$. For the squared exponential kernel:
 

@@ -1,11 +1,3 @@
 ## Empirical Summary {#sec-empirical-summary}
 
-The experiments reveal a consistent pattern where DGPs outperform single-layer GPs only when the target function has a non-stationary, compositional structure.
-
-On the Kin8nm robot kinematics benchmark, DSVGP-2L achieved a 10.7% RMSE reduction over SVGP (0.0699 vs 0.0783) at full. The target is a composition of trigonometric functions, which is exactly the hierarchical non-linearity where intermediate representations add value. On the financial classification task, where credit-default surfaces are likely more smooth and monotonic, DGPs matched but did not meaningfully exceed single-layer GP performance, confirming that a single RBF kernel is sufficient for this task.
-
-Across the evaluated datasets, the GP family delivered significantly better probability calibration than classical baselines on credit-risk classification. On the credit card dataset (22.1% default rate), GP models achieved 5–13$\times$ lower ECE than XGBoost, confirming the practical value of Bayesian uncertainty quantification where PD estimates must track observed frequencies.
-
-The scaling analysis leads to two practical guidelines. First, SVGP is the most data-efficient GP variant: it leads or matches DGPs at small scale ($N < 1{,}000$) across the experiments. Secondly, additional depth beyond two layers never improved performance. DSVGP-3L collapsed to near-constant predictions at small scale (R² = 0.002 on Kin8nm) and never outperformed DSVGP-2L at any scale, while costing 3–4$\times$ more training time.
-
-In conclusion, DGPs deserve consideration when the application domain has known compositional structure (robotics, sensor fusion, multi-stage physical processes) and sufficient data is available ($N > 3{,}000$). For smooth risk surfaces typical of credit and financial modelling, single-layer SVGPs provide comparable discriminative and uncertainty quantification at far lower computational costs.
+Across both experiments, DGPs outperform single-layer GPs only when the target function has genuinely non-stationary, compositional structure — and the GP family consistently delivers better probability calibration than classical baselines regardless of dataset. Detailed analysis of the results, limitations, and implications is provided in @sec-conclusion.

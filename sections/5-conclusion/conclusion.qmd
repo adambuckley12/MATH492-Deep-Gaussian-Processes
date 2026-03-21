@@ -1,6 +1,6 @@
 # Conclusion {#sec-conclusion}
 
-This dissertation set out to answer a focused empirical question: do Deep Gaussian Processes improve on single-layer GPs for real-world machine learning tasks, and if so, when and at what cost? The theoretical development — from weight-space Bayesian linear regression through the kernel trick, GP inference, and doubly stochastic variational inference — established the machinery required to make this question tractable at scale. Two experiments then tested the practical implications.
+This dissertation set out to answer if Deep Gaussian Processes improve on single-layer GPs for real-world machine learning tasks, and if so, when and at what cost? The theoretical development, from weight-space Bayesian linear regression through the kernel trick, GP inference, and doubly stochastic variational inference, established the machinery required to make this question tractable at scale. Two experiments then tested the practical implications.
 
 ## Key Findings
 
@@ -12,7 +12,7 @@ This dissertation set out to answer a focused empirical question: do Deep Gaussi
 
 ## Limitations
 
-These findings are subject to several limitations. First, all experiments were conducted on CPU without GPU acceleration; absolute training times would be considerably shorter on modern hardware, though relative ratios between models would remain approximately the same. Second, only two datasets were evaluated — a broader benchmark study across more domains would be needed to establish stronger generalisability claims. Third, the DGP architectures tested use fixed-width hidden layers with a single hidden dimension; variable-width or residual DGP architectures [@salimbeni_doubly_2017] were not explored. Finally, the regulatory compliance claims are illustrative rather than definitive: real-world PD model validation involves back-testing, portfolio-level stability testing, and model documentation requirements that go beyond the metrics evaluated here.
+These findings are subject to several limitations. First, all experiments were conducted on CPU (Apple M2) without GPU acceleration; absolute training times would be considerably shorter on modern hardware, though relative ratios between models would remain approximately the same. Second, only two datasets were evaluated — a broader benchmark study across more domains would be needed to establish stronger generalisability claims. Third, the DGP architectures tested use fixed-width hidden layers with a single hidden dimension; variable-width or residual DGP architectures [@salimbeni_doubly_2017] were not explored. Finally, the regulatory compliance claims are illustrative rather than definitive: real-world PD model validation involves back-testing, portfolio-level stability testing, and model documentation requirements that go beyond the metrics evaluated here.
 
 ## Future Directions
 

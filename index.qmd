@@ -48,7 +48,6 @@ abstract: |
 <!-- Modeling -->
 {{< include sections/4-modeling/0-overview.qmd >}}
 {{< include sections/4-modeling/1-kin8nm.qmd >}}
-{{< include sections/4-modeling/1.5-finance-intro.qmd >}} <!-- yes the numbering is not in order i cba fixing -->
 
 {{< include sections/4-modeling/1-uci-credit-card-default.qmd >}}
 {{< include sections/4-modeling/3-conclusion.qmd >}}

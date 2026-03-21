@@ -8,9 +8,9 @@ $$
 f^{(\ell)} \mid \vF^{(\ell-1)} \sim \mathcal{GP}\left(0, k^{(\ell)}(\cdot, \cdot)\right), \quad \ell = 1, \ldots, L,
 $$ {#eq-dgp_definition}
 
-with the convention $\vF^{(0)} = \vX$ (the observed inputs). Each layer applies a freshly drawn GP function to the *outputs* of the previous layer — the first layer warps the raw inputs, the second warps those warped values, and so on. The model is a learned chain of transformations, each inheriting all the uncertainty of the layers before it.
+with the convention $\vF^{(0)} = \vX$ (the observed inputs). Each layer applies a freshly drawn GP function to the *outputs* of the previous layer, where the first layer warps the raw data inputs, the second warps those warped values, and so on. The model is a learned chain of transformations, with each layer inheriting all the uncertainty of the layers before it.
 
-For observed inputs $\vX \in \mathbb{R}^{n \times d_0}$ and outputs $\vy \in \mathbb{R}^n$, the generative model proceeds as:
+For observed inputs $\vX \in \mathbb{R}^{n \times d_0}$ and outputs $\vy \in \mathbb{R}^n$, the generative model is:
 
 $$
 \begin{aligned}
@@ -36,9 +36,9 @@ $$
 p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right) = \mathcal{N}\left(\vF^{(\ell)} \mid \vzero, K^{(\ell)}\right).
 $$ {#eq-dgp_conditional_gaussian}
 
-When $\vF^{(\ell-1)}$ is held fixed, this is identical to a standard GP prior — layer $\ell$ behaves exactly like a regular GP evaluated at those inputs. The difficulty arises only when $\vF^{(\ell-1)}$ is random: the covariance matrix $K^{(\ell)}$ then becomes a random variable itself, and integrating over it no longer yields a closed form.
+When $\vF^{(\ell-1)}$ is held fixed, this is identical to a standard GP prior and layer $\ell$ behaves exactly like a regular GP evaluated at those inputs. The difficulty comes around only when $\vF^{(\ell-1)}$ is random as the covariance matrix $K^{(\ell)}$ then becomes a random variable itself, and integrating over it no longer gives a closed form solution.
 
-The directed graph structure implies that each layer depends only on its immediate predecessor (a Markov property), leading to a factorised joint prior:
+The directed graph structure implies that each layer depends only on its immediate predecessor (which is a Markov property), leading to a factorised joint prior:
 
 $$
 p\left(\vF^{(1)}, \ldots, \vF^{(L)} \mid \vX\right) = p\left(\vF^{(1)} \mid \vX\right) \prod_{\ell=2}^{L} p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right).
@@ -126,4 +126,4 @@ $$
 \text{Cov}[g(\vx), g(\vx')] = \mathbb{E}_{f^{(1)}}\left[k^{(2)}\left(f^{(1)}(\vx), f^{(1)}(\vx')\right)\right].
 $$ {#eq-composed_covariance}
 
-This expectation depends on marginal distributions of $f^{(1)}(\vx)$ and $f^{(1)}(\vx')$, which change with $\vx, \vx'$ through $k^{(1)}$. The composed covariance is therefore not simply a function of $\vx - \vx'$, making the process non-stationary. This input-dependent structure lets DGPs model functions with varying smoothness and lengthscale across input space. To see why this is useful, imagine fitting a signal that is smooth in some regions and rapidly varying in others: a single GP with a fixed lengthscale must compromise, while a DGP can learn to "stretch" the input space in smooth regions and "compress" it in complex regions through $f^{(1)}$, giving the second layer an effectively adapted coordinate system. [**TODO: CITE**].
+This expectation depends on marginal distributions of $f^{(1)}(\vx)$ and $f^{(1)}(\vx')$, which changes with $\vx, \vx'$ through $k^{(1)}$. The composed DGP covariance is therefore not just a function of $\vx - \vx'$, which makes the process non-stationary. This input-dependent structure lets DGPs model functions with varying smoothness and lengthscale across input space. To see why this is useful, imagine fitting a signal that is smooth in some regions and rapidly varying in others: a single GP with a fixed lengthscale must compromise, while a DGP can learn to "stretch" the input space in smooth regions and "compress" it in complex regions through $f^{(1)}$, which gives the second layer an effectively adapted coordinate system rather than the raw inputs to work with. [TODO: cite!!]
