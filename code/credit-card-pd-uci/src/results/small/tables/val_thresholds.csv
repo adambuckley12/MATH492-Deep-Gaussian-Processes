@@ -1,0 +1,7 @@
+model,val_threshold
+Logistic Regression,0.44999999999999996
+Random Forest,0.39999999999999997
+XGBoost,0.39999999999999997
+SVGP,0.3
+DSVGP-2L,0.3
+DSVGP-3L,0.05

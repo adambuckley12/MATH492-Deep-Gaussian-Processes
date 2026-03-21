@@ -136,7 +136,38 @@ This produces a three-way split (train / validation / test) per tier. The valida
 
 ### Pre-Processing Pipeline {#sec-credit-risk-preprocessing-snippet}
 
-The `DataPreprocessor` class handles categorical encoding, numeric scaling, and split construction. The scaler is fit on the training set only and applied to validation and test sets, preventing leakage.
+The `DataCleaner` class handles collapsing undocumented categorical codes and applying log-transforms to skewed monetary variables. These run before encoding and scaling.
+
+```python
+@staticmethod
+def _fix_education(df: pd.DataFrame) -> pd.DataFrame:
+    """Collapse undocumented EDUCATION codes (0, 5, 6) into 'Other' (4)."""
+    df[COL_EDUCATION] = df[COL_EDUCATION].replace({0: 4, 5: 4, 6: 4})
+    return df
+
+@staticmethod
+def _fix_marriage(df: pd.DataFrame) -> pd.DataFrame:
+    """Collapse undocumented MARRIAGE code 0 into 'Other' (3)."""
+    df[COL_MARRIAGE] = df[COL_MARRIAGE].replace({0: 3})
+    return df
+
+@staticmethod
+def _apply_log_transforms(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply log1p transforms to right-skewed monetary columns.
+    LIMIT_BAL and PAY_AMT_* (non-negative): log1p(clip(x, lower=0)).
+    BILL_* (can be negative): sign(x) * log1p(|x|).
+    """
+    for col in [limit_col] + pay_amt_cols:
+        if col in df.columns:
+            df[col] = np.log1p(df[col].clip(lower=0))
+    for col in bill_cols:
+        if col in df.columns:
+            df[col] = np.sign(df[col]) * np.log1p(np.abs(df[col]))
+    return df
+```
+
+The `DataPreprocessor` class then handles categorical encoding, numeric scaling, and split construction. The scaler is fit on the training set only and applied to validation and test sets, preventing leakage.
 
 ```python
 @staticmethod
@@ -175,7 +206,7 @@ The `_NUMERIC` constant covers `LIMIT_BAL`, `AGE`, the six `PAY_*` ordinal repay
 
 ### Post-Hoc Calibration Utility {#sec-credit-risk-calibration-snippet}
 
-A post-hoc calibration module is available for Platt scaling and isotonic regression but is **not** used in the default pipeline. The main text discusses why: post-hoc calibration introduces additional model risk under SR 11-7 [@federal_reserve_sr11_7], requires a held-out calibration set (reducing training data), and is difficult to validate on low-default portfolios. The code is included here for completeness:
+A post-hoc calibration module is available for Platt scaling and isotonic regression but is not used in the default pipeline. The main text discusses why: post-hoc calibration introduces additional model risk under SR 11-7 [@federal_reserve_sr11_7], requires a held-out calibration set (reducing training data), and is difficult to validate on low-default portfolios. The code is included here for completeness:
 
 ```python
 def fit_probability_calibrator(

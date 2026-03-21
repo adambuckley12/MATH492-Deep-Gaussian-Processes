@@ -318,6 +318,16 @@ def regenerate_tier(dataset_key, tier, results_root):
         if "train_time_sec" in old_m.columns:
             runtime_map = dict(zip(old_m["model"], old_m["train_time_sec"]))
 
+    # -- Load val-chosen thresholds (if available) ------------------
+    val_thresh_path = os.path.join(tables_dir, "val_thresholds.csv")
+    val_thresh_map = {}
+    if os.path.exists(val_thresh_path):
+        vt = pd.read_csv(val_thresh_path)
+        val_thresh_map = dict(zip(vt["model"], vt["val_threshold"]))
+        print(f"  Loaded val thresholds from {val_thresh_path}")
+    else:
+        print(f"  WARNING: No val_thresholds.csv found, falling back to test-set threshold")
+
     # -- Compute metrics ------------------------------------------
     metric_rows_fixed = []
     metric_rows_optimal = []
@@ -335,8 +345,11 @@ def regenerate_tier(dataset_key, tier, results_root):
         m_fixed["train_time_sec"] = runtime_map.get(model, 0)
         metric_rows_fixed.append(m_fixed)
 
-        # Optimal F1 threshold
-        t_opt = find_optimal_threshold(yt, yp, metric="f1")
+        # Val-chosen threshold (fall back to test-optimal if val thresholds unavailable)
+        if model in val_thresh_map:
+            t_opt = val_thresh_map[model]
+        else:
+            t_opt = find_optimal_threshold(yt, yp, metric="f1")
         optimal_thresholds[model] = t_opt
         m_opt = compute_metrics(yt, yp, t_opt)
         m_opt["model"] = model
@@ -348,7 +361,7 @@ def regenerate_tier(dataset_key, tier, results_root):
         print(f"  {model:25s}  t*={t_opt:.3f}  F1={m_opt['f1']:.4f}  "
               f"ROC-AUC={m_opt['roc_auc']:.4f}  ECE={m_opt['ece']:.4f}")
 
-        # Threshold sweep
+        # Threshold sweep (diagnostic, on test data)
         sw = threshold_sweep(yt, yp)
         sw.insert(0, "model", model)
         sw.insert(1, "family", family)
@@ -415,7 +428,7 @@ def regenerate_tier(dataset_key, tier, results_root):
         if fname.endswith(".png"):
             shutil.copy2(os.path.join(fig_dir, fname), os.path.join(asset_dir, fname))
     # Also copy key CSVs
-    for csv_name in ["metrics.csv", "metrics_optimal.csv", "threshold_optima.csv", "split_summary.csv"]:
+    for csv_name in ["metrics.csv", "metrics_optimal.csv", "threshold_optima.csv", "split_summary.csv", "val_thresholds.csv"]:
         src = os.path.join(tables_dir, csv_name)
         if os.path.exists(src):
             shutil.copy2(src, os.path.join(asset_dir, csv_name))

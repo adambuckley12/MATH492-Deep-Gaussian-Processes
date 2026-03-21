@@ -1,3 +1,3 @@
 ## Empirical Summary {#sec-empirical-summary}
 
-Across both experiments, DGPs outperform single-layer GPs only when the target function has genuinely non-stationary, compositional structure — and the GP family consistently delivers better probability calibration than classical baselines regardless of dataset. Detailed analysis of the results, limitations, and implications is provided in @sec-conclusion.
+Across both experiments, DGPs outperform single-layer GPs only when the target function has genuinely non-stationary, compositional structure — and on the classification task, the GP family delivers substantially better probability calibration than classical baselines. Detailed analysis of the results, limitations, and implications is provided in @sec-conclusion.

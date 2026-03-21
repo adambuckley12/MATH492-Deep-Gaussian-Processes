@@ -1,4 +1,4 @@
-## Sparse Variational GPs
+## Sparse Variational GPs {#sec-gp-variational}
 
 The $O(n^3)$ cost of standard GP inference becomes prohibitive for large datasets. We can reduce this by using $m \ll n$ *inducing points* that summarise the data, reducing complexity to $O(nm^2)$ [@quinonero-candela_unifying_2005; @titsias_variational_2009].
 

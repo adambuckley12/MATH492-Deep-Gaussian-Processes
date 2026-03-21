@@ -1,7 +1,7 @@
 model,family,train_time_sec
-Logistic Regression,classical,0.0258
-Random Forest,classical,4.574
-XGBoost,classical,0.5836
-SVGP,gp,149.7124
-DSVGP-2L,dgp,186.0758
-DSVGP-3L,dgp,616.1388
+Logistic Regression,classical,0.0265
+Random Forest,classical,4.8524
+XGBoost,classical,0.2351
+SVGP,gp,160.3832
+DSVGP-2L,dgp,197.0385
+DSVGP-3L,dgp,706.5168
