@@ -204,51 +204,73 @@ def transform(self, X: pd.DataFrame) -> pd.DataFrame:
 
 The `_NUMERIC` constant covers `LIMIT_BAL`, `AGE`, the six `PAY_*` ordinal repayment-status codes, six `BILL_*` amounts, and six `PAY_AMT_*` repayment amounts.
 
-### Post-Hoc Calibration Utility {#sec-credit-risk-calibration-snippet}
+### DGP Layer Architecture {#sec-dgp-architecture-snippet}
 
-A post-hoc calibration module is available for Platt scaling and isotonic regression but is not used in the default pipeline. The main text discusses why: post-hoc calibration introduces additional model risk under SR 11-7 [@federal_reserve_sr11_7], requires a held-out calibration set (reducing training data), and is difficult to validate on low-default portfolios. The code is included here for completeness:
-
-```python
-def fit_probability_calibrator(
-    method: str,
-    y_prob: np.ndarray,
-    y_true: np.ndarray,
-) -> FittedCalibrator:
-    """Fit a post-hoc calibrator from predicted probabilities."""
-    probs = np.clip(np.asarray(y_prob, dtype=float), 1e-6, 1.0 - 1e-6)
-    targets = np.asarray(y_true, dtype=int)
-    if method == "platt":
-        logits = np.log(probs / (1.0 - probs)).reshape(-1, 1)
-        model = LogisticRegression(solver="lbfgs", random_state=42)
-        model.fit(logits, targets)
-        return FittedCalibrator(method=method, model=model)
-    if method == "isotonic":
-        model = IsotonicRegression(out_of_bounds="clip")
-        model.fit(probs, targets)
-        return FittedCalibrator(method=method, model=model)
-```
-
-### SVGP Training Loop {#sec-credit-risk-svgp-snippet}
+Each GP layer in the DSVGP implementation is a `DeepGPLayer` subclass. The design choices below are non-standard and directly affect training stability:
 
 ```python
-optimizer = torch.optim.Adam(
-    list(self._model.parameters()) + list(self._likelihood.parameters()),
-    lr=self.lr,
-)
-mll = VariationalELBO(self._likelihood, self._model, num_data=len(y))
+class _DeepGPLayer(DeepGPLayer):
+    def __init__(self, input_dims, output_dims, num_inducing=128,
+                 inducing_pts=None):
+        # output_dims=None → scalar output (final layer)
+        # output_dims=int  → batch of output_dims independent GPs (hidden)
+        batch_shape = torch.Size([]) if output_dims is None \
+                      else torch.Size([output_dims])
 
-for epoch in range(1, self.n_epochs + 1):
-    for X_batch, y_batch in _iter_batches(X, y, self.batch_size):
-        X_batch = X_batch.to(self.device)
-        y_batch = y_batch.to(self.device)
-        optimizer.zero_grad()
-        output = self._model(X_batch)
-        loss   = -mll(output, y_batch)
-        loss.backward()
-        optimizer.step()
+        var_dist = CholeskyVariationalDistribution(
+            num_inducing_points=num_inducing, batch_shape=batch_shape)
+        var_strat = VariationalStrategy(
+            self, inducing_pts, var_dist, learn_inducing_locations=True)
+        super().__init__(var_strat, input_dims, output_dims)
+
+        # Hidden layers use ConstantMean (learnable bias);
+        # output layer uses ZeroMean (bias absorbed into variational params)
+        MeanClass = ZeroMean if output_dims is None else ConstantMean
+        self.mean_module  = MeanClass(batch_shape=batch_shape)
+        self.covar_module = ScaleKernel(
+            RBFKernel(batch_shape=batch_shape, ard_num_dims=input_dims),
+            batch_shape=batch_shape,
+        )
+        # Initialise lengthscale to sqrt(input_dims).
+        # Default l=1 gives near-zero kernel values for standardised data
+        # in >~5 dimensions because ||Δx||² ~ input_dims.
+        with torch.no_grad():
+            self.covar_module.base_kernel.lengthscale = float(input_dims)**0.5
 ```
 
-This is standard mini-batch stochastic variational inference for a sparse GP classifier. The variational ELBO is optimised jointly over the inducing-point representation and the Bernoulli likelihood parameters.
+Layers are stacked in `_DSVGPInternalModel`. The first hidden layer's inducing points are subsampled from real training data to prevent the first-layer kernel matrix from collapsing before training begins; subsequent hidden layers use random initialisation:
+
+```python
+class _DSVGPInternalModel(DeepGP):
+    def __init__(self, input_dims, n_layers, hidden_dim, num_inducing,
+                 X_init=None):
+        super().__init__()
+        # Seed first-layer inducing points from actual data
+        if X_init is not None:
+            idx = torch.randperm(X_init.shape[0])[:num_inducing]
+            pts = X_init[idx].clone()
+            first_inducing = pts.unsqueeze(0).expand(hidden_dim, -1, -1).clone()
+        else:
+            first_inducing = None
+
+        self.hidden_layers = torch.nn.ModuleList()
+        self.hidden_layers.append(
+            _DeepGPLayer(input_dims, hidden_dim, num_inducing,
+                         inducing_pts=first_inducing))
+        for _ in range(n_layers - 2):   # additional hidden layers
+            self.hidden_layers.append(
+                _DeepGPLayer(hidden_dim, hidden_dim, num_inducing))
+        self.output_layer = _DeepGPLayer(hidden_dim, None, num_inducing)
+        self.likelihood = BernoulliLikelihood()
+
+    def forward(self, x):
+        h = x
+        for layer in self.hidden_layers:
+            h = layer(h)
+        return self.output_layer(h)
+```
+
+For the regression variant, `BernoulliLikelihood` is replaced by `GaussianLikelihood` and the output layer returns a scalar GP with predictive mean and variance.
 
 ### DSVGP Training Loop {#sec-credit-risk-dsvgp-snippet}
 
@@ -342,6 +364,21 @@ def predict(self, X: pd.DataFrame | np.ndarray,
 
 The `num_samples` parameter (default 30 for prediction, 10 for training) controls the Monte Carlo approximation quality; more samples improve accuracy at increased cost.
 
+### Hidden Representation Extraction {#sec-hidden-rep-snippet}
+
+The hidden-layer analysis in @sec-kin8nm-large-hidden extracts the posterior mean of the first GP layer directly from GPyTorch's variational strategy. For a trained DSVGP-2L regression model loaded as `dgp`:
+
+```python
+layer0 = dgp.hidden_layers[0]
+# variational_strategy(x, prior=False) → posterior q(u | data)
+# posterior.mean has shape [hidden_dim, N] = [5, N]; transpose to [N, 5]
+with torch.no_grad():
+    posterior = layer0.variational_strategy(X_test_tensor, prior=False)
+    hidden_mean = posterior.mean.T.cpu().numpy()  # [N, hidden_dim]
+```
+
+The resulting `hidden_mean` matrix is the 5-dimensional posterior mean representation learned by the first GP layer. PCA is then applied to project it to 2D for visualisation, giving the centre panel of @fig-kin8nm-hidden.
+
 ### Optimal Threshold Re-computation {#sec-credit-risk-regen-snippet}
 
 After training, metrics are re-computed at each model's F1-optimal threshold rather than the conventional $t = 0.5$. The threshold search scans $[0.01, 0.99]$ at granularity $\Delta t = 0.001$:
@@ -420,9 +457,9 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 | Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
 |:------|:-----:|:----------:|:---------:|:------:|
-| Logistic Regression | 0.55 | 0.513 | 0.474 | 0.559 |
-| Random Forest | 0.40 | 0.538 | 0.506 | 0.573 |
-| XGBoost | 0.55 | 0.543 | 0.523 | 0.565 |
+| Logistic Regression | 0.50 | 0.500 | 0.474 | 0.559 |
+| Random Forest | 0.35 | 0.532 | 0.506 | 0.573 |
+| XGBoost | 0.50 | 0.536 | 0.523 | 0.565 |
 | SVGP | 0.30 | 0.546 | 0.541 | 0.550 |
 | DSVGP-2L | 0.30 | 0.541 | 0.534 | 0.549 |
 | DSVGP-3L | 0.30 | 0.541 | 0.515 | 0.569 |
@@ -436,9 +473,9 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 | Logistic Regression | 0.739 | [0.723, 0.755] | 0.225 | [0.215, 0.235] |
 | Random Forest | 0.769 | [0.754, 0.783] | 0.087 | [0.078, 0.096] |
 | XGBoost | 0.779 | [0.765, 0.794] | 0.196 | [0.187, 0.205] |
-| SVGP | 0.776 | [0.760, 0.790] | 0.015 | [0.010, 0.023] |
-| DSVGP-2L | 0.778 | [0.764, 0.793] | 0.017 | [0.012, 0.026] |
-| DSVGP-3L | 0.777 | [0.762, 0.792] | 0.016 | [0.011, 0.025] |
+| SVGP | 0.778 | [0.760, 0.790] | 0.015 | [0.010, 0.023] |
+| DSVGP-2L | 0.777 | [0.764, 0.793] | 0.017 | [0.012, 0.026] |
+| DSVGP-3L | 0.776 | [0.762, 0.792] | 0.016 | [0.011, 0.025] |
 
 : Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.026$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
 

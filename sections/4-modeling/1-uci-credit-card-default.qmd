@@ -66,7 +66,7 @@ The standout result is **probability calibration**: GP models achieve ECE = 0.01
 
 ROC and precision-recall curves and reliability diagrams at each training tier are provided in @sec-appendix-uci-scaling.
 
-All models improve with more data, but the patterns differ by family. XGBoost shows the strongest discriminative scaling (+0.045 ROC-AUC from small to large), while GP models converge toward XGBoost at large scale. DSVGP-3L collapses at small scale (ROC-AUC = 0.523), a clear instance of the pathological behaviour identified by @duvenaud_avoiding_2014 — overly deep architectures suffer vanishing kernel gradients with limited data. It recovers fully by medium scale.
+All models improve with more data, but the patterns differ by family. XGBoost shows the strongest discriminative scaling (+0.045 ROC-AUC from small to large), while GP models converge toward XGBoost at large scale. DSVGP-3L collapses at small scale (ROC-AUC = 0.523), a clear instance of the pathological behaviour identified by @duvenaud_avoiding_2014 — overly deep architectures suffer vanishing kernel gradients with limited data. It recovers fully by medium scale. Note that the anomalously low ECE = 0.005 for DSVGP-3L at small scale does not indicate good model performance as a model that consistently predicts near the base rate (~22.1% default probability) will appear well-calibrated by ECE despite its near-random discrimination performance.
 
 On calibration, GP models maintain ECE $\leq 0.027$ from 425 training observations onward, while classical models are miscalibrated at all scales. XGBoost ECE actually *worsens* from 0.164 (small) to 0.196 (large) as more confident fits produce more extreme scores without an intrinsic calibration mechanism [@niculescu_mizil_predicting_2005].
 

@@ -71,17 +71,17 @@ See [Appendix @sec-completing-the-square] for the full derivation of the posteri
 
 ## Predictive Distribution
 
-This posterior distribution captures both the best estimate of the weights $\bar{\vw}$, and the uncertainty about the weights $\Sigma_w$. We can use this to make predictions at a new input $\vx_*$ by marginalising over the weight posterior:
+This posterior distribution captures both the best estimate of the weights $\bar{\vw}$, and the uncertainty about the weights $\Sigma_w$. We can use this to make predictions at a new input $\vx_*$ by marginalising over the weight posterior. Here we predict the noisy observation $y_* = f(\vx_*) + \epsilon_*$ where $\epsilon_* \sim \mathcal{N}(0, \sigma_n^2)$:
 $$
-p(f_* \mid \vx_*, \vX, \vy) = \int p(f_* \mid \vx_*, \vw) p(\vw \mid \vX, \vy) \, d\vw,
+p(y_* \mid \vx_*, \vX, \vy) = \int p(y_* \mid \vx_*, \vw) p(\vw \mid \vX, \vy) \, d\vw,
 $$ {#eq-predictive-distribution}
 
-where $f_* = f(\vx_*)$. Since $f(\vx_*) = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw$, the marginal $p(f_* \mid \vx_*, \vX, \vy)$ is also Gaussian [@bishop_pattern_2006, Chapter 3]. Evaluating the integral in closed form gives the predictive mean and variance (see [Appendix @sec-predictive-variance] for the full derivation):
+where $p(y_* \mid \vx_*, \vw) = \mathcal{N}(y_* \mid \vphi(\vx_*)^\top \vw, \sigma_n^2)$. Since $f(\vx_*) = \vphi(\vx_*)^\top \vw$ is a linear function of $\vw$, the marginal $p(y_* \mid \vx_*, \vX, \vy)$ is also Gaussian [@bishop_pattern_2006, Chapter 3]. Evaluating the integral in closed form gives the predictive mean and variance (see [Appendix @sec-predictive-variance] for the full derivation):
 
 $$
 \begin{aligned}
-\text{mean:} \quad & \E[f_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \bar{\vw}, \\
-\text{variance:} \quad & \Var[f_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \Sigma_w \vphi(\vx_*) + \sigma_n^2.
+\text{mean:} \quad & \E[y_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \bar{\vw}, \\
+\text{variance:} \quad & \Var[y_* \mid \vx_*, \vX, \vy] = \vphi(\vx_*)^\top \Sigma_w \vphi(\vx_*) + \sigma_n^2.
 \end{aligned}
 $$ {#eq-predictive-mean-var}
 
@@ -104,20 +104,20 @@ $$
 \Sigma_w = \Sigma_p - \Sigma_p\Phi^\top\bigl(\sigma_n^2\vI + \Phi\Sigma_p\Phi^\top\bigr)^{-1}\Phi\Sigma_p.
 $$ {#eq-sigma-w-kernel}
 
-In matrix form $K = \Phi\Sigma_p\Phi^\top$ and $\vk_* = \Phi\Sigma_p\vphi(\vx_*)$. Substituting @eq-sigma-w-kernel into the predictive mean $\E[f_*] = \sigma_n^{-2}\vphi(\vx_*)^\top\Sigma_w\Phi^\top\vy$:
+In matrix form $K = \Phi\Sigma_p\Phi^\top$ and $\vk_* = \Phi\Sigma_p\vphi(\vx_*)$. Substituting @eq-sigma-w-kernel into the predictive mean $\E[y_*] = \sigma_n^{-2}\vphi(\vx_*)^\top\Sigma_w\Phi^\top\vy$:
 $$
 \begin{aligned}
-\E[f_*]
+\E[y_*]
 &= \sigma_n^{-2}\vphi(\vx_*)^\top\Sigma_p\Phi^\top\vy - \sigma_n^{-2}\vk_*^\top(K + \sigma_n^2\vI)^{-1}K\vy \\
 &= \vk_*^\top\bigl[\sigma_n^{-2}\vI - \sigma_n^{-2}(K+\sigma_n^2\vI)^{-1}K\bigr]\vy \\
 &= \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,
 \end{aligned}
 $$
 
-where the last step uses $\sigma_n^{-2}(K+\sigma_n^2\vI)^{-1}[(K+\sigma_n^2\vI)-K] = (K+\sigma_n^2\vI)^{-1}$. Substituting into the variance $\Var[f_*] = \vphi(\vx_*)^\top\Sigma_w\vphi(\vx_*) + \sigma_n^2$:
+where the last step uses $\sigma_n^{-2}(K+\sigma_n^2\vI)^{-1}[(K+\sigma_n^2\vI)-K] = (K+\sigma_n^2\vI)^{-1}$. Substituting into the variance $\Var[y_*] = \vphi(\vx_*)^\top\Sigma_w\vphi(\vx_*) + \sigma_n^2$:
 $$
 \begin{aligned}
-\Var[f_*]
+\Var[y_*]
 &= \vphi(\vx_*)^\top\Sigma_p\vphi(\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2 \\
 &= k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2.
 \end{aligned}
@@ -126,14 +126,14 @@ $$
 The predictive distribution in terms of the kernel is therefore:
 $$
 \begin{aligned}
-\E[f_* \mid \vx_*, \vX, \vy] &= \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vy, \\
-\Var[f_* \mid \vx_*, \vX, \vy] &= k(\vx_*, \vx_*) - \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vk_* + \sigma_n^2.
+\E[y_* \mid \vx_*, \vX, \vy] &= \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vy, \\
+\Var[y_* \mid \vx_*, \vX, \vy] &= k(\vx_*, \vx_*) - \vk_*^\top (K + \sigma_n^2 \vI)^{-1} \vk_* + \sigma_n^2.
 \end{aligned}
 $$ {#eq-predictive-kernel}
 
 Substituting these into the Gaussian predictive distribution from @eq-predictive-distribution gives:
 $$
-p(f_* \mid \vx_*, \vX, \vy) = \N\!\left(f_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
+p(y_* \mid \vx_*, \vX, \vy) = \N\!\left(y_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-predictive-kernel-full}
 
 The most important observation here is that $\vphi$ has vanished entirely. The predictions clearly now depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. If we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.

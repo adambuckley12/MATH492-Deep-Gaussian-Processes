@@ -371,12 +371,9 @@ fig.tight_layout()
 plt.show()
 ```
 
-    
-
-
 ## Prediction {#sec-gp-prediction}
 
-After learning, with hyperparameters now fixed at their optimised values $\hat{\boldsymbol{\theta}}$, the task of predicting a new observation $y_*$ at a test input $\vx_*$ reduces to evaluating the posterior from @eq-gp-posterior-moments at $\vx_*$. The main cost for a prediction is the Cholesky factorisation $LL^\top = K_{\hat{\vtheta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ which is only performed once. Once cached, evaluating the predictive mean and variance at a new point only requires two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point. Therefore, making predictions at test time efficient, and the main computational challenge is purely the training phase when dealing with large datasets.
+After learning, with hyperparameters now fixed at their optimised values $\hat{\boldsymbol{\theta}}$, the task of predicting a new observation $y_*$ at a test input $\vx_*$ reduces to evaluating the posterior from @eq-gp-posterior-moments at $\vx_*$. The main cost for a prediction is the Cholesky factorisation $LL^\top = K_{\hat{\vtheta}} + \sigma_n^2\vI$, which is $\mathcal{O}(n^3)$ which is only performed once. Once cached, evaluating the predictive mean and variance at a new point only requires two triangular solves and a kernel evaluation, costing $\mathcal{O}(n)$ per point. Therefore, making predictions at test time is efficient, and the main computational challenge is the training phase when dealing with large datasets.
 
 The predictive variance at a test point $\vx_*$ can be split into two parts:
 $$

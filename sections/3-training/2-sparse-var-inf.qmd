@@ -22,7 +22,7 @@ $$
 p(\vf \mid \vu) = \mathcal{N}(\vf \mid K_{fu} K_{uu}^{-1} \vu, \, K_{ff} - K_{fu} K_{uu}^{-1} K_{uf}).
 $$ {#eq-conditional_f_given_u}
 
-This is the standard GP predictive formula we saw in @sec-gp-prediction, but now applied to the inducing points rather than test points. The conditional mean $K_{fu}K_{uu}^{-1}\vu$ is a weighted sum of inducing values The conditional variance $K_{ff} - K_{fu}K_{uu}^{-1}K_{uf}$ is the prior variance reduced by the information the inducing points provide and so it vanishes at the inducing locations themselves.
+This is the standard GP predictive formula we saw in @sec-gp-prediction, but now applied to the inducing points rather than test points. The conditional mean $K_{fu}K_{uu}^{-1}\vu$ is a weighted sum of inducing values. The conditional variance $K_{ff} - K_{fu}K_{uu}^{-1}K_{uf}$ is the prior variance reduced by the information the inducing points provide and so it vanishes at the inducing locations themselves.
 
 Marginalising out $\vu$, the variational distribution over $\vf$ is:
 

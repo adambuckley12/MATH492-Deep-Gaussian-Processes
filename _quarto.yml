@@ -6,7 +6,7 @@ manuscript:
   notebooks: []
 
 number-sections: true
-toc: false
+toc: true
 toc-depth: 2
 reference-section-title: "References"
 link-citations: true
