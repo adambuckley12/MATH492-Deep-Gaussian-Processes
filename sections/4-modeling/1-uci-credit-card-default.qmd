@@ -66,7 +66,7 @@ The standout result is probability calibration, with GP models achieving ECE = 0
 
 ROC and precision-recall curves and reliability diagrams at each training tier are provided in @sec-appendix-uci-scaling.
 
-All models improve with more data, but the patterns differ by family. XGBoost shows the strongest discriminative scaling improvements (+0.045 ROC-AUC from small to large), while GP models converge toward XGBoost at large scale. Identically, and for the same reasons as the prior Kin8nm case, DSVGP-3L collapses at small scale (ROC-AUC = 0.523). Note that the anomalously low ECE = 0.005 for DSVGP-3L at small scale does not at all indicate good model performance. A model that consistently predicts near the base rate (~22.1% default probability) will appear well-calibrated by ECE despite its near-random discrimination performance.
+All models improve with more data, but the patterns differ by family. XGBoost shows the strongest discriminative scaling improvements (+0.045 ROC-AUC from small to large), while GP models converge toward XGBoost at large scale. DSVGP-3L collapses at small scale (ROC-AUC = 0.523, F1 = 0.362), a clear instance of the same small-data pathology observed on the Kin8nm dataset. Note that the anomalously low ECE = 0.005 for DSVGP-3L at small scale does not indicate good model performance as a model that consistently predicts near the base rate (~22.1% default probability) will appear well-calibrated by ECE despite its near-random discrimination.
 
 On calibration, GP models maintain ECE $\leq 0.027$ from 425 training observations onward, while classical models are miscalibrated at all scales. XGBoost ECE actually worsens from 0.164 (small) to 0.196 (large) as more confident fits produce more extreme scores due to the lack of an intrinsic calibration mechanism [@niculescu_mizil_predicting_2005].
 
@@ -83,7 +83,7 @@ On calibration, GP models maintain ECE $\leq 0.027$ from 425 training observatio
 
 : Training time scaling across tiers. GP models scale approximately linearly with $N$; DSVGP-3L is $\sim 3.6\times$ the cost of DSVGP-2L at all scales. {#tbl-uci-runtime}
 
-DSVGP-3L is the most expensive model at 707 seconds, approximately 3.6$\times$ the cost of the two-layer variant, yet gives no meaningful improvement over DSVGP-2L on any metric at large scale (ROC-AUC: 0.776 vs 0.777; ECE: 0.021 vs 0.014). This is consistent with @duvenaud_avoiding_2014, who demonstrate that additional GP layers suppress rather than enhance flexibility on smooth finite datasets. DSVGP-2L is consequently the more defensible configuration: it achieves near-best discrimination, excellent calibration, and approximately one-quarter the training cost of the three-layer variant.
+DSVGP-3L is the most expensive model at 707 seconds, approximately 3.6$\times$ the cost of the two-layer variant, yet gives no meaningful improvement over DSVGP-2L on any metric at large scale (ROC-AUC: 0.776 vs 0.777; ECE: 0.021 vs 0.014).
 
 For deployment contexts, the GP training time penalty (197 s for DSVGP-2L vs 0.24 s for XGBoost at large scale) is a batch training cost incurred once per model refresh cycle. In credit-risk production environments where models are retrained monthly or quarterly, this is operationally irrelevant. Inference time for a single prediction is comparable across model families.
 
