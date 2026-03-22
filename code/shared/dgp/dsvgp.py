@@ -135,7 +135,7 @@ class _DeepGPLayer(DeepGPLayer):
 
         # Initialise lengthscale to sqrt(input_dims).
         # Default l=1 gives RBF(x,x') approx 0 for standardised data in >~5 dims
-        # because ||Δx||² ~ input_dims.  sqrt(input_dims) keeps the kernel
+        # because ||deltax||² ~ input_dims.  sqrt(input_dims) keeps the kernel
         # values in a healthy range from the very first gradient step.
         with torch.no_grad():
             self.covar_module.base_kernel.lengthscale = float(input_dims) ** 0.5

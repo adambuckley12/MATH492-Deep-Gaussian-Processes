@@ -8,8 +8,8 @@ Metrics reported (chosen for class-imbalanced credit default prediction):
   - Average Precision (AUC-PR): better than ROC-AUC under heavy imbalance
   - F1 (class 1)    : harmonic mean of precision/recall for the minority class
   - Precision / Recall (class 1)
-  - Brier Score     : calibration quality — important for GP comparison
-  - ECE             : Expected Calibration Error — weighted |acc − conf| per bin
+  - Brier Score     : calibration quality - important for GP comparison
+  - ECE             : Expected Calibration Error - weighted |acc - conf| per bin
   - Accuracy        : reported for completeness (misleading under imbalance)
 """
 
@@ -257,7 +257,7 @@ def plot_roc_curves(
     for name, (y_prob,) in models_probs.items():
         RocCurveDisplay.from_predictions(y_true, y_prob, name=name, ax=ax)
     ax.plot([0, 1], [0, 1], "k--", lw=0.8, label="Random")
-    ax.set_title("ROC Curves — All Models")
+    ax.set_title("ROC Curves - All Models")
     ax.legend(loc="lower right")
     fig.tight_layout()
     os.makedirs(os.path.dirname(save_path), exist_ok=True)

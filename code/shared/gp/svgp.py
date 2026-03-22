@@ -88,7 +88,7 @@ class _SVGPInternalModel(ApproximateGP):
 
         # Initialise lengthscale to sqrt(n_features) — prevents near-zero RBF
         # kernel values for standardised high-dimensional inputs where
-        # ||Δx||² ~ n_features, making exp(-||Δx||²/2) approx = 0 with default l=1.
+        # ||deltax||² ~ n_features, making exp(-||deltax||²/2) approx = 0 with default l=1.
         with torch.no_grad():
             self.covar_module.base_kernel.lengthscale = float(n_features) ** 0.5
 
