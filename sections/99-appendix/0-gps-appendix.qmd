@@ -1,4 +1,4 @@
-# Appendix {.unnumbered}
+# Appendix
 
 ## Design Matrix Construction {#sec-design-matrix}
 
@@ -233,7 +233,7 @@ class _DeepGPLayer(DeepGPLayer):
         )
         # Initialise lengthscale to sqrt(input_dims).
         # Default l=1 gives near-zero kernel values for standardised data
-        # in >~5 dimensions because ||Δx||² ~ input_dims.
+        # in >~5 dimensions because ||delta_x||² ~ input_dims.
         with torch.no_grad():
             self.covar_module.base_kernel.lengthscale = float(input_dims)**0.5
 ```
@@ -315,7 +315,7 @@ def nlpd(y_true: np.ndarray, y_mean: np.ndarray, y_var: np.ndarray) -> float:
     return float(np.mean(nll))
 ```
 
-NLPD measures how well the model's predictive uncertainty captures the true residual distribution — lower is better. Classical models (Ridge, Random Forest, XGBoost) do not provide predictive variances, so NLPD is reported only for GP-family models.
+NLPD measures how well the model's predictive uncertainty captures the true residual distribution - lower is better. Classical models (Ridge, Random Forest, XGBoost) do not provide predictive variances, so NLPD is reported only for GP-family models.
 
 **SVGP Regression Prediction:**
 
@@ -366,7 +366,7 @@ The `num_samples` parameter (default 30 for prediction, 10 for training) control
 
 ### Hidden Representation Extraction {#sec-hidden-rep-snippet}
 
-The hidden-layer analysis in @sec-kin8nm-large-hidden extracts the posterior mean of the first GP layer directly from GPyTorch's variational strategy. For a trained DSVGP-2L regression model loaded as `dgp`:
+The hidden-layer analysis in @sec-kin8nm-large extracts the posterior mean of the first GP layer directly from GPyTorch's variational strategy. For a trained DSVGP-2L regression model loaded as `dgp`:
 
 ```python
 layer0 = dgp.hidden_layers[0]
@@ -405,25 +405,25 @@ The figures below show ROC/precision-recall curves, reliability diagrams, confus
 
 ### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-uci-small}
 
-![ROC and precision-recall curves — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/roc_pr.png){#fig-app-uci-small-roc-pr}
+![ROC and precision-recall curves - UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/roc_pr.png){#fig-app-uci-small-roc-pr}
 
-![Reliability diagrams — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/calibration.png){#fig-app-uci-small-calibration}
+![Reliability diagrams - UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/calibration.png){#fig-app-uci-small-calibration}
 
-![Confusion matrices at optimal threshold — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/confusion.png){#fig-app-uci-small-confusion}
+![Confusion matrices at optimal threshold - UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/confusion.png){#fig-app-uci-small-confusion}
 
-![Threshold–F1 tradeoff curves — UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/threshold.png){#fig-app-uci-small-threshold}
+![Threshold–F1 tradeoff curves - UCI credit card, small tier.](/sections/4-modeling/assets/credit-card-default/small/threshold.png){#fig-app-uci-small-threshold}
 
 ### Medium Tier ($N_\text{dev} = 5{,}000$) {#sec-appendix-uci-medium}
 
-![ROC and precision-recall curves — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/roc_pr.png){#fig-app-uci-medium-roc-pr}
+![ROC and precision-recall curves - UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/roc_pr.png){#fig-app-uci-medium-roc-pr}
 
-![Reliability diagrams — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/calibration.png){#fig-app-uci-medium-calibration}
+![Reliability diagrams - UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/calibration.png){#fig-app-uci-medium-calibration}
 
-![Confusion matrices at optimal threshold — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/confusion.png){#fig-app-uci-medium-confusion}
+![Confusion matrices at optimal threshold - UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/confusion.png){#fig-app-uci-medium-confusion}
 
-![Threshold–F1 tradeoff curves — UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/threshold.png){#fig-app-uci-medium-threshold}
+![Threshold–F1 tradeoff curves - UCI credit card, medium tier.](/sections/4-modeling/assets/credit-card-default/medium/threshold.png){#fig-app-uci-medium-threshold}
 
-### Large Tier — Runtime vs Calibration {#sec-appendix-uci-runtime}
+### Large Tier - Runtime vs Calibration {#sec-appendix-uci-runtime}
 
 ![Training time versus ECE for the six models at large scale. GP-family models provide substantially better native calibration at training times two to three orders of magnitude greater than classical models.](/sections/4-modeling/assets/credit-card-default/large/runtime.png){#fig-app-uci-runtime width=70%}
 
@@ -433,27 +433,27 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 ### Small Tier ($N_\text{dev} = 500$) {#sec-appendix-kin8nm-small}
 
-![Predicted vs actual values — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/predicted_vs_actual.png){#fig-app-kin8nm-small-pred}
+![Predicted vs actual values - Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/predicted_vs_actual.png){#fig-app-kin8nm-small-pred}
 
-![Residual distributions — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/residuals.png){#fig-app-kin8nm-small-residuals}
+![Residual distributions - Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/residuals.png){#fig-app-kin8nm-small-residuals}
 
-![Metrics comparison (RMSE, R², NLPD) — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/metrics_bar.png){#fig-app-kin8nm-small-metrics}
+![Metrics comparison (RMSE, R², NLPD) - Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/metrics_bar.png){#fig-app-kin8nm-small-metrics}
 
-![Training runtime — Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/runtime.png){#fig-app-kin8nm-small-runtime}
+![Training runtime - Kin8nm, small tier.](/sections/4-modeling/assets/kin8nm/small/runtime.png){#fig-app-kin8nm-small-runtime}
 
 ### Medium Tier ($N_\text{dev} = 3{,}000$) {#sec-appendix-kin8nm-medium}
 
-![Predicted vs actual values — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/predicted_vs_actual.png){#fig-app-kin8nm-medium-pred}
+![Predicted vs actual values - Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/predicted_vs_actual.png){#fig-app-kin8nm-medium-pred}
 
-![Residual distributions — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/residuals.png){#fig-app-kin8nm-medium-residuals}
+![Residual distributions - Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/residuals.png){#fig-app-kin8nm-medium-residuals}
 
-![Metrics comparison (RMSE, R², NLPD) — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/metrics_bar.png){#fig-app-kin8nm-medium-metrics}
+![Metrics comparison (RMSE, R², NLPD) - Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/metrics_bar.png){#fig-app-kin8nm-medium-metrics}
 
-![Training runtime — Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/runtime.png){#fig-app-kin8nm-medium-runtime}
+![Training runtime - Kin8nm, medium tier.](/sections/4-modeling/assets/kin8nm/medium/runtime.png){#fig-app-kin8nm-medium-runtime}
 
 ## UCI Credit Card: Supplementary Tables {#sec-uci-supp-tables}
 
-### F1-Optimal Threshold Summary — All Models {#sec-app-uci-threshold-optima}
+### F1-Optimal Threshold Summary - All Models {#sec-app-uci-threshold-optima}
 
 | Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
 |:------|:-----:|:----------:|:---------:|:------:|
@@ -481,7 +481,7 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 ## Kin8nm: Supplementary Tables {#sec-kin8nm-supp-tables}
 
-### NLPD Summary — GP Models {#sec-app-kin8nm-nlpd}
+### NLPD Summary - GP Models {#sec-app-kin8nm-nlpd}
 
 | Model | NLPD (Small) | NLPD (Medium) | NLPD (Large) |
 |:------|:-----------:|:-------------:|:------------:|
@@ -489,9 +489,9 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 | DSVGP-2L | $+0.259$ | $-1.000$ | $\mathbf{-1.241}$ |
 | DSVGP-3L | $+0.333$ | $-1.003$ | $-1.158$ |
 
-: Negative log predictive density (NLPD) across training tiers. Lower is better. The positive NLPD at small scale for all GP models indicates poorly calibrated predictive uncertainty in the low-data regime — the models' variance estimates are too narrow for their inaccurate means. At sufficient scale, DSVGP-2L achieves the best NLPD. {#tbl-app-kin8nm-nlpd}
+: Negative log predictive density (NLPD) across training tiers. Lower is better. The positive NLPD at small scale for all GP models indicates poorly calibrated predictive uncertainty in the low-data regime - the models' variance estimates are too narrow for their inaccurate means. At sufficient scale, DSVGP-2L achieves the best NLPD. {#tbl-app-kin8nm-nlpd}
 
-### Runtime Summary — All Models {#sec-app-kin8nm-runtime}
+### Runtime Summary - All Models {#sec-app-kin8nm-runtime}
 
 | Model | Time (s, small) | Time (s, medium) | Time (s, large) |
 |:------|:---------------:|:----------------:|:---------------:|
