@@ -2,7 +2,7 @@
 
 Standard deep GPs compose layers that warp the input space, so that the output of layer $\ell$ becomes the input to layer $\ell+1$. While this enables learning complex mappings, it has two practical drawbacks. First, the warped inputs lose any connection to the original features, making kernel hyperparameters such as lengthscales difficult to interpret. Second, @duvenaud_avoiding_2014 showed that composing many stationary kernels tends to produce pathological priors: the effective mapping either collapses toward a constant or becomes so convoluted that the GP prior concentrates on highly irregular functions. Both problems worsen with depth.
 
-An alternative approach, explored by @heinonen_nonstationary_2016, is to parameterise the *lengthscale* of a kernel as a function of the input, treated as a GP itself. This retains interpretability — the lengthscale still controls local smoothness — but sacrifices the ability to learn low-dimensional embeddings of the input data. @souza_thin_2023 proposed *Thin and Deep Gaussian Processes* (TDGPs) as a synthesis of both ideas, combining the embedding-learning capacity of standard deep GPs with the interpretability of lengthscale-based models.
+An alternative approach, explored by @heinonen_nonstationary_2016, is to parameterise the *lengthscale* of a kernel as a function of the input, treated as a GP itself. This retains interpretability, as the lengthscale still controls local smoothness, but it sacrifices the ability to learn low-dimensional embeddings of the input data. @souza_thin_2023 proposed *Thin and Deep Gaussian Processes* (TDGPs) as a synthesis of both ideas, combining the embedding-learning capacity of standard deep GPs with the interpretability of lengthscale-based models.
 
 ### The TDGP Layer
 

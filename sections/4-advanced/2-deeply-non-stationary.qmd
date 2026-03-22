@@ -1,6 +1,6 @@
 ## Deeply Non-Stationary Gaussian Processes {#sec-deeply-nonstationary}
 
-A stationary kernel $k(\vx, \vx') = k(\vx - \vx')$ assumes that the function's smoothness and variability are uniform across input space. For many real-world problems — where a function might be smooth in one region and rapidly varying in another — this assumption is too restrictive. @paciorek_nonstationary_2004 introduced non-stationary kernels by allowing the lengthscale to vary with input location, but specifying how the lengthscale should change requires domain knowledge that may not be available.
+A stationary kernel $k(\vx, \vx') = k(\vx - \vx')$ assumes that the function's smoothness and variability are uniform across input space. For many real-world problems, where a function might be smooth in one region and rapidly varying in another, this assumption is often too restrictive. @paciorek_nonstationary_2004 introduced non-stationary kernels by allowing the lengthscale to vary with input location, but specifying how the lengthscale should change requires domain knowledge that may not be available.
 
 @salimbeni_deep_2019 showed that DGPs provide a natural mechanism for learning non-stationary structure: the composition of GP layers induces input-dependent covariance even when each layer uses a stationary kernel. Building on this, the *deeply non-stationary GP* framework makes this connection explicit and uses it to construct DGP architectures specifically designed for non-stationarity.
 
@@ -10,7 +10,7 @@ Recall from @eq-composed_covariance that for a two-layer DGP $g = f^{(2)} \circ 
 $$
 \text{Cov}[g(\vx), g(\vx')] = \mathbb{E}_{f^{(1)}}\!\left[k^{(2)}\!\bigl(f^{(1)}(\vx),\, f^{(1)}(\vx')\bigr)\right].
 $$
-Even when $k^{(2)}$ is the squared exponential (stationary), this covariance depends on $\vx$ and $\vx'$ individually — not just on their difference — because $f^{(1)}$ maps different regions of input space to different parts of the latent space. Where $f^{(1)}$ compresses the input (small gradient), the effective lengthscale of $g$ increases; where $f^{(1)}$ stretches the input, the effective lengthscale decreases.
+Even when $k^{(2)}$ is the squared exponential (stationary), this covariance depends on $\vx$ and $\vx'$ individually - not just on their difference - because $f^{(1)}$ maps different regions of input space to different parts of the latent space. Where $f^{(1)}$ compresses the input (small gradient), the effective lengthscale of $g$ increases; where $f^{(1)}$ stretches the input, the effective lengthscale decreases.
 
 To make this precise, consider a one-dimensional input and a first-layer function $h = f^{(1)}(x)$. For nearby inputs $x$ and $x + \delta$, we have $h(x + \delta) \approx h(x) + h'(x)\delta$. Substituting into a squared exponential second-layer kernel with lengthscale $\ell$:
 $$
@@ -114,6 +114,6 @@ where $\ell_d(\vx)$ is the lengthscale along dimension $d$ at location $\vx$. Wh
 
 ### Practical Considerations
 
-Training deeply non-stationary GPs follows the same doubly stochastic framework as standard DGPs, with a few additional considerations. First, the input concatenation in @eq-input-connected doubles the input dimension at each layer, which increases the number of kernel hyperparameters. In practice, using ARD (separate lengthscales per dimension) at each layer allows the model to learn which inputs — original or latent — are most relevant. Second, the linear mean functions introduce additional parameters $\vW^{(\ell)}, \vb^{(\ell)}$ at each layer, though these are typically few compared to the variational parameters and are optimised jointly with the ELBO.
+Training deeply non-stationary GPs follows the same doubly stochastic framework as standard DGPs, with a few additional considerations. First, the input concatenation in @eq-input-connected doubles the input dimension at each layer, which increases the number of kernel hyperparameters. In practice, using ARD (separate lengthscales per dimension) at each layer allows the model to learn which inputs - original or latent - are most relevant. Second, the linear mean functions introduce additional parameters $\vW^{(\ell)}, \vb^{(\ell)}$ at each layer, though these are typically few compared to the variational parameters and are optimised jointly with the ELBO.
 
 Empirically, @salimbeni_deep_2019 found that deeply non-stationary GPs with 2–5 layers consistently outperform single-layer GPs on regression benchmarks with heterogeneous smoothness, while the skip connections prevent the degradation in performance that standard DGPs can suffer as depth increases.

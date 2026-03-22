@@ -64,7 +64,7 @@ This leads to $\sum_{\ell=1}^{L} n \cdot d_\ell = O(nLd)$ total latent variables
 
 ```{python}
 #| label: fig-dgp-composition
-#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ warps the input. Centre: the second-layer function $f^{(2)}$ maps the warped inputs to outputs. Right: the composed function $f^{(2)} \\circ f^{(1)}$ exhibits non-stationary behaviour — smooth in some regions and rapidly varying in others — that neither layer alone could produce."
+#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ warps the input. Centre: the second-layer function $f^{(2)}$ maps the warped inputs to outputs. Right: the composed function $f^{(2)} \\circ f^{(1)}$ exhibits non-stationary behaviour, being smooth in some regions and rapidly varying in others, that neither layer alone could produce."
 #| echo: false
 
 import torch
