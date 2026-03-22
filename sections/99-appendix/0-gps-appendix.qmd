@@ -457,12 +457,12 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 | Model | $t^*$ | F1 ($t^*$) | Precision | Recall |
 |:------|:-----:|:----------:|:---------:|:------:|
-| Logistic Regression | 0.50 | 0.500 | 0.474 | 0.559 |
-| Random Forest | 0.35 | 0.532 | 0.506 | 0.573 |
-| XGBoost | 0.50 | 0.536 | 0.523 | 0.565 |
-| SVGP | 0.30 | 0.546 | 0.541 | 0.550 |
-| DSVGP-2L | 0.30 | 0.541 | 0.534 | 0.549 |
-| DSVGP-3L | 0.30 | 0.541 | 0.515 | 0.569 |
+| Logistic Regression | 0.50 | 0.500 | 0.421 | 0.613 |
+| Random Forest | 0.35 | 0.532 | 0.465 | 0.619 |
+| XGBoost | 0.50 | 0.536 | 0.476 | 0.613 |
+| SVGP | 0.30 | 0.546 | 0.550 | 0.543 |
+| DSVGP-2L | 0.30 | 0.540 | 0.533 | 0.548 |
+| DSVGP-3L | 0.30 | 0.544 | 0.524 | 0.566 |
 
 : F1-optimal operating thresholds for all six models on the UCI credit-card dataset (large tier). GP models operate at $t^* = 0.30$, approximately 0.20 below the conventional threshold, while classical models range from 0.40–0.55. {#tbl-app-uci-threshold-optima}
 

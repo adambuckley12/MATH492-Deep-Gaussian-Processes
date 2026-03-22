@@ -106,6 +106,10 @@ def run_regression_pipeline(
 
     for model in classical_models:
         if isinstance(model, XGBoostRegressionModel):
+            # XGBoost uses early stopping on the validation set to select
+            # n_estimators, so it must train on X_train/y_train with the
+            # validation split held out. Ridge and RF train on the full
+            # train+validation set (X_full) since they have no such mechanism.
             fitted, elapsed = timed(
                 lambda m=model: m.fit(X_train, y_train, X_val, y_val)
             )

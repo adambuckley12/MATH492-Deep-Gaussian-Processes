@@ -1,8 +1,6 @@
 ## Variational Inference
 
-When exact inference is intractable, variational inference allows for approximations [@jordan_introduction_1999; @blei_variational_2017]. The idea is to approximate the true posterior $p(\vz \mid \vy)$ with a simpler, tractable distribution $q(\vz)$, which is chosen in order to minimise the Kullback–Leibler (KL) divergence between $q$ and $p$:
-
-For latent variables $\vz$ and observations $\vy$, the log marginal likelihood separates into the evidence lower bound (ELBO) and KL divergence:
+When exact inference is intractable, variational inference allows for approximations [@jordan_introduction_1999; @blei_variational_2017]. The idea is to approximate the true posterior $p(\vz \mid \vy)$ with a simpler, tractable distribution $q(\vz)$, which is chosen in order to minimise the Kullback–Leibler (KL) divergence between $q$ and $p$. For latent variables $\vz$ and observations $\vy$, the log marginal likelihood separates into the evidence lower bound (ELBO) and KL divergence:
 
 $$
 \log p(\vy) = \mathcal{L}(q) + \KL(q(\vz) \| p(\vz \mid \vy)),

@@ -116,7 +116,7 @@ $$
 $$ {#eq-log-marginal-likelihood}
 
 This LML has three interpretable terms: the first encourages the model to fit the data well, the second penalises overly complex models that can fit many functions, and the third is a constant that ensures the likelihood is properly normalised. The LML is typically maximised using gradient-based optimisation (e.g.\ L-BFGS or Adam [@kingma_adam_2015]), which is tractable for exact GPs since the LML and its gradients can be computed in $\mathcal{O}(n^3)$ time via Cholesky decomposition of $K + \sigma_n^2\vI$. However, the LML is non-convex in general, and in low-dimensional settings can exhibit multiple local optima; it is common to use multiple random restarts or a good initialisation strategy to mitigate this [@rasmussen_gaussian_2008].
-Additionally, since kernel hyperparameters are typically constrained to be positive, as a negative length-scale or noise variance would not make sense, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
+Additionally, since kernel hyperparameters such as length-scale and noise variance must be positive, it is standard practice to optimise them in log-space to ensure positivity and improve numerical stability. 
 
 ## GP Regression {#sec-gp-regression}
 
@@ -160,7 +160,7 @@ These expressions have intuitive interpretations: the posterior mean is a linear
 
 ```{python}
 #| label: fig-gp-regression
-#| fig-cap: "GP regression with an SE kernel. Left: five prior samples before observing data. Right: posterior mean (blue), 95% credible interval (shaded), and five posterior samples after conditioning on five observations (red dots)."
+#| fig-cap: "GP regression with an SE kernel. Left: five prior samples before observing data. Right: posterior mean (blue), 95% credible interval (shaded), and five posterior samples after conditioning on seven observations (red dots)."
 #| echo: false
 
 import torch

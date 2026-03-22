@@ -1,6 +1,6 @@
 ## The Weight Space View
 
-Before moving to the full function space perspective, it is helpful to build intuition through a finite-dimensional parametric approach. The so-called *weight space view* treats regression as Bayesian inference over a weight vector. We show how the structure of the resulting predictive distribution can be expressed in terms of inner products between inputs, which naturally motivates the transition into Gaussian processes [@rasmussen_gaussian_2008; @mackay_introduction_1998].
+Before moving to the full function space perspective, it is helpful to build intuition through a finite-dimensional parametric approach. The *weight space view* treats regression as Bayesian inference over a weight vector. We show how the structure of the resulting predictive distribution can be expressed in terms of inner products between inputs, which naturally motivates the transition into Gaussian processes [@rasmussen_gaussian_2008; @mackay_introduction_1998].
 
 We begin with a linear model of the form
 $$
@@ -22,7 +22,7 @@ This motivates moving to a Bayesian approach, allowing us to capture this uncert
 
 ### Prior and Likelihood
 
-A Bayesian approach addresses these issues by placing a prior distribution over $\vw$, which turns the problem into so-called *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
+A Bayesian approach addresses these issues by placing a prior distribution over $\vw$, which turns the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
 $$
 p(\vw) = \N(\vw \mid \vzero, \Sigma_p),
 $$ {#eq-weight-prior}
@@ -138,4 +138,4 @@ $$ {#eq-predictive-kernel-full}
 
 The most important observation here is that $\vphi$ has vanished entirely. The predictions clearly now depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. If we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.
 
-This is the so-called *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.
+This is the *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.

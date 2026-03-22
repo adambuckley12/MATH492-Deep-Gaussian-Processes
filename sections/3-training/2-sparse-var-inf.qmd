@@ -2,7 +2,7 @@
 
 The $O(n^3)$ cost of standard GP inference becomes prohibitive for large datasets. We can reduce this by using $m \ll n$ *inducing points* that summarise the data, reducing complexity to $O(nm^2)$ [@quinonero-candela_unifying_2005; @titsias_variational_2009].
 
-If we consider inducing inputs $\vZ = \{\vz_j\}_{j=1}^m$ with function values $\vu = f(\vZ) \in \mathbb{R}^m$. From the prior, the joint distribution of function values $\vf$ at training inputs and inducing values $\vu$ is:
+Consider inducing inputs $\vZ = \{\vz_j\}_{j=1}^m$ with function values $\vu = f(\vZ) \in \mathbb{R}^m$. From the prior, the joint distribution of function values $\vf$ at training inputs and inducing values $\vu$ is:
 
 $$
 \begin{bmatrix} \vf \\ \vu \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} K_{ff} & K_{fu} \\ K_{uf} & K_{uu} \end{bmatrix}\right),

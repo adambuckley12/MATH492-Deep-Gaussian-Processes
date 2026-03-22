@@ -12,7 +12,7 @@ f^{(\ell)}(\cdot) \sim \mathcal{GP}\bigl(0,\, k^{(\ell)}(\cdot, \cdot)\bigr), \q
 $$
 The key observation of @souza_thin_2023 is that each layer can instead define a *locally linear* transformation of the **original** inputs $\vX$. Specifically, a TDGP layer maps
 $$
-\vH^{(\ell)} = \vX \, \text{diag}\!\bigl(g^{(\ell)}(\vX)\bigr),
+\vH^{(\ell)} = \vX \odot g^{(\ell)}(\vX),
 $$ {#eq-tdgp-layer}
 where $g^{(\ell)}: \mathbb{R}^d \to \mathbb{R}^d$ is a vector-valued GP that produces input-dependent scaling factors. The layer output $\vH^{(\ell)}$ lives in the same space as the original data, but each input dimension is rescaled by a smooth, spatially varying factor learned from the data.
 
@@ -29,7 +29,7 @@ $$
 
 The locally linear structure of @eq-tdgp-layer is what prevents the pathologies of standard deep GPs. Because each layer multiplies the original inputs by a smooth function rather than replacing them with an arbitrary warp, the composed transformation remains a smooth deformation of the input space. @souza_thin_2023 show that this guarantees the induced manifold is non-degenerate: it cannot collapse to a lower-dimensional subspace the way standard DGP warps can.
 
-More precisely, let $\phi^{(\ell)}(\vx) = \vx \odot g^{(\ell)}(\vx)$ denote the mapping at layer $\ell$. The Jacobian of the composition $\phi^{(L)} \circ \cdots \circ \phi^{(1)}$ is a product of diagonal-plus-rank-one matrices, which remains full rank whenever the $g^{(\ell)}$ are bounded away from zero. In contrast, standard DGP warps can have Jacobians with eigenvalues that shrink exponentially with depth, leading to the pathological collapse described by @duvenaud_avoiding_2014.
+More precisely, let $\phi^{(\ell)}(\vx) = \vx \odot g^{(\ell)}(\vx)$ denote the mapping at layer $\ell$. The Jacobian of the composition $\phi^{(L)} \circ \cdots \circ \phi^{(1)}$ is a product of diagonal-plus-rank-$d$ matrices, which remains full rank whenever the $g^{(\ell)}$ are bounded away from zero. In contrast, standard DGP warps can have Jacobians with eigenvalues that shrink exponentially with depth, leading to the pathological collapse described by @duvenaud_avoiding_2014.
 
 ### Dimensionality Reduction
 
