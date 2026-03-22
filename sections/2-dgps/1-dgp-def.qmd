@@ -1,6 +1,6 @@
 ## Definition and Model Formulation
 
-DGPs extend standard GPs by composing multiple GP layers in a hierarchical structure [@damianou_deep_2013]. Instead of a single mapping from inputs to outputs, DGPs construct a chain of latent function spaces, each transforming the previous layer.
+A DGP composes multiple GP layers in a hierarchical structure [@damianou_deep_2013]. Instead of a single mapping from inputs to outputs, each layer defines a latent function that maps its inputs into a new latent representation, which then serves as the input to the next layer.
 
 An $L$-layer DGP is defined by a sequence of latent functions $\{f^{(\ell)}\}_{\ell=1}^{L}$ where each function is drawn from a GP prior conditioned on the output of the previous:
 
