@@ -60,11 +60,12 @@ $$ {#eq-dgp_multi_output}
 
 This leads to $\sum_{\ell=1}^{L} n \cdot d_\ell = O(nLd)$ total latent variables.
 
-@fig-dgp-composition illustrates the compositional structure of a two-layer DGP. The first layer warps the input, and the second layer operates on the warped space, producing a composed function that would be difficult to represent with a single GP.
+@fig-dgp-composition illustrates the compositional structure of a two-layer DGP. The first layer applies an aggressive input warp that stretches the centre of input space while compressing the tails; the second layer applies a stationary GP to that warped space. The composed function becomes non-stationary, varying rapidly in the stretched centre and slowly in the compressed tails. This is behaviour that no single stationary GP could replicate.
+
 
 ```{python}
 #| label: fig-dgp-composition
-#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ warps the input. Centre: the second-layer function $f^{(2)}$ maps the warped inputs to outputs. Right: the composed function $f^{(2)} \\circ f^{(1)}$ exhibits non-stationary behaviour, being smooth in some regions and rapidly varying in others, that neither layer alone could produce."
+#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ is a steep sigmoid warp — near $x=0$ the slope is large (inputs map to a wide range of $h$) while near $\\pm 3$ it flattens (inputs cluster at the extremes of $h$). Centre: the second-layer GP $f^{(2)}$ is stationary and uniform on the warped axis $h$. Right: the composed function $f^{(2)} \\circ f^{(1)}$ is non-stationary — it varies rapidly near $x=0$ where the warp stretches input space, and is nearly flat near $x=\\pm 3$ where the warp compresses it. Neither layer alone could produce this varying-lengthscale behaviour."
 #| echo: false
 
 import torch
@@ -77,13 +78,15 @@ torch.manual_seed(21)
 n = 300
 x_np = np.linspace(-3, 3, n)
 
-# Layer 1: a smooth nonlinear warp
-h_np = x_np + 0.7 * np.tanh(1.8 * x_np) + 0.3 * np.sin(2 * x_np)
+# Layer 1: aggressive sigmoid warp — steep near 0, saturating at extremes.
+# dh/dx = 3 * 1.5 * sech^2(1.5x): large (~4.5) at x=0, near-zero at |x|=3.
+# This stretches the centre of x-space and compresses the tails.
+h_np = 3 * np.tanh(1.5 * x_np)
 
-# Layer 2: draw a GP sample on the warped inputs using GPyTorch
+# Layer 2: draw a stationary GP sample on the warped axis h
 h_t = torch.tensor(h_np, dtype=torch.float64)
 kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel()).double()
-kernel.base_kernel.lengthscale = 0.8
+kernel.base_kernel.lengthscale = 0.6
 kernel.outputscale = 1.0
 prior = gpytorch.distributions.MultivariateNormal(
     torch.zeros(n, dtype=torch.float64),
