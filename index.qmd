@@ -50,7 +50,6 @@ abstract: |
 {{< include sections/4-modeling/1-kin8nm.qmd >}}
 
 {{< include sections/4-modeling/1-uci-credit-card-default.qmd >}}
-{{< include sections/4-modeling/3-conclusion.qmd >}}
 
 <!-- Conclusion -->
 {{< include sections/5-conclusion/conclusion.qmd >}}

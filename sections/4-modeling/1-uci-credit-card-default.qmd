@@ -21,14 +21,14 @@ The model set and training protocol are consistent with @sec-kin8nm, adapted for
 
 #### Results at Full Scale (Large Tier) {#sec-uci-large}
 
-| Model | ROC-AUC | Avg Prec | F1 ($t^*$) | $t^*$ | ECE | Brier | Log Loss | Time (s) |
-|:------|:-------:|:--------:|:----------:|:-----:|:---:|:-----:|:--------:|:--------:|
-| Logistic Regression | 0.739 | 0.493 | 0.500 | 0.50 | 0.225 | 0.199 | 0.590 | 0.03 |
-| Random Forest | 0.769 | 0.549 | 0.532 | 0.35 | 0.087 | 0.146 | 0.460 | 4.85 |
-| XGBoost | **0.779** | 0.553 | 0.536 | 0.50 | 0.196 | 0.177 | 0.539 | 0.24 |
-| SVGP | 0.778 | 0.553 | **0.546** | 0.30 | **0.010** | **0.135** | **0.430** | 160.4 |
-| DSVGP-2L | 0.777 | **0.554** | 0.540 | 0.30 | 0.014 | **0.135** | **0.430** | 197.0 |
-| DSVGP-3L | 0.776 | 0.550 | 0.544 | 0.30 | 0.021 | 0.136 | 0.433 | 706.5 |
+| Model | ROC-AUC | F1 ($t^*$) | $t^*$ | ECE | Brier | Log Loss | Time (s) |
+|:------|:-------:|:----------:|:-----:|:---:|:-----:|:--------:|:--------:|
+| Logistic Regression | 0.739 | 0.500 | 0.50 | 0.225 | 0.199 | 0.590 | 0.03 |
+| Random Forest | 0.769 | 0.532 | 0.35 | 0.087 | 0.146 | 0.460 | 4.85 |
+| XGBoost | **0.779** | 0.536 | 0.50 | 0.196 | 0.177 | 0.539 | 0.24 |
+| SVGP | 0.778 | **0.546** | 0.30 | **0.010** | **0.135** | **0.430** | 160.4 |
+| DSVGP-2L | 0.777 | 0.540 | 0.30 | 0.014 | **0.135** | **0.430** | 197.0 |
+| DSVGP-3L | 0.776 | 0.544 | 0.30 | 0.021 | 0.136 | 0.433 | 706.5 |
 
 : Model comparison at full scale ($N_{\text{train}} = 20{,}400$, $N_{\text{test}} = 6{,}000$). Threshold $t^*$ selected on the validation set to maximise F1; all threshold-dependent metrics evaluated on the held-out test set at this fixed threshold. Bold entries indicate leading values. {#tbl-uci-large}
 
