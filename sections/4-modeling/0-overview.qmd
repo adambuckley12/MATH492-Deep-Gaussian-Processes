@@ -1,6 +1,6 @@
 # Model Evaluation {#sec-results}
 
-Having developed the theory of GPs and DGPs and derived the variational inference framework needed for scalable training, this section evaluates DGP models empirically. We compare GPs and DGPs against standard machine learning baselines across two datasets.
+Having developed the theory of DGPs and derived the variational inference framework needed for scalable training, this section evaluates DGP models empirically. We compare GPs and DGPs against standard machine learning baselines across two datasets.
 
 The first experiment uses the Kin8nm robot kinematics dataset (@sec-kin8nm), a regression benchmark with a known non-stationary, compositional structure, where we expect DGPs to outperform single-layer GPs. This establishes whether the additional depth of DGPs translates into measurable gains when the data supports it.
 
