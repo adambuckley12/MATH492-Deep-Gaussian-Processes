@@ -34,7 +34,7 @@ $$
 p(y_i \mid \vx_i, \vw) = \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood}
 
-Assuming that there is independence across observations, and conditioning on $\vw$, we have that the joint likelihood over $\mathcal{D}$ becomes
+Assuming that there is independence across observations, and conditioning on $\vw$, the joint likelihood over $\mathcal{D}$ becomes
 $$
 p(\vy \mid \vX, \vw) = \prod_{i=1}^{n} \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
 $$ {#eq-likelihood-product}
