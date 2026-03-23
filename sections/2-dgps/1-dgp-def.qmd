@@ -65,7 +65,7 @@ This leads to $\sum_{\ell=1}^{L} n \cdot d_\ell = O(nLd)$ total latent variables
 
 ```{python}
 #| label: fig-dgp-composition
-#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ is a steep sigmoid warp — near $x=0$ the slope is large (inputs map to a wide range of $h$) while near $\\pm 3$ it flattens (inputs cluster at the extremes of $h$). Centre: the second-layer GP $f^{(2)}$ is stationary and uniform on the warped axis $h$. Right: the composed function $f^{(2)} \\circ f^{(1)}$ is non-stationary — it varies rapidly near $x=0$ where the warp stretches input space, and is nearly flat near $x=\\pm 3$ where the warp compresses it. Neither layer alone could produce this varying-lengthscale behaviour."
+#| fig-cap: "Compositional structure of a two-layer DGP. Left: the first-layer function $f^{(1)}$ is a steep sigmoid warp. Near $x=0$ the slope is large (inputs map to a wide range of $h$) while near $\\pm 3$ it flattens (inputs cluster at the extremes of $h$). Centre: the second-layer GP $f^{(2)}$ is stationary and uniform on the warped axis $h$. Right: the composed function $f^{(2)} \\circ f^{(1)}$ is non-stationary: it varies rapidly near $x=0$ where the warp stretches input space, and is nearly flat near $x=\\pm 3$ where the warp compresses it. Neither layer alone could produce this varying-lengthscale behaviour."
 #| echo: false
 
 import torch
