@@ -36,7 +36,7 @@ $$
 p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right) = \mathcal{N}\left(\vF^{(\ell)} \mid \vzero, K^{(\ell)}\right).
 $$ {#eq-dgp_conditional_gaussian}
 
-When $\vF^{(\ell-1)}$ is held fixed, this is identical to a standard GP prior and layer $\ell$ behaves exactly like a regular GP evaluated at those inputs. The difficulty comes around only when $\vF^{(\ell-1)}$ is random as the covariance matrix $K^{(\ell)}$ then becomes a random variable itself, and integrating over it no longer gives a closed form solution.
+When $\vF^{(\ell-1)}$ is held fixed, this is identical to a standard GP prior and layer $\ell$ behaves exactly like a regular GP evaluated at those inputs. The difficulty arises only when $\vF^{(\ell-1)}$ is random as the covariance matrix $K^{(\ell)}$ then becomes a random variable itself, and integrating over it no longer gives a closed form solution.
 
 The directed graph structure implies that each layer depends only on its immediate predecessor (which is a Markov property), leading to a factorised joint prior:
 

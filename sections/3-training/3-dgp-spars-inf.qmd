@@ -61,4 +61,4 @@ $$
 \mathcal{L}_{\text{MF}} = \mathbb{E}_{q(\vF^{(L)})}[\log p(\vy \mid \vF^{(L)})] - \sum_{\ell=1}^{L} \mathbb{E}_{q(\vF^{(\ell-1)})}\left[\KL(q(\vF^{(\ell)}) \| p(\vF^{(\ell)} \mid \vF^{(\ell-1)}))\right].
 $$ {#eq-damianou_elbo}
 
-This approach enabled the original DGP work but suffers from scalability issues (variational parameters grow with $n$) and may produce poor approximations due to the mean-field assumption of independence between each layer's outputs which ignores the hierarchical structure of the model. 
+This approach enabled the original DGP work but suffers from scalability issues (variational parameters grow with $n$) and may produce poor approximations due to the mean-field assumption of independence between each layer's outputs, which ignores the hierarchical structure of the model. 

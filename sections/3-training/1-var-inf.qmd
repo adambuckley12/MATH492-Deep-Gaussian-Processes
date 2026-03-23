@@ -23,11 +23,11 @@ $$
 \end{aligned}
 $$
 
-Rearranging this gives @eq-vi_decomposition. As $\KL(q \| p)$ cannot be computed directly, we chose to instead maximise the ELBO, which is equivalent to minimising KL divergence.
+Rearranging this gives @eq-vi_decomposition. As $\KL(q \| p)$ cannot be computed directly, we choose to instead maximise the ELBO, which is equivalent to minimising KL divergence.
 
 The second form @eq-elbo shows the ELBO's structure. The expected log-likelihood $\mathbb{E}_{q}[\log p(\vy \mid \vz)]$ pushes $q$ to concentrate where the data is explained well, while the KL term $\KL(q \| p(\vz))$ pushes $q$ toward the prior, preventing overfitting [@bishop_pattern_2006]. This trade-off mirrors the data-fit versus complexity balance we see in exact Bayesian inference.
 
-For the models in this dissertation, variational inference serves two purposes. Firstly, they allow for scaling to large datasets. Secondly, they allow for handling the hierarchical structure of DGPs where function values at each layer cannot be analytically integrated out which is discussed later (@sec-dgp-variational). The latent variables $\vz$ correspond to function values $\vf$, and the variational distribution is usually chosen to be Gaussian:
+For the models in this dissertation, variational inference serves two purposes. Firstly, it allows for scaling to large datasets. Secondly, it allows for handling the hierarchical structure of DGPs where function values at each layer cannot be analytically integrated out which is discussed later (@sec-dgp-variational). The latent variables $\vz$ correspond to function values $\vf$, and the variational distribution is usually chosen to be Gaussian:
 
 $$
 q(\vf) = \mathcal{N}(\vf \mid \vm, S),

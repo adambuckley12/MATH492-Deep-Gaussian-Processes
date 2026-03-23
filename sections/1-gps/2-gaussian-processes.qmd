@@ -288,7 +288,7 @@ In practice, the training loop iterates: (1) evaluate the negative LML via Chole
 
 ```{python}
 #| label: fig-gp-training
-#| fig-cap: "Effect of hyperparameter training on GP fit. Left: GP with a intentionally large initial length-scale and a near-zero noise variance, giving a flat oversmoothed posterior. Centre: negative log marginal likelihood during 50 Adam training iterations. Right: GP after training. The learnt hyperparameter values are shown above the plots."
+#| fig-cap: "Effect of hyperparameter training on GP fit. Left: GP with an intentionally large initial length-scale and a near-zero noise variance, giving a flat oversmoothed posterior. Centre: negative log marginal likelihood during 50 Adam training iterations. Right: GP after training. The learnt hyperparameter values are shown above the plots."
 #| echo: false
 
 import torch
