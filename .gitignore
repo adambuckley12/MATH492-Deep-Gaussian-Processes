@@ -31,4 +31,4 @@ code/**/__pycache__/**
 _freeze/
 code/kin8nm/src/results/**/weights/
 
-
+.jupyter_cache/

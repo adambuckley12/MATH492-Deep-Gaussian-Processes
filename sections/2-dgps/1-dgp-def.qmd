@@ -44,7 +44,7 @@ $$
 p\left(\vF^{(1)}, \ldots, \vF^{(L)} \mid \vX\right) = p\left(\vF^{(1)} \mid \vX\right) \prod_{\ell=2}^{L} p\left(\vF^{(\ell)} \mid \vF^{(\ell-1)}\right).
 $$ {#eq-dgp_joint_prior}
 
-This follows from applying the chain rule and noting that $\vF^{(\ell)} \perp \vF^{(1:\ell-2)}, \vX \mid \vF^{(\ell-1)}$. In plain terms: once you know what layer $\ell\!-\!1$ output, knowledge of all earlier layers gives no additional information about layer $\ell$. Practically, this means one can sample through the model one layer at a time, discarding each layer's outputs once they have been passed forward. The likelihood connects the final layer to observations via $p(\vy \mid \vF^{(L)}) = \mathcal{N}(\vy \mid \vF^{(L)}, \sigma_n^2 \vI)$.
+This follows from applying the chain rule and noting that $\vF^{(\ell)} \perp \vF^{(1:\ell-2)}, \vX \mid \vF^{(\ell-1)}$. Once you know what layer $\ell\!-\!1$ output, knowledge of all earlier layers gives no additional information about layer $\ell$. Practically, this means one can sample through the model one layer at a time, discarding each layer's outputs once they have been passed forward. The likelihood connects the final layer to observations via $p(\vy \mid \vF^{(L)}) = \mathcal{N}(\vy \mid \vF^{(L)}, \sigma_n^2 \vI)$.
 
 Equivalently, defining the composed function $f = f^{(L)} \circ f^{(L-1)} \circ \cdots \circ f^{(1)}$:
 

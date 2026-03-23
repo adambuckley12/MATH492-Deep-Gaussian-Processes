@@ -1,5 +1,0 @@
-## Financial Risk Modeling {#sec-credit-risk}
-
-GP-based methods have been applied to credit-risk and credit-rating problems [@mahajan_gaussian_2022; @huang_using_2011], volatility forecasting [@munoz-gonzalez_laplace_2014], and market-risk approximation [@lehdili_performance-enhancing_2025], but direct DGP applications remain uncommon in the finance literature. Basel III makes banks' capital requirements explicitly risk-sensitive, so reliable probability of default (PD) estimates are critical for regulatory compliance [@basel_committee_basel_2011]. Under the IRB Advanced Approach, PD models must demonstrate both discriminative power (correctly ranking borrowers by risk) and probability calibration (predicted default rates must track observed frequencies across rating grades) [@eba_gl_2017_16; @iasb_ifrs9_2014]. This makes credit risk a natural testbed for GP and DGP models, whose Bayesian posteriors provide native uncertainty quantification.
-
-We evaluate a credit-risk dataset with a 22.1% default rate (@sec-credit-card). The model set and training protocol are consistent with @sec-kin8nm, adapted for binary classification with a Bernoulli likelihood.
