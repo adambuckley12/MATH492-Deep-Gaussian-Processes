@@ -14,13 +14,13 @@ The factorisation follows from $p(\vy \mid \vF^{(L)}) = \prod_i p(y_i \mid f_i^{
 
 $$
 q(f_i^{(L)}) = \int \cdots \int p(f_i^{(L)} \mid \vU^{(L)}, f_i^{(L-1)}) q(\vU^{(L)}) \cdots p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)} \cdots d\vU^{(L)}.
-$$ {#eq-marginal_q_output}
+$$
 
 This integral is analytically intractable due to the nonlinear dependencies across layers. The doubly stochastic approach estimates this expectation via Monte Carlo. For a data point $\vx_i$, we construct a sample path through all layers. Starting at layer 1, the marginal distribution over $f_i^{(1)}$ given $\vx_i$ is:
 
 $$
 q(f_i^{(1)} \mid \vx_i) = \int p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) q(\vU^{(1)}) \, d\vU^{(1)}.
-$$ {#eq-layer1_marginal}
+$$
 
 Since $p(f_i^{(1)} \mid \vU^{(1)}, \vx_i) = \mathcal{N}(f_i^{(1)} \mid k_i^{(1)\top} (K_{uu}^{(1)})^{-1} \vU^{(1)}, \, k_{ii}^{(1)} - k_i^{(1)\top} (K_{uu}^{(1)})^{-1} k_i^{(1)})$ and $q(\vU^{(1)}) = \mathcal{N}(\vM^{(1)}, \vS^{(1)})$, integrating out $\vU^{(1)}$ yields:
 
@@ -29,7 +29,7 @@ $$
 \mu_i^{(1)} &= k_i^{(1)\top} (K_{uu}^{(1)})^{-1} \vM^{(1)}, \\
 \sigma_i^{(1)2} &= k_{ii}^{(1)} - k_i^{(1)\top} (K_{uu}^{(1)})^{-1} (K_{uu}^{(1)} - \vS^{(1)}) (K_{uu}^{(1)})^{-1} k_i^{(1)},
 \end{aligned}
-$$ {#eq-layer1_moments}
+$$
 
 where $k_i^{(1)} = k^{(1)}(\vx_i, \vZ^{(1)}) \in \mathbb{R}^{m_1}$ and $k_{ii}^{(1)} = k^{(1)}(\vx_i, \vx_i)$. The mean $\mu_i^{(1)}$ is the posterior GP mean at $\vx_i$, which is a weighted sum of inducing values $\vM^{(1)}$, weighted by how correlated $\vx_i$ is with each inducing point. The variance $\sigma_i^{(1)2}$ is the prior variance $k_{ii}^{(1)}$ minus the information contributed by the inducing points, plus additional uncertainty from $\vS^{(1)}$ which reflects that our beliefs that the inducing outputs are uncertain.
 
@@ -37,16 +37,17 @@ Sampling $f_i^{(1)} \sim \mathcal{N}(\mu_i^{(1)}, \sigma_i^{(1)2})$ gives a real
 
 $$
 q(f_i^{(\ell)} \mid f_i^{(\ell-1)}) = \int p(f_i^{(\ell)} \mid \vU^{(\ell)}, f_i^{(\ell-1)}) q(\vU^{(\ell)}) \, d\vU^{(\ell)},
-$$ {#eq-layer_conditional}
+$$
 
 with mean and variance:
 
 $$
 \begin{aligned}
 \mu_i^{(\ell)} &= k^{(\ell)}(f_i^{(\ell-1)}, \vZ^{(\ell)})^\top (K_{uu}^{(\ell)})^{-1} \vM^{(\ell)}, \\
-\sigma_i^{(\ell)2} &= k^{(\ell)}(f_i^{(\ell-1)}, f_i^{(\ell-1)}) - k^{(\ell)}(f_i^{(\ell-1)}, \vZ^{(\ell)})^\top (K_{uu}^{(\ell)})^{-1} (K_{uu}^{(\ell)} - \vS^{(\ell)}) (K_{uu}^{(\ell)})^{-1} k^{(\ell)}(\vZ^{(\ell)}, f_i^{(\ell-1)}).
+\sigma_i^{(\ell)2} &= k^{(\ell)}(f_i^{(\ell-1)}, f_i^{(\ell-1)}) \\
+&\quad - k^{(\ell)}(f_i^{(\ell-1)}, \vZ^{(\ell)})^\top (K_{uu}^{(\ell)})^{-1} (K_{uu}^{(\ell)} - \vS^{(\ell)}) (K_{uu}^{(\ell)})^{-1} k^{(\ell)}(\vZ^{(\ell)}, f_i^{(\ell-1)}).
 \end{aligned}
-$$ {#eq-layer_ell_moments}
+$$
 
 The same formula applies as at layer 1, except now that the input is instead the sampled value $f_i^{(\ell-1)}$ from the previous layer rather than the fixed training input $\vx_i$. This allows uncertainty to propagate as each layer outputs a Gaussian whose mean and variance depend on a random draw from the layer below, so uncertainty compounds as samples pass through each layer of the DGP.
 
@@ -54,7 +55,7 @@ After sampling through all $L$ layers, we obtain $f_i^{(L)}$ and evaluate $\log 
 
 $$
 \hat{\mathcal{L}} = \frac{n}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \frac{1}{S} \sum_{s=1}^{S} \log p(y_i \mid f_i^{(L,s)}) - \sum_{\ell=1}^{L} \KL(q(\vU^{(\ell)}) \| p(\vU^{(\ell)})),
-$$ {#eq-dsvi_mc_elbo}
+$$
 
 where $\mathcal{B} \subset \{1, \ldots, n\}$ is a minibatch and $f_i^{(L,s)}$ is the $s$-th sample at the final layer for point $i$. The factor $n/|\mathcal{B}|$ corrects for minibatch subsampling.
 

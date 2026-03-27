@@ -31,7 +31,7 @@ For the models in this dissertation, variational inference serves two purposes. 
 
 $$
 q(\vf) = \mathcal{N}(\vf \mid \vm, S),
-$$ {#eq-variational_gaussian}
+$$
 
 with variational parameters $\vm \in \mathbb{R}^n$ and $S \in \mathbb{R}^{n \times n}$ (positive definite). This balances how expressive the approximation is, with still staying computationally feasible. The expectations under $q$ can often be computed analytically for standard likelihood functions.
 
@@ -39,7 +39,7 @@ With this Gaussian choice, the KL term has closed form:
 
 $$
 \KL(q(\vf) \| p(\vf)) = \frac{1}{2}\left[\tr(K^{-1}S) + \vm^\top K^{-1} \vm - n + \log|K| - \log|S|\right],
-$$ {#eq-kl_gaussian}
+$$
 
 where $K$ is the prior covariance. 
 

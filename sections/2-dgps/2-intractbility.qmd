@@ -6,7 +6,7 @@ The marginal likelihood requires integrating out all latent functions:
 
 $$
 p(\vy \mid \vX) = \int p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) \, d\vF^{(1)} \cdots d\vF^{(L)},
-$$ {#eq-dgp_marginal_likelihood}
+$$
 
 where $\vF^{(0)} = \vX$. This integral has no closed-form solution for $L \geq 2$ (unless the kernel is linear, which reduces the composition to a single-layer GP). The fundamental obstacle is that the covariance matrix $K^{(\ell)}$ at each layer is a nonlinear function of $\vF^{(\ell-1)}$. This is the very variables being integrated over and so the integral cannot be reorganised into the product-of-Gaussians form that makes single-layer GP inference tractable.
 
@@ -14,7 +14,7 @@ To see why, consider a two-layer DGP. The covariance matrix $K^{(2)}$ depends on
 
 $$
 k^{(2)}(h_1, h_2) = \sigma_f^2 \exp\left(-\frac{(h_1 - h_2)^2}{2\ell^2}\right),
-$$ {#eq-se_random_inputs}
+$$
 
 this is a nonlinear function of the Gaussian random variables $(f_i^{(1)}, f_j^{(1)})$. The integral
 
@@ -28,19 +28,19 @@ As well as the intractability of the marginal likelihood, the resulting distribu
 
 $$
 \begin{bmatrix} h_1 \\ h_2 \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(1)}_{11} & k^{(1)}_{12} \\ k^{(1)}_{12} & k^{(1)}_{22} \end{bmatrix}\right).
-$$ {#eq-first_layer_joint}
+$$
 
 Conditioned on $(h_1, h_2)$, the outputs follow:
 
 $$
 \begin{bmatrix} y_1 \\ y_2 \end{bmatrix} \Bigg| h_1, h_2 \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(2)}(h_1, h_1) & k^{(2)}(h_1, h_2) \\ k^{(2)}(h_1, h_2) & k^{(2)}(h_2, h_2) \end{bmatrix}\right).
-$$ {#eq-second_layer_conditional}
+$$
 
 The marginal distribution
 
 $$
 p(y_1, y_2) = \int p(y_1, y_2 \mid h_1, h_2) \, p(h_1, h_2) \, dh_1 \, dh_2
-$$ {#eq-marginal_y}
+$$
 
 is a continuous mixture of Gaussians with varying covariance matrices. Since $k^{(2)}(h_1, h_2)$ is a nonlinear function of $(h_1, h_2)$, this mixture is not Gaussian.
 
@@ -48,7 +48,7 @@ The posterior over all latent functions is:
 
 $$
 p(\vF^{(1:L)} \mid \vX, \vy) = \frac{p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} p(\vF^{(\ell)} \mid \vF^{(\ell-1)})}{p(\vy \mid \vX)}.
-$$ {#eq-dgp_posterior}
+$$
 
 Since both the numerator (a product of coupled Gaussians) and the denominator (the intractable marginal likelihood) lack closed forms, exact posterior computation is infeasible.
 

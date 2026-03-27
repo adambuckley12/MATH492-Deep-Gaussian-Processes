@@ -5,7 +5,7 @@ As shown in @sec-kernel-hyperparams, the GP hyperparameters $\vtheta$ are learne
 Starting from the GP prior $\vf \mid \vX \sim \mathcal{N}(\vzero, K_{\vtheta})$ and likelihood $\vy \mid \vf \sim \mathcal{N}(\vf, \sigma_n^2 \vI)$, Gaussian–Gaussian conjugacy [@bernardo_bayesian_2000] allows the integral over function values to be computed in closed form:
 $$
 p(\vy \mid \vX, \vtheta) = \int p(\vy \mid \vf) p(\vf \mid \vX, \vtheta) \, d\vf = \mathcal{N}(\vy \mid \vzero, K_{\vtheta} + \sigma_n^2 \vI),
-$$ {#eq-gp_marginal_likelihood}
+$$
 
 giving the LML of @eq-log-marginal-likelihood. As the product of two Gaussians is proportional to a Gaussian, the $\vf$-integral collapses to a single multivariate normal with covariance $K_{\vtheta} + \sigma_n^2 \vI$.
 
@@ -13,7 +13,7 @@ Hyperparameters can then be found via gradient ascent. The gradient with respect
 
 $$
 \frac{\partial \log p(\vy)}{\partial \theta_j} = \frac{1}{2}\tr\left((\valpha \valpha^\top - K_y^{-1}) \frac{\partial K_y}{\partial \theta_j}\right),
-$$ {#eq-gradient}
+$$
 
 where $\valpha = K_y^{-1} \vy$ and $K_y = K_{\vtheta} + \sigma_n^2 \vI$. The matrix $\valpha \valpha^\top - K_y^{-1}$ has a clear interpretation: $\valpha \valpha^\top$ is a rank-one outer product that captures how the data predicts itself under the current model, while $K_y^{-1}$ reflects the full model uncertainty; a large positive difference for $\partial K_y / \partial \theta_j$ indicates that increasing $\theta_j$ improves the data fit more than it increases model complexity. This follows from the matrix calculus identities $\frac{\partial}{\partial \theta} \log|K| = \tr(K^{-1} \frac{\partial K}{\partial \theta})$ and $\frac{\partial K^{-1}}{\partial \theta} = -K^{-1} \frac{\partial K}{\partial \theta} K^{-1}$.
 

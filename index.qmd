@@ -54,6 +54,11 @@ abstract: |
 <!-- Conclusion -->
 {{< include sections/5-conclusion/conclusion.qmd >}}
 
+## References {-}
+
+::: {#refs}
+:::
+
 ```{=latex}
 \appendix
 ```

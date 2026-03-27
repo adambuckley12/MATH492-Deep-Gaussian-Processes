@@ -14,7 +14,7 @@ Regression performance is measured by RMSE, $R^2$, and negative log predictive d
 
 $$
 \text{NLPD} = -\frac{1}{n_*} \sum_{i=1}^{n_*} \log p(y_i \mid \vx_i, \mathcal{D}),
-$$ {#eq-nlpd}
+$$
 
 where $y_i$ is the observed (noisy) output. For GP models with a Gaussian predictive distribution $\mathcal{N}(y_i \mid \mu_i, \sigma_i^2)$, this reduces to $\frac{1}{n_*}\sum_i \bigl[\frac{1}{2}\log(2\pi\sigma_i^2) + \frac{(y_i - \mu_i)^2}{2\sigma_i^2}\bigr]$, where $\sigma_i^2$ includes observation noise $\sigma_n^2$. Lower NLPD is better. Unlike RMSE, NLPD penalises both inaccurate means and poorly calibrated predictive variance, which makes it one of the primary metrics for assessing uncertainty quality. Classical models (Ridge, Random Forest, XGBoost) do not produce predictive distributions, so NLPD is only reported for GP-family models.
 

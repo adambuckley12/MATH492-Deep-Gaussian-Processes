@@ -15,7 +15,7 @@ The conditional $p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)})$ uses the GP 
 
 $$
 p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vU^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)} K^{(\ell)}_{uu} A^{(\ell)\top}\right),
-$$ {#eq-dgp_layer_conditional}
+$$
 
 where $A^{(\ell)} = K^{(\ell)}_{fu} (K^{(\ell)}_{uu})^{-1}$. The covariance matrices $K^{(\ell)}_{ff}$, $K^{(\ell)}_{fu}$, and $K^{(\ell)}_{uu}$ depend on the random inputs $\vF^{(\ell-1)}$, creating dependencies across layers.
 
@@ -31,19 +31,19 @@ The expectation in @eq-dgp_elbo involves:
 
 $$
 \mathbb{E}_{q}[\log p(\vy \mid \vF^{(L)})] = \int \cdots \int \log p(\vy \mid \vF^{(L)}) \prod_{\ell=1}^{L} q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) \, d\vF^{(1)} \cdots d\vF^{(L)},
-$$ {#eq-dgp_nested_expectation}
+$$
 
 where $q(\vF^{(\ell)} \mid \vF^{(\ell-1)})$ is obtained by integrating out $\vU^{(\ell)}$:
 
 $$
 q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \int p(\vF^{(\ell)} \mid \vU^{(\ell)}, \vF^{(\ell-1)}) q(\vU^{(\ell)}) \, d\vU^{(\ell)}.
-$$ {#eq-marginal_q_layer}
+$$
 
 This integral is Gaussian:
 
 $$
 q(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}\left(\vF^{(\ell)} \mid A^{(\ell)} \vM^{(\ell)}, \, K^{(\ell)}_{ff} - A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}\right).
-$$ {#eq-marginal_q_layer_explicit}
+$$
 
 Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vzero, K^{(\ell)}_{ff})$, this has a non-zero mean (coming from $\vM^{(\ell)}$) and lower variance (the term $A^{(\ell)}(K^{(\ell)}_{uu} - \vS^{(\ell)})A^{(\ell)\top}$ takes off the uncertainty that is explained by the inducing points, then adds back only what $\vS^{(\ell)}$ says is left). While Gaussian in $\vF^{(\ell)}$ when $\vF^{(\ell-1)}$ is fixed, the overall distribution is non-Gaussian because the covariance matrices $K^{(\ell)}$ depend non-linearly on the random $\vF^{(\ell-1)}$.
 
@@ -51,7 +51,7 @@ Compared to the GP prior $p(\vF^{(\ell)} \mid \vF^{(\ell-1)}) = \mathcal{N}(\vze
 
 $$
 q(\vF^{(\ell)}) = \mathcal{N}(\vF^{(\ell)} \mid \vmu^{(\ell)}, \vSigma^{(\ell)}),
-$$ {#eq-damianou_q_F}
+$$
 
 treating $\{\vmu^{(\ell)}, \vSigma^{(\ell)}\}$ as additional variational parameters. This "mean-field" approximation breaks the dependencies between layers but introduces $O(nLd)$ additional parameters and loses the structure that $\vF^{(\ell)}$ should be generated from $\vF^{(\ell-1)}$ via a GP.
 
@@ -59,6 +59,6 @@ The resulting ELBO becomes:
 
 $$
 \mathcal{L}_{\text{MF}} = \mathbb{E}_{q(\vF^{(L)})}[\log p(\vy \mid \vF^{(L)})] - \sum_{\ell=1}^{L} \mathbb{E}_{q(\vF^{(\ell-1)})}\left[\KL(q(\vF^{(\ell)}) \| p(\vF^{(\ell)} \mid \vF^{(\ell-1)}))\right].
-$$ {#eq-damianou_elbo}
+$$
 
 This approach enabled the original DGP work but suffers from scalability issues (variational parameters grow with $n$) and may produce poor approximations due to the mean-field assumption of independence between each layer's outputs, which ignores the hierarchical structure of the model. 

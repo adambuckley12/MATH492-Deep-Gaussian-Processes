@@ -3,7 +3,7 @@
 Formally, a Gaussian process is a collection of random variables, any finite number of which have a joint Gaussian distribution [@rasmussen_gaussian_2008]. A GP is fully specified by its mean function $m(\vx) = \E[f(\vx)]$ and covariance function (or kernel) 
 $$
 k(\vx, \vx') = \E[(f(\vx) - m(\vx))(f(\vx') - m(\vx'))] = \Cov[f(\vx), f(\vx')]
-$$ {#eq-kernel-covariance}
+$$
 
 We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a GP with mean $m$ and kernel $k$. The GP provides a prior directly over functions, rather than over a finite parameter vector as in the weight-space view of @sec-weight-to-function-space. 
 
@@ -12,7 +12,7 @@ We write $f \sim \GP(m, k)$ to denote that $f$ is a random function drawn from a
 Placing a GP prior on $f$ gives a "prior over functions". Evaluating $f$ at any finite collection of inputs $\vX = \{\vx_1, \ldots, \vx_n\}$ gives a joint Gaussian over the corresponding function values $\vf = [f(\vx_1), \ldots, f(\vx_n)]^\top$,
 $$
 \vf \mid \vX \sim \N(\vm, K),
-$$ {#eq-gp-prior}
+$$
 
 where $[\vm]_i = m(\vx_i)$ and $K_{ij} = k(\vx_i, \vx_j)$. This property that every finite-dimensional marginal is Gaussian is a defining characteristic of the process [@rasmussen_gaussian_2008; @williams_gaussian_1995]. In regression, it is standard practice to take $m \equiv 0$: the training targets can be centred by subtracting their mean, and any residual structure is captured by the kernel [@mackay_introduction_1998]. However, non-zero mean functions can be useful for encoding strong prior beliefs about the function shape, such as a linear trend or periodicity [@rasmussen_gaussian_2008, Section 2.2].
 
@@ -89,12 +89,12 @@ plt.show()
 The SE kernel, which is interchangeably called the radial basis function (RBF) kernel, is defined as
 $$
 k_{\text{SE}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{\|\vx - \vx'\|^2}{2\ell^2}\right),
-$$ {#eq-se-kernel}
+$$
 
 and is the most widely used GP kernel in practice [@rasmussen_gaussian_2008]. A small $\ell$ allows the function to vary rapidly over short distances, producing rough wiggly samples, while a large $\ell$ enforces smoothly varying functions. The periodic kernel,
 $$
 k_{\text{per}}(\vx, \vx') = \sigma_f^2 \exp\!\left(-\frac{2\sin^2\!\left(\pi|\vx - \vx'|/p\right)}{\ell^2}\right),
-$$ {#eq-periodic-kernel}
+$$
 
 explicitly encodes a repeating structure with period $p$, making it suitable for modelling seasonal or cyclical signals. 
 
@@ -138,7 +138,7 @@ $$
 \vzero,\;
 \begin{bmatrix} K + \sigma_n^2 \vI & \vk_* \\ \vk_*^\top & k_{**} \end{bmatrix}
 \right).
-$$ {#eq-joint-gp}
+$$
 
 Conditioning on $\vy$ via the standard Gaussian conditionals [@rasmussen_gaussian_2008, Equation 2.19; @bishop_pattern_2006, Section 2.3] gives the posterior predictive distribution:
 $$
@@ -154,7 +154,7 @@ k_{\text{post}}(\vx_*, \vx_*) &= k_{**} - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_
 \end{aligned}
 $$ {#eq-gp-posterior-moments}
 
-These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data. As more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Specifically, $\vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_*$ is large when $\vx_*$ is strongly correlated with the training inputs, with $(K+\sigma_n^2\vI)^{-1}$ penalising duplicate, redundant or noisy observations. The full predictive distribution for a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds $+\sigma_n^2$ to the latent posterior variance, giving @eq-gp-predictive.
+These expressions have intuitive interpretations: the posterior mean is a linear combination of the observed outputs $\vy$, where the weights are determined by the similarity between the test input and training inputs, as measured by the kernel. The posterior variance $k_{\text{post}}(\vx_*, \vx_*)$ is the prior variance at $\vx_*$ minus a positive term that captures how much information about $f(\vx_*)$ is contained in the training data. As more data are observed near $\vx_*$, this reduction grows and uncertainty falls. Specifically, $\vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_*$ is large when $\vx_*$ is strongly correlated with the training inputs, with $(K+\sigma_n^2\vI)^{-1}$ penalising duplicate, redundant or noisy observations. The full predictive distribution for a new *noisy* observation $y_* = f(\vx_*) + \epsilon_*$ adds $+\sigma_n^2$ to the latent posterior variance, giving @eq-gp-predictive.
 
 @fig-gp-regression illustrates these properties: the left panel shows three samples from the GP prior, and the right panel shows the posterior after conditioning on observations, where uncertainty collapses near the data and the posterior mean tracks the observations.
 
@@ -278,7 +278,13 @@ We have the LML expression from @eq-log-marginal-likelihood:
 $$\log p(\vy \mid \vX, \boldsymbol{\theta}) = -\frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1}\vy - \frac{1}{2}\log |K + \sigma_n^2\vI| - \frac{n}{2}\log 2\pi.$$ 
 
 The gradient of the LML with respect to a hyperparameter $\theta_j$ can be derived using the matrix derivative trace formula [@rasmussen_gaussian_2008, Equation 5.9], yielding:
-$$  \frac{\partial \log p(\vy \mid \vX, \boldsymbol{\theta})}{\partial \theta_j} = \frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j} (K + \sigma_n^2\vI)^{-1} \vy - \frac{1}{2}\text{tr}\!\left((K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j}\right). $$
+$$
+\begin{split}
+\frac{\partial \log p(\vy \mid \vX, \boldsymbol{\theta})}{\partial \theta_j}
+&= \frac{1}{2}\vy^\top(K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j} (K + \sigma_n^2\vI)^{-1} \vy \\
+&\quad - \frac{1}{2}\text{tr}\!\left((K + \sigma_n^2\vI)^{-1} \frac{\partial (K + \sigma_n^2\vI)}{\partial \theta_j}\right).
+\end{split}
+$$
 
 Defining $K_\alpha = K + \sigma_n^2\vI$ and $\valpha = K_\alpha^{-1}\vy$, the gradient has two interpretable terms. The trace $\text{tr}(A)$ denotes the sum of the diagonal entries of a matrix $A$; it appears here via the identity $\frac{\partial \log|A|}{\partial\theta_j} = \text{tr}\!\left(A^{-1}\frac{\partial A}{\partial\theta_j}\right)$, so the second term is the negative gradient of the log-determinant $\log|K_\alpha|$. The first term, $\frac{1}{2}\valpha^\top \frac{\partial K_\alpha}{\partial \theta_j}\valpha$, is the data-fit gradient which is large when the change in kernel structure aligns with the pattern in the posterior weights $\valpha$. It therefore rewards the hyperparameters whose covariance better explains $\vy$. The second term, $-\frac{1}{2}\text{tr}(K_\alpha^{-1}\frac{\partial K_\alpha}{\partial \theta_j})$, penalises growth in the kernel's effective degrees of freedom regardless of the data. So the total result is a balance of these terms where hyperparameters increase only as much as the improvement in the data fit justifies the added complexity.
 
@@ -380,7 +386,7 @@ $$
 \Var[y_* \mid \vx_*, \vX, \vy, \hat{\vtheta}]
 = \underbrace{k(\vx_*, \vx_*) - \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vk_*}_{\text{epistemic (reducible)}}
 + \underbrace{\sigma_n^2}_{\text{aleatoric (irreducible)}},
-$$ {#eq-variance-decomposition}
+$$
 
 where the first term is the *epistemic* uncertainty which is the model's ignorance about $f$. The second is the *aleatoric* noise [@kendall_what_2017]. The epistemic term decreases as training data accumulates near $\vx_*$, and equals the full prior variance $k(\vx_*, \vx_*)$ where no data has been observed. The $\sigma_n^2$ term is always present when predicting a noisy observation $y_*$, but absent when predicting the latent $f(\vx_*)$ directly. It is an irreducible hard floor on prediction uncertainty that no amount of data can eliminate.
 

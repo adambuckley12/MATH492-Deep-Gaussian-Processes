@@ -7,7 +7,7 @@ With $\vy = [y_1, \ldots, y_n]^\top$ and the design matrix $\Phi \in \R^{n \time
 $$
 \begin{bmatrix} \vphi(\vx_1)^\top \vw \\ \vdots \\ \vphi(\vx_n)^\top \vw \end{bmatrix} =
 \begin{bmatrix} \vphi(\vx_1)^\top \\ \vdots \\ \vphi(\vx_n)^\top \end{bmatrix} \vw = \Phi \vw.
-$$ {#eq-design-matrix-mean}
+$$
 
 ## Completing the Square for the Posterior over Weights {#sec-completing-the-square}
 
@@ -47,7 +47,7 @@ Comparing the linear term in $\vw$ from @eq-quadratic-expansion with @eq-complet
 
 $$
 \vw^\top \Sigma_w^{-1} \bar{\vw} = \sigma_n^{-2}\vy^\top \Phi \vw.
-$$ {#eq-linear-term-match}
+$$
 
 Writing the left side as $(\Sigma_w^{-1} \bar{\vw})^\top \vw$ and the right side as $(\sigma_n^{-2}\Phi^\top \vy)^\top \vw$, and noting this must hold for all $\vw$, we get $\Sigma_w^{-1} \bar{\vw} = \sigma_n^{-2}\Phi^\top \vy$, which gives the posterior mean $\bar{\vw} = \sigma_n^{-2} \Sigma_w \Phi^\top \vy$ as stated in @eq-posterior-mean.
 

@@ -19,7 +19,7 @@ where $g^{(\ell)}: \mathbb{R}^d \to \mathbb{R}^d$ is a vector-valued GP that pro
 By composing $L$ such layers, the model produces a sequence of transformations
 $$
 \vH^{(1)} \to \vH^{(2)} \to \cdots \to \vH^{(L)},
-$$ {#eq-tdgp-composition}
+$$
 where each $\vH^{(\ell)}$ is a locally linear distortion of $\vX$. The final layer feeds into a standard GP:
 $$
 y_i = f^{(L+1)}\!\bigl(\vh_i^{(L)}\bigr) + \epsilon_i, \qquad f^{(L+1)} \sim \mathcal{GP}(0, k^{(L+1)}).
@@ -42,7 +42,7 @@ A further advantage of TDGPs is that they naturally support dimensionality reduc
 Inference in TDGPs follows the doubly stochastic variational framework of @salimbeni_doubly_2017. Each GP layer $g^{(\ell)}$ is equipped with its own set of inducing points, and samples are propagated through the layers using the reparameterisation trick. The ELBO takes the same form as @eq-dsvi_elbo, with KL terms for each layer's inducing variables:
 $$
 \mathcal{L}_{\text{TDGP}} = \sum_{i=1}^{n} \mathbb{E}_{q(f_i^{(L+1)})}\!\bigl[\log p(y_i \mid f_i^{(L+1)})\bigr] - \sum_{\ell=1}^{L+1} \text{KL}\!\bigl(q(\vU^{(\ell)}) \,\|\, p(\vU^{(\ell)})\bigr).
-$$ {#eq-tdgp-elbo}
+$$
 
 The locally linear structure means that the kernel evaluations at intermediate layers remain functions of the original inputs $\vX$, scaled by the sampled $g^{(\ell)}$ values. This makes the computational cost per iteration comparable to standard doubly stochastic DGPs.
 

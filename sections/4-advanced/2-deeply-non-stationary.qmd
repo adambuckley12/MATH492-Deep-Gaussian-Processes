@@ -15,7 +15,7 @@ Even when $k^{(2)}$ is the squared exponential (stationary), this covariance dep
 To make this precise, consider a one-dimensional input and a first-layer function $h = f^{(1)}(x)$. For nearby inputs $x$ and $x + \delta$, we have $h(x + \delta) \approx h(x) + h'(x)\delta$. Substituting into a squared exponential second-layer kernel with lengthscale $\ell$:
 $$
 k^{(2)}\!\bigl(h(x),\, h(x+\delta)\bigr) \approx \sigma_f^2 \exp\!\left(-\frac{h'(x)^2 \delta^2}{2\ell^2}\right).
-$$ {#eq-effective-lengthscale}
+$$
 This is a squared exponential in $\delta$ with *effective* lengthscale $\ell_{\text{eff}}(x) = \ell / |h'(x)|$. The local derivative of $f^{(1)}$ thus controls the local smoothness of the composed process.
 
 ### The Deeply Non-Stationary Architecture
@@ -103,7 +103,7 @@ plt.show()
 The Gibbs kernel [@paciorek_nonstationary_2004] is a classical non-stationary kernel that directly parameterises input-dependent lengthscales:
 $$
 k_{\text{Gibbs}}(\vx, \vx') = \prod_{d=1}^{D} \left(\frac{2\ell_d(\vx)\ell_d(\vx')}{\ell_d(\vx)^2 + \ell_d(\vx')^2}\right)^{1/2} \exp\left(-\sum_{d=1}^{D} \frac{(x_d - x_d')^2}{\ell_d(\vx)^2 + \ell_d(\vx')^2}\right),
-$$ {#eq-gibbs-kernel}
+$$
 where $\ell_d(\vx)$ is the lengthscale along dimension $d$ at location $\vx$. When $\ell_d(\vx) = \ell_d$ is constant, this reduces to the standard squared exponential kernel.
 
 @salimbeni_deep_2019 showed that a DGP with appropriate architecture can express a similar class of non-stationary covariance structures, but without requiring the user to specify the functional form of $\ell_d(\vx)$. Instead, the intermediate GP layers learn the lengthscale functions from data. This is advantageous because:

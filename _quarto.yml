@@ -19,6 +19,7 @@ format:
   # (other formats)
   pdf:
     pdf-engine: pdflatex
+    fontsize: 12pt
     include-in-header:
       - _macros.tex
       - text: |

@@ -5,12 +5,12 @@ Before moving to the full function space perspective, it is helpful to build int
 We begin with a linear model of the form
 $$
 f(\vx) = \vx^\top \vw,
-$$ {#eq-linear-model}
+$$
 
 where $\vw \in \R^D$ is a weight vector. To make this more general, we consider an expansion of basis functions
 $$
 f(\vx) = \sum_{j=1}^{M} w_j \phi_j(\vx) = \vphi(\vx)^\top \vw,
-$$ {#eq-basis-expansion}
+$$
 
 where $\vphi(\vx) = [\phi_1(\vx), \ldots, \phi_M(\vx)]^\top$ is a vector of basis functions, which maps the input to an $M$-dimensional feature space, with weights $\vw = [w_1, \ldots, w_M]^\top$. This becomes more general than the simple linear model, allowing the modeling of non-linear relationships through the choice of basis functions $\phi_j(\cdot)$, without breaking linearity in the parameters $\vw$.
 
@@ -25,14 +25,14 @@ This motivates moving to a Bayesian approach, allowing us to capture this uncert
 A Bayesian approach addresses these issues by placing a prior distribution over $\vw$, which turns the problem into *Bayesian linear regression* [@bishop_pattern_2006; @gelman_bayesian_2025]. A natural choice is a zero-mean Gaussian prior:
 $$
 p(\vw) = \N(\vw \mid \vzero, \Sigma_p),
-$$ {#eq-weight-prior}
+$$
 
 where $\Sigma_p \in \R^{M \times M}$ is the prior covariance matrix. A common prior is $\Sigma_p = \sigma_w^2 \vI$, which gives independent, identically distributed, (i.i.d.) Gaussian weights with variance $\sigma_w^2$ [@mackay_practical_1992].
 
 When modelling each observation as $y_i = f(\vx_i) + \epsilon_i$, where $\epsilon_i$ is independent noise $\epsilon_i \sim \N(0, \sigma_n^2)$, we get a likelihood for a single observation of the form
 $$
 p(y_i \mid \vx_i, \vw) = \N(y_i \mid \vphi(\vx_i)^\top \vw, \sigma_n^2).
-$$ {#eq-likelihood}
+$$
 
 Assuming that there is independence across observations, and conditioning on $\vw$, the joint likelihood over $\mathcal{D}$ becomes
 $$
@@ -42,20 +42,20 @@ $$ {#eq-likelihood-product}
 Collecting observations into the *design matrix* $\Phi \in \R^{n \times M}$ with $\Phi_{ij} = \phi_j(\vx_i)$ [@rasmussen_gaussian_2008] (see [Appendix @sec-design-matrix] for the explicit construction), @eq-likelihood-product becomes a single multivariate Gaussian rather than a product of univariate Gaussians:
 $$
 p(\vy \mid \vX, \vw) = \N(\vy \mid \Phi \vw, \sigma_n^2 \vI).
-$$ {#eq-joint-likelihood}
+$$
 
 ### Posterior over Weights
 
 Applying Bayes' theorem to this gives the posterior distribution over weights:
 $$
 p(\vw \mid \vX, \vy) = \frac{p(\vy \mid \vX, \vw) p(\vw)}{p(\vy \mid \vX)}.
-$$ {#eq-bayes-theorem}
+$$
 
 Because the Gaussian prior is a product of Gaussians, and the likelihood is also Gaussian, the posterior is Gaussian as well [@bishop_pattern_2006; @bernardo_bayesian_2000]. The prior and likelihood are conjugate distributions, so the posterior is in the same family as the prior, this is called *conjugacy* [@gelman_bayesian_2025] and is a property that allows for closed-form inference. Evaluating the posterior gives covariance
 
 $$
 \Sigma_w = \left(\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1}\right)^{-1},
-$$ {#eq-posterior-cov}
+$$
 
 and posterior mean
 $$
@@ -65,7 +65,7 @@ $$ {#eq-posterior-mean}
 The posterior distribution over the weights is therefore
 $$
 p(\vw \mid \vX, \vy) = \N(\vw \mid \bar{\vw}, \Sigma_w).
-$$ {#eq-posterior-weights}
+$$
 
 See [Appendix @sec-completing-the-square] for the full derivation of the posterior mean and covariance.
 
@@ -90,14 +90,14 @@ $$ {#eq-predictive-mean-var}
 The predictive distribution in @eq-predictive-mean-var is expressed in terms of the feature map $\vphi$. However, we can see $\vphi$ appears only through inner products with the posterior covariance $\Sigma_w$, of the form $\vphi(\vx)^\top \Sigma_p \vphi(\vx')$. We can define a *kernel function* (interchangeably called a *covariance function*) as an inner product in the feature space: [@scholkopf_learning_2002; @rasmussen_gaussian_2008]
 $$
 k(\vx, \vx') = \vphi(\vx)^\top \Sigma_p \vphi(\vx'),
-$$ {#eq-kernel-def}
+$$
 
 which measures similarity between inputs in the feature space, weighted by the prior covariance $\Sigma_p$.
 
 With this definition, we can collect all pairwise kernel evaluations over the full training set into the *kernel matrix* $K \in \R^{n \times n}$ with $K_{ij} = k(\vx_i, \vx_j)$, and the vector of cross-covariances $\vk_* \in \R^n$ with $[\vk_*]_i = k(\vx_i, \vx_*)$. This allows for rewriting the predictive equation entirely in terms of the kernel. This can be done by reparametrizing the posterior covariance $\Sigma_w = (\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1})^{-1}$ using the matrix inversion lemma [@rasmussen_gaussian_2008, Equation A.9],
 $$
 (A + UCV)^{-1} = A^{-1} - A^{-1}U\bigl(C^{-1} + VA^{-1}U\bigr)^{-1}VA^{-1},
-$$ {#eq-matrix-inversion-lemma}
+$$
 
 setting $A = \Sigma_p^{-1}$, $U = \Phi^\top$, $C = \sigma_n^{-2}\vI$, $V = \Phi$, which gives the equivalent $n \times n$ expression:
 $$
