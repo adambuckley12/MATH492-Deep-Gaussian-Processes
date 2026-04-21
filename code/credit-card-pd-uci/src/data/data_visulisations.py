@@ -40,7 +40,7 @@ class DataVisualisations:
     def __init__(self, output_dir: str = "results/eda"):
         self.output_dir = output_dir
 
-    # -- 1. Class balance ------------------------------------------------------
+    # 1. Class balance 
 
     def target_distribution(self, y: pd.Series):
         """Bar chart showing class balance (default vs no-default)."""
@@ -60,7 +60,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "target_distribution", self.output_dir)
 
-    # -- 2. Correlation heatmap (continuous features only) --------------------
+    # 2. Correlation heatmap (continuous features only)
 
     def correlation_heatmap(self, X: pd.DataFrame):
         """Heatmap of Pearson correlations among continuous features."""
@@ -78,7 +78,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "correlation_heatmap", self.output_dir)
 
-    # -- 3. Continuous feature distributions (grid) ---------------------------
+    # 3. Continuous feature distributions (grid)
 
     def feature_distributions(self, X: pd.DataFrame):
         """Histogram + KDE grid for all continuous features."""
@@ -95,7 +95,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "feature_distributions", self.output_dir)
 
-    # -- 4. Categorical feature counts ----------------------------------------
+    # 4. Categorical feature counts
 
     def categorical_distributions(self, X: pd.DataFrame, y: pd.Series):
         """Count-plot grid for categorical features, coloured by default label."""
@@ -115,7 +115,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "categorical_distributions", self.output_dir)
 
-    # -- 5. Boxplots of key continuous features by target ---------------------
+    # 5. Boxplots of key continuous features by target
 
     def boxplots_by_target(self, X: pd.DataFrame, y: pd.Series):
         """Box-plots for LIMIT_BAL, AGE, and the most recent BILL/PAY_AMT."""
@@ -140,7 +140,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "boxplots_by_target", self.output_dir)
 
-    # -- 6. Temporal trends across months -------------------------------------
+    # 6. Temporal trends across months
 
     def temporal_trends(self, X: pd.DataFrame, y: pd.Series):
         """
@@ -179,7 +179,7 @@ class DataVisualisations:
         fig.tight_layout()
         _save(fig, "temporal_trends", self.output_dir)
 
-    # -- 7. Repayment status heatmap -------------------------------------------
+    #  7. Repayment status heatmap
 
     def repayment_status_heatmap(self, X: pd.DataFrame, y: pd.Series):
         """

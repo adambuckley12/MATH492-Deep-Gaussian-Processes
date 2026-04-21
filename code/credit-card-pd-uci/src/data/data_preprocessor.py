@@ -8,8 +8,8 @@ Handles all preprocessing steps after DataCleaner.clean():
       - EDUCATION : one-hot (4 levels → drop first to avoid dummy trap)
       - MARRIAGE  : one-hot (3 levels → drop first)
   2. Scaling of numeric features (StandardScaler)
-      Includes: LIMIT_BAL, AGE, PAY_SEP–PAY_APR (ordinal ints),
-              BILL_SEP–BILL_APR, PAY_AMT_SEP–PAY_AMT_APR
+      Includes: LIMIT_BAL, AGE, PAY_SEP-PAY_APR (ordinal ints),
+              BILL_SEP-BILL_APR, PAY_AMT_SEP-PAY_AMT_APR
   3. Stratified multi-split protocol
       - train      : model fitting
       - validation : model-selection / early stopping

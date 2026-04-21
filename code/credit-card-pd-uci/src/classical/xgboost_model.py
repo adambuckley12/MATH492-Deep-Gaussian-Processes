@@ -76,7 +76,7 @@ class XGBoostModel:
             verbosity=0,
         )
 
-    # -- Public API ------------------------------------------------------------
+    # Public API
 
     def fit(
         self,
@@ -130,7 +130,7 @@ class XGBoostModel:
         return evaluate_classifier(self.name, np.asarray(y_test),
                                    y_pred, y_prob, verbose=verbose)
 
-    # -- Feature importance ----------------------------------------------------
+    # Feature importance
 
     def feature_importance(
         self, feature_names: list[str] | None = None
@@ -146,7 +146,7 @@ class XGBoostModel:
         df = pd.DataFrame({"feature": names, "gain": imp})
         return df.sort_values("gain", ascending=False).reset_index(drop=True)
 
-    # -- Persistence ------------------------------------------------
+    # Persistence
 
     def save(self, path: str) -> None:
         """Serialise the fitted model to *path* using joblib."""

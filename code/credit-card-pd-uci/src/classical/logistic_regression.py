@@ -1,14 +1,12 @@
 """
 classical/logistic_regression.py
-=================================
 Logistic Regression baseline for credit default prediction.
 
 Design choices
 --------------
 * ``class_weight='balanced'``: compensates for the ~22%/78% class imbalance
   by up-weighting the minority (default) class during training.
-* Solver ``lbfgs`` with L2 regularisation: fast, numerically stable, works
-  well out-of-the-box on tabular data.
+* Solver ``lbfgs`` with L2 regularisation as is fast and numerically stable for this problem.
 * ``max_iter=1000``: UCI credit dataset converges well within this budget.
 * Threshold 0.5 for hard predictions (can be tuned via precision-recall curve).
 """

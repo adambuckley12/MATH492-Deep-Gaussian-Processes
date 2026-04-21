@@ -39,7 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-# -- Expected Calibration Error ------------------------------------------------
+# Expected Calibration Error
 
 def expected_calibration_error(
     y_true: np.ndarray,
@@ -50,9 +50,9 @@ def expected_calibration_error(
     Expected Calibration Error (ECE).
 
     Partitions predicted probabilities into ``n_bins`` equal-width bins and
-    computes the weighted average of |accuracy − confidence| per bin.
+    computes the weighted average of |accuracy - confidence| per bin.
 
-        ECE = Σ_m  (|B_m| / n) * |acc(B_m) − conf(B_m)|
+        ECE = Σ_m  (|B_m| / n) * |acc(B_m) - conf(B_m)|
 
     Parameters
     ----------

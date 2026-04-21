@@ -125,7 +125,7 @@ def run_tier(
 
 
 def main() -> None:
-    # -- Load & clean ----------------------------------------------------------
+    # Load & clean
     df = DataLoader(data_path=DATASET_CSV).load_data()
     X_raw, y_raw = DataCleaner(df).clean(apply_log_transforms=True)
 
@@ -140,14 +140,14 @@ def main() -> None:
         viz.temporal_trends(X_raw, y_raw)
         viz.repayment_status_heatmap(X_raw, y_raw)
 
-    # -- Split off fixed test set (20 % of full data) ---------------------------
+    # Split off fixed test set (20 % of full data)
     X_dev, X_test, y_dev, y_test = train_test_split(
         X_raw, y_raw, test_size=0.2, stratify=y_raw, random_state=SEED,
     )
 
     preprocessor = DataPreprocessor(random_state=SEED)
 
-    # -- Determine which tiers to run ------------------------------------------
+    # Determine which tiers to run
     explicit = [k for k in SIZE_TIERS if f"--{k}" in sys.argv]
     tiers = explicit if explicit else ["small", "medium"]
 
