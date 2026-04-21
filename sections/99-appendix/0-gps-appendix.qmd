@@ -470,14 +470,14 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 
 | Model | ROC-AUC | 95% CI | ECE | 95% CI |
 |:------|:-------:|:------:|:---:|:------:|
-| Logistic Regression | 0.739 | [0.723, 0.755] | 0.225 | [0.215, 0.235] |
-| Random Forest | 0.769 | [0.754, 0.783] | 0.087 | [0.078, 0.096] |
-| XGBoost | 0.779 | [0.765, 0.794] | 0.196 | [0.187, 0.205] |
-| SVGP | 0.778 | [0.760, 0.790] | 0.015 | [0.010, 0.023] |
-| DSVGP-2L | 0.777 | [0.764, 0.793] | 0.017 | [0.012, 0.026] |
-| DSVGP-3L | 0.776 | [0.762, 0.792] | 0.016 | [0.011, 0.025] |
+| Logistic Regression | 0.739 | [0.723, 0.755] | 0.225 | [0.215, 0.236] |
+| Random Forest | 0.769 | [0.754, 0.783] | 0.087 | [0.078, 0.097] |
+| XGBoost | 0.779 | [0.765, 0.794] | 0.196 | [0.186, 0.205] |
+| SVGP | 0.778 | [0.762, 0.792] | 0.011 | [0.010, 0.023] |
+| DSVGP-2L | 0.777 | [0.763, 0.792] | 0.014 | [0.013, 0.027] |
+| DSVGP-3L | 0.776 | [0.761, 0.791] | 0.021 | [0.018, 0.033] |
 
-: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) are within 0.003 ROC-AUC, which is smaller than the per-model CI width ($\sim 0.03$). The the gap is too small to support that any of these four has better discrimination. ECE intervals are non-overlapping between the GP models (upper bounds $\leq 0.026$) and classical models (lower bounds $\geq 0.078$), so the calibration advantage is large. {#tbl-app-uci-ci}
+: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) are within 0.003 ROC-AUC, which is smaller than the per-model CI width ($\sim 0.03$); the gap is too small to support that any of these four have better discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.033$) and classical models (lower bounds $\geq 0.078$), so the calibration advantage is large relative to expected sample variations. {#tbl-app-uci-ci}
 
 ## Kin8nm: Supplementary Tables {#sec-kin8nm-supp-tables}
 

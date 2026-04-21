@@ -42,7 +42,9 @@ RNG     = np.random.default_rng(42)
 
 # -- ECE helper ----------------------------------------------------------------
 
-def ece(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> float:
+def ece(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 15) -> float:
+    # n_bins=15 to match classical/metrics.py expected_calibration_error default,
+    # so bootstrap point estimates agree with the headline metrics tables.
     bins   = np.linspace(0.0, 1.0, n_bins + 1)
     total  = len(y_true)
     result = 0.0
