@@ -104,7 +104,7 @@ Kernels can also be combined: both sums and products of valid kernels are themse
 
 ## Choosing Kernel Hyperparameters {#sec-kernel-hyperparams}
 
-The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and so must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, which is known as *type-II* or *level-II* maximum likelihood or sometimes as *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998; @deisenroth_practical_2010],
+The kernel hyperparameters $\boldsymbol{\theta}$ (e.g.\ length-scale $\ell$, output scale $\sigma_f^2$, noise variance $\sigma_n^2$) are not specified by the GP directly, and so must be estimated from data. The standard approach is to maximise the log marginal likelihood (LML) of the observed data under the GP model, which is known as *type-II* or *level-II* maximum likelihood or sometimes as *empirical Bayes* [@mackay_practical_1992; @mackay_introduction_1998],
 
 <!--- underline each section in the LML expression and explain its interpretation --->
 $$

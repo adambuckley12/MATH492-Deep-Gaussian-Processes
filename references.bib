@@ -1,14 +1,13 @@
 
 @book{rasmussen_gaussian_2008,
 	address = {Cambridge, Mass.},
-	edition = {3. print},
 	series = {Adaptive computation and machine learning},
 	title = {Gaussian processes for machine learning},
 	isbn = {978-0-262-18253-9},
 	language = {en},
 	publisher = {MIT Press},
 	author = {Rasmussen, Carl Edward and Williams, Christopher K. I.},
-	year = {2008},
+	year = {2006},
 	file = {PDF:/Users/adam/Zotero/storage/CQW52ER7/Rasmussen and Williams - 2008 - Gaussian processes for machine learning.pdf:application/pdf},
 }
 
@@ -76,24 +75,21 @@
 }
 
 
-@misc{salimbeni_doubly_2017,
+@inproceedings{salimbeni_doubly_2017,
 	title = {Doubly {Stochastic} {Variational} {Inference} for {Deep} {Gaussian} {Processes}},
 	url = {http://arxiv.org/abs/1705.08933},
 	doi = {10.48550/arXiv.1705.08933},
 	abstract = {Gaussian processes (GPs) are a good choice for function approximation as they are ﬂexible, robust to overﬁtting, and provide well-calibrated predictive uncertainty. Deep Gaussian processes (DGPs) are multi-layer generalizations of GPs, but inference in these models has proved challenging. Existing approaches to inference in DGP models assume approximate posteriors that force independence between the layers, and do not work well in practice. We present a doubly stochastic variational inference algorithm that does not force independence between layers. With our method of inference we demonstrate that a DGP model can be used effectively on data ranging in size from hundreds to a billion points. We provide strong empirical evidence that our inference scheme for DGPs works well in practice in both classiﬁcation and regression.},
 	language = {en},
 	urldate = {2025-12-15},
-	publisher = {arXiv},
+	publisher = {Curran Associates, Inc.},
+	booktitle = {Advances in Neural Information Processing Systems},
 	author = {Salimbeni, Hugh and Deisenroth, Marc},
 	month = nov,
 	year = {2017},
-	note = {arXiv:1705.08933 [stat]},
-	keywords = {Statistics - Machine Learning},
-	annote = {Comment: NIPS 2017},
-	file = {PDF:/Users/adam/Zotero/storage/JCPC5MFB/Salimbeni and Deisenroth - 2017 - Doubly Stochastic Variational Inference for Deep Gaussian Processes.pdf:application/pdf},
 }
 
-@misc{damianou_deep_2013,
+@inproceedings{damianou_deep_2013,
 	title = {Deep {Gaussian} {Processes}},
 	url = {http://arxiv.org/abs/1211.0358},
 	doi = {10.48550/arXiv.1211.0358},
@@ -104,10 +100,8 @@
 	author = {Damianou, Andreas C. and Lawrence, Neil D.},
 	month = mar,
 	year = {2013},
-	note = {arXiv:1211.0358 [stat]},
-	keywords = {Computer Science - Machine Learning, Statistics - Machine Learning, Mathematics - Probability},
-	annote = {Comment: 9 pages, 8 figures. Appearing in Proceedings of the 16th International Conference on Artificial Intelligence and Statistics (AISTATS) 2013},
-	file = {PDF:/Users/adam/Zotero/storage/G22BP29S/Damianou and Lawrence - 2013 - Deep Gaussian Processes.pdf:application/pdf},
+	booktitle = {Proceedings of the Sixteenth International Conference on Artificial Intelligence and Statistics},
+	publisher = {PMLR},
 }
 
 
@@ -120,7 +114,7 @@
 	abstract = {In the 1990s, a new type of learning algorithm was developed, based on results from statistical learning theory: the Support Vector Machine (SVM). This gave rise to a new class of theoretically elegant learning machines that use a central concept of SVMs -- -kernels--for a number of learning tasks. Kernel machines provide a modular framework that can be adapted to different tasks and domains by the choice of the kernel function and the base algorithm. They are replacing neural networks in a variety of fields, including engineering, information retrieval, and bioinformatics. Learning with Kernels provides an introduction to SVMs and related kernel methods. Although the book begins with the basics, it also includes the latest research. It provides all of the concepts necessary to enable a reader equipped with some basic mathematical knowledge to enter the world of machine learning using theoretically well-founded yet easy-to-use kernel algorithms and to understand and apply the powerful algorithms that have been developed over the last few years},
 	language = {eng},
 	publisher = {MIT Press},
-	author = {Schölkopf, Bernhard},
+	author = {Schölkopf, Bernhard and Smola, Alexander J.},
 	collaborator = {Smola, Alexander J.},
 	year = {2002},
 }
@@ -281,20 +275,17 @@
 	file = {PDF:/Users/adam/Zotero/storage/7AK5EIRZ/Deisenroth - A Practical and Conceptual Framework for Learning in Control.pdf:application/pdf},
 }
 
-@misc{kingma_adam_2015,
+@inproceedings{kingma_adam_2015,
 	title = {Adam: {A} {Method} for {Stochastic} {Optimization}},
 	url = {http://arxiv.org/abs/1412.6980},
 	doi = {10.48550/arXiv.1412.6980},
 	abstract = {We introduce Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments. The method is straightforward to implement, is computationally efficient, has little memory requirements, is invariant to diagonal rescaling of the gradients, and is well suited for problems that are large in terms of data and/or parameters.},
 	language = {en},
 	urldate = {2026-03-06},
-	publisher = {arXiv},
+	booktitle = {Proceedings of the 3rd International Conference on Learning Representations},
 	author = {Kingma, Diederik P. and Ba, Jimmy},
 	month = jan,
 	year = {2015},
-	note = {arXiv:1412.6980 [cs]},
-	keywords = {Computer Science - Machine Learning},
-	annote = {Published at ICLR 2015},
 }
 
 @inproceedings{kendall_what_2017,
@@ -531,4 +522,19 @@
 	number = {SR 11-7},
 	year = {2011},
 	url = {https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm},
+}
+
+@book{neal_bayesian_1996,
+	title = {Bayesian Learning for Neural Networks},
+	publisher = {Springer New York},
+	author = {Neal, Radford M.},
+	year = {1996},
+}
+
+@inproceedings{rezende_stochastic_2014,
+	title = {Stochastic Backpropagation and Approximate Inference in Deep Generative Models},
+	booktitle = {Proceedings of the 31st International Conference on Machine Learning},
+	publisher = {PMLR},
+	author = {Rezende, Danilo Jimenez and Mohamed, Shakir and Wierstra, Daan},
+	year = {2014},
 }

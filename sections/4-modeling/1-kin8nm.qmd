@@ -2,7 +2,7 @@
 
 For the first experiment, we evaluate the same GP and DGP architectures on the Kin8nm dataset, a standard regression benchmark from the UCI repository that has been widely used in the DGP literature [@salimbeni_doubly_2017; @damianou_deep_2013].
 
-Kin8nm contains 8,192 observations of the forward kinematics of an 8-link robot arm. There are eight input features which are joint angles, and the task is to predict the end-effector position. The mapping from joint angles to end-effector position is a composition of many trigonometric transformations, which should be the kind of hierarchical non-linearity where the intermediate representations we have in the DGP layers are able to improve performance over standard GPs.
+Kin8nm contains 8,192 observations of the forward kinematics of an 8-link robot arm. There are eight input features which are joint angles, and the task is to predict the distance of the end-effector from a target point. The mapping from joint angles to this target distance is a composition of many trigonometric transformations, which should be the kind of hierarchical non-linearity where the intermediate representations we have in the DGP layers are able to improve performance over standard GPs.
 
 ### Experimental Design
 

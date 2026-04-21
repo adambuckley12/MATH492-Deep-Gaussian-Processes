@@ -32,7 +32,7 @@ $$
 
 Compared to the conditional $p(\vf \mid \vu = \vm)$, the variational posterior $q(\vf)$ adds the term $K_{fu}K_{uu}^{-1}SK_{uu}^{-1}K_{uf}$ to the variance which restores the uncertainty lost by treating $\vu$ as fixed at $\vm$, so $q(\vf)$ correctly reflects our prior uncertainty about $\vu$.
 
-The ELBO for this sparse model is [@titsias_variational_2009]:
+The ELBO for this sparse model is:
 
 $$
 \mathcal{L} = \mathbb{E}_{q(\vf)}[\log p(\vy \mid \vf)] - \KL(q(\vu) \| p(\vu)).

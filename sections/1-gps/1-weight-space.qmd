@@ -51,7 +51,7 @@ $$
 p(\vw \mid \vX, \vy) = \frac{p(\vy \mid \vX, \vw) p(\vw)}{p(\vy \mid \vX)}.
 $$
 
-Because the Gaussian prior is a product of Gaussians, and the likelihood is also Gaussian, the posterior is Gaussian as well [@bishop_pattern_2006; @bernardo_bayesian_2000]. The prior and likelihood are conjugate distributions, so the posterior is in the same family as the prior, this is called *conjugacy* [@gelman_bayesian_2025] and is a property that allows for closed-form inference. Evaluating the posterior gives covariance
+Because the prior and likelihood are both Gaussian, their product is proportional to another Gaussian, meaning the posterior is Gaussian also [@bishop_pattern_2006; @bernardo_bayesian_2000]. The prior and likelihood are conjugate distributions, so the posterior is in the same family as the prior, this is called *conjugacy* [@gelman_bayesian_2025] and is a property that allows for closed-form inference. Evaluating the posterior gives covariance
 
 $$
 \Sigma_w = \left(\sigma_n^{-2}\Phi^\top\Phi + \Sigma_p^{-1}\right)^{-1},
@@ -136,6 +136,6 @@ $$
 p(y_* \mid \vx_*, \vX, \vy) = \N\!\left(y_* \;\middle|\; \vk_*^\top(K + \sigma_n^2\vI)^{-1}\vy,\; k(\vx_*,\vx_*) - \vk_*^\top(K+\sigma_n^2\vI)^{-1}\vk_* + \sigma_n^2\right).
 $$ {#eq-predictive-kernel-full}
 
-The most important observation here is that $\vphi$ has vanished entirely. The predictions depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. If we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. @williams_computing_1996 showed that a Bayesian neural network with an infinite number of hidden units and a Gaussian weight prior converges to a GP, formally proving the connection between the weight-space and function-space views.
+The most important observation here is that $\vphi$ has vanished entirely. The predictions depend purely on kernel evaluations between data points. We are free to specify $k$ directly, and we never need to construct an explicit feature map. If we allow $M \to \infty$ many basis functions, and we define $k$ to be the corresponding inner product of this limit, then the model becomes *non-parametric*. The functions complexity grows with the data rather than being fixed in advance [@williams_computing_1996; @mackay_introduction_1998]. Building on the work of @neal_bayesian_1996, @williams_computing_1996 showed a Bayesian neural network with infinite hidden units and a Gaussian weight prior converges to a GP, proving the connection between weight-space and function-space views.
 
 This is the *function-space perspective*. Instead of reasoning about a weight vector $\vw$, we place a prior *directly over functions*, characterised entirely by $k$. The result is a Gaussian process.
