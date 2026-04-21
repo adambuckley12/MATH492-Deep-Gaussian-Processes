@@ -477,7 +477,7 @@ The figures below show predicted-vs-actual plots, residual distributions, and ru
 | DSVGP-2L | 0.777 | [0.764, 0.793] | 0.017 | [0.012, 0.026] |
 | DSVGP-3L | 0.776 | [0.762, 0.792] | 0.016 | [0.011, 0.025] |
 
-: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) have completely overlapping ROC-AUC intervals and are statistically indistinguishable on discrimination. ECE intervals are non-overlapping between the GP family (upper bounds $\leq 0.026$) and classical models (lower bounds $\geq 0.078$), confirming the calibration advantage is statistically robust. {#tbl-app-uci-ci}
+: Bootstrap 95% confidence intervals for ROC-AUC and ECE on the UCI Credit Card large test set (6,000 observations, 22.1% default rate). The top four models (XGBoost, DSVGP-2L, DSVGP-3L, SVGP) are within 0.003 ROC-AUC, which is smaller than the per-model CI width ($\sim 0.03$). The the gap is too small to support that any of these four has better discrimination. ECE intervals are non-overlapping between the GP models (upper bounds $\leq 0.026$) and classical models (lower bounds $\geq 0.078$), so the calibration advantage is large. {#tbl-app-uci-ci}
 
 ## Kin8nm: Supplementary Tables {#sec-kin8nm-supp-tables}
 

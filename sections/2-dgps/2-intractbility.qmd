@@ -24,25 +24,25 @@ $$
 
 is a mixture of Gaussians with continuously varying covariance. Intuitively, for every possible realisation of $\vF^{(1)}$ there is a different Gaussian over $\vF^{(2)}$; marginalising out $\vF^{(1)}$ means averaging together infinitely many Gaussians with different shapes, producing a result that is heavier-tailed and more complex than any individual Gaussian component. These do not have a closed-form expression, and the resulting distribution over $\vF^{(2)}$ is non-Gaussian.
 
-As well as the intractability of the marginal likelihood, the resulting distribution over outputs is non-Gaussian. Consider a two-layer DGP with first-layer outputs $h_1 = f^{(1)}(x_1)$, $h_2 = f^{(1)}(x_2)$. From the GP prior:
+As well as the intractability of the marginal likelihood, the resulting joint distribution over the final-layer latent values is non-Gaussian. Consider a two-layer DGP with first-layer outputs $h_1 = f^{(1)}(x_1)$, $h_2 = f^{(1)}(x_2)$. From the GP prior:
 
 $$
 \begin{bmatrix} h_1 \\ h_2 \end{bmatrix} \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(1)}_{11} & k^{(1)}_{12} \\ k^{(1)}_{12} & k^{(1)}_{22} \end{bmatrix}\right).
 $$
 
-Conditioned on $(h_1, h_2)$, the outputs follow:
+Writing $f_i^{(2)} = f^{(2)}(h_i)$ for the second-layer latent at input $h_i$, conditioning on $(h_1, h_2)$ gives:
 
 $$
-\begin{bmatrix} y_1 \\ y_2 \end{bmatrix} \Bigg| h_1, h_2 \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(2)}(h_1, h_1) & k^{(2)}(h_1, h_2) \\ k^{(2)}(h_1, h_2) & k^{(2)}(h_2, h_2) \end{bmatrix}\right).
+\begin{bmatrix} f_1^{(2)} \\ f_2^{(2)} \end{bmatrix} \Bigg| h_1, h_2 \sim \mathcal{N}\left(\vzero, \begin{bmatrix} k^{(2)}(h_1, h_1) & k^{(2)}(h_1, h_2) \\ k^{(2)}(h_1, h_2) & k^{(2)}(h_2, h_2) \end{bmatrix}\right).
 $$
 
 The marginal distribution
 
 $$
-p(y_1, y_2) = \int p(y_1, y_2 \mid h_1, h_2) \, p(h_1, h_2) \, dh_1 \, dh_2
+p(f_1^{(2)}, f_2^{(2)}) = \int p(f_1^{(2)}, f_2^{(2)} \mid h_1, h_2) \, p(h_1, h_2) \, dh_1 \, dh_2
 $$
 
-is a continuous mixture of Gaussians with varying covariance matrices. Since $k^{(2)}(h_1, h_2)$ is a nonlinear function of $(h_1, h_2)$, this mixture is not Gaussian.
+is a continuous mixture of Gaussians with varying covariance matrices. Since $k^{(2)}(h_1, h_2)$ is a nonlinear function of $(h_1, h_2)$, this mixture is not Gaussian, so the output $\vy = \vf^{(2)} + \vepsilon$ is also non-Gaussian.
 
 The posterior over all latent functions is:
 
